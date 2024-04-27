@@ -34,7 +34,7 @@ MarkupSafe==2.1.5
 packaging==24.0
 passlib==1.7.4
 proto-plus==1.23.0
-protobuf==4.25.3
+protobuf==5.26.1
 pyasn1==0.6.0
 pyasn1_modules==0.4.0
 pycparser==2.22
