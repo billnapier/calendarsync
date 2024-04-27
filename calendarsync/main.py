@@ -1,20 +1,16 @@
+"""Main module for running webserver."""
 import os
 
 from werkzeug.middleware.proxy_fix import ProxyFix
 from flask import Flask, render_template_string
+
 from flask_sqlalchemy import SQLAlchemy
+import config
+from security import setup_flask_security
+
 from flask_security import (
-    Security,
-    SQLAlchemyUserDatastore,
     auth_required,
 )
-from flask_security.models import fsqla_v3 as fsqla
-
-import datetime
-import uuid
-from sqlalchemy import Column, Integer, DateTime
-
-import config
 
 # Create app
 app = Flask(__name__)
@@ -45,37 +41,15 @@ app.config["GOOGLE_CLIENT_ID"] = app_config.access_secret('google_oauth_client_i
 app.config["GOOGLE_CLIENT_SECRET"] = app_config.access_secret('google_oauth_client_secret')
 app.config["SQLALCHEMY_DATABASE_URI"] = app_config.sqlalchemy_database_uri
 
+
 db = SQLAlchemy(app)
-fsqla.FsModels.set_db_info(db)
-
-### The bigquery adapter isn't fully functional.  BigQuery itself doesn't supply an autoincrement feature, so we 
-### use UUID to simulate it.  bigquery-sqlalchemy doesn't correctly implement func.now() (supposed to be 
-### CURRENT_DATETIME()), so we generate the timestamps in python.
-def _uid():
-    return uuid.uuid4().int & 0x7FFFFFFFFFFFFFFF
-
-
-class Role(db.Model, fsqla.FsRoleMixin):
-    id = Column(Integer(), primary_key=True, default=_uid)
-    update_datetime = Column(DateTime, default=datetime.datetime.utcnow)
-
-
-class User(db.Model, fsqla.FsUserMixin):
-    id = Column(Integer(), primary_key=True, default=_uid)
-    create_datetime = Column(DateTime, default=datetime.datetime.utcnow)
-    update_datetime = Column(
-        DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow
-    )
-
-
-# Setup Flask-Security
-user_datastore = SQLAlchemyUserDatastore(db, User, Role)
-app.security = Security(app, user_datastore)
+setup_flask_security(app=app, db=db)
 
 # Views
 @app.route("/")
 @auth_required()
 def home():
+    """Home page."""
     return render_template_string("Hello {{ current_user.email }}")
 
 if __name__ == "__main__":
