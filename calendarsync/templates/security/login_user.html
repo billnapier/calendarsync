@@ -1,14 +1,17 @@
-{% extends "security/base.html" %}
+{% extends "bootstrap/base.html" %}
+{% import "bootstrap/wtf.html" as wtf %}
+{% import "bootstrap/fixes.html" as fixes %}
+{% import "bootstrap/utils.html" as util %}
 {% from "security/_macros.html" import render_field_with_errors, render_field, render_field_errors, render_form_errors, prop_next %}
 {% block content %}
   {% include "security/_messages.html" %}
   {% if security.oauthglue %}
-    <hr class="fs-gap">
-    <h1>{{ _fsdomain("Use Social Oauth to Sign In") }}</h1>
+    <h1>{{ _fsdomain("Please Login") }}</h1>
+    
     {% for provider in security.oauthglue.provider_names %}
       <div class="fs-gap">
         <form method="post" id="{{ provider }}_form" name="{{ provider }}_form">
-          <input id="{{ provider }}" name="{{ provider }}" type="submit" value="{{ _fsdomain('Sign in with ')~provider }}" formaction="{{ url_for_security('oauthstart', name=provider) }}{{ prop_next() }}">
+          <input id="{{ provider }}" name="{{ provider }}" type="image" src="/static/web_light_rd_SI@1x.png" value="{{ _fsdomain('Sign in with ')~provider }}" formaction="{{ url_for_security('oauthstart', name=provider) }}{{ prop_next() }}">
           {% if csrf_token is defined %}
             <input id="{{ provider }}_csrf_token" name="{{ provider }}_csrf_token" type="hidden" value="{{ csrf_token() }}">
           {% endif %}

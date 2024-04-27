@@ -2,7 +2,8 @@
 import os
 
 from werkzeug.middleware.proxy_fix import ProxyFix
-from flask import Flask, render_template_string
+from flask import Flask, render_template
+from flask_bootstrap import Bootstrap
 
 from flask_sqlalchemy import SQLAlchemy
 import config
@@ -45,12 +46,14 @@ app.config["SQLALCHEMY_DATABASE_URI"] = app_config.sqlalchemy_database_uri
 db = SQLAlchemy(app)
 setup_flask_security(app=app, db=db)
 
+Bootstrap(app)
+
 # Views
 @app.route("/")
 @auth_required()
 def home():
     """Home page."""
-    return render_template_string("Hello {{ current_user.email }}")
+    return render_template('index.html')
 
 if __name__ == "__main__":
-    app.run()
+    app.run(debug=True)
