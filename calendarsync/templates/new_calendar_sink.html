@@ -6,12 +6,7 @@
 {% block content %}
 {{util.flashed_messages(dismissible=True)}}
 <div class="container">
-    <h1>Welcome to CalendarSync!</h1>
-
-    <h2>Currently Configured Calendars</h2>
-
-    {{util.form_button(url_for('new_calendar_sink'),
-    util.icon('plus') + ' Add new calendar to write to')}}
+    <h1>Add new calendar to sync</h1>
 </div>
 
 {% endblock %}
