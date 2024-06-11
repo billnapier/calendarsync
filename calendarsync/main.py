@@ -58,8 +58,7 @@ def home():
 @auth_required()
 def new_calendar_sink():
     """Add a new calendar sink for the user."""
-    form = forms.NewCalendarSinkForm()
-    return render_template('new_calendar_sink.html', form=form)
+    return render_template('new_calendar_sink.html')
 
 if __name__ == "__main__":
     app.run(debug=True)
