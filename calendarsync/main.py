@@ -1,17 +1,15 @@
 """Main module for running webserver."""
 import os
 
-from werkzeug.middleware.proxy_fix import ProxyFix
+import config
 from flask import Flask, render_template
 from flask_bootstrap import Bootstrap
-
-from flask_sqlalchemy import SQLAlchemy
-import config
-from security import setup_flask_security
-
 from flask_security import (
     auth_required,
 )
+from flask_sqlalchemy import SQLAlchemy
+from security import setup_flask_security
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 # Create app
 app = Flask(__name__)
@@ -54,6 +52,12 @@ Bootstrap(app)
 def home():
     """Home page."""
     return render_template('index.html')
+
+@app.route("/sink/add", methods=["POST"])
+@auth_required()
+def new_calendar_sink():
+    """Add a new calendar sink for the user."""
+    return render_template('new_calendar_sink.html')
 
 if __name__ == "__main__":
     app.run(debug=True)
