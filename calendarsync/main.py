@@ -2,7 +2,6 @@
 import os
 
 import config
-import models
 from flask import Flask, render_template
 from flask_bootstrap import Bootstrap
 from flask_security import (
