@@ -1,0 +1,42 @@
+{% extends "bootstrap/base.html" %}
+{% import "bootstrap/wtf.html" as wtf %}
+{% import "bootstrap/fixes.html" as fixes %}
+{% import "bootstrap/utils.html" as util %}
+
+{% block content %}
+{{util.flashed_messages(dismissible=True)}}
+<div class="container">
+    <h1>Add new calendar to sync</h1>
+</div>
+
+<form method="POST" action="{{ url_for('new_calendar') }}">
+    {{ form.hidden_tag() }}
+
+    {% if form.source_url.errors %}
+    <ul class="errors">
+    {% for error in form.source_url.errors %}
+        <li>{{ error }}</li>
+    {% endfor %}
+    </ul>
+    {% endif %}
+
+    <div>{{ form.source_url.label }}: {{ form.source_url(class="css_class") }}</div>
+
+
+    {% if form.dest_cal_id.errors %}
+    <ul class="errors">
+    {% for error in form.dest_cal_id.errors %}
+        <li>{{ error }}</li>
+    {% endfor %}
+    </ul>
+    {% endif %}
+    <div>{{ form.dest_cal_id.label }}: {{ form.dest_cal_id() }}</div>
+    <input type="submit">
+</form>
+
+{% endblock %}
+
+{% block head %}
+{{super()}}
+{{fixes.ie8()}}
+{% endblock %}
