@@ -12,20 +12,12 @@ class Base(DeclarativeBase):
     """Base class for sqlalchemy ORM."""
     
 
-class CalendarSink(Base):
-    """Represents the Google calendar to write items to."""
-
-    __tablename__ = "calendar_sink"
-
-    calendar_id: Mapped[str] = mapped_column(String(), primary_key=True)
-    sources: Mapped[List["CalendarSource"]] = relationship()
-
 class CalendarSourceType(enum.Enum):
     """The type of calendar this CalendarSource is."""
     GOOGLE_CALENDAR = "google_calendar"
     ICAL = "ical"
 
-class CalendarSource(Base):
+class Calendar(Base):
     """Represents the Calendar to read items from."""
 
     __tablename__ = "calendar_source"
@@ -33,4 +25,5 @@ class CalendarSource(Base):
     type: Mapped[CalendarSourceType]
     # For ICAL, this is the ICAL link.  For Google Calendar, this is the gcal id.
     calendar_location: Mapped[str] = mapped_column(String(), primary_key=True)
-    parent_id: Mapped[int] = mapped_column(ForeignKey("calendar_sink.calendar_id"))
+    # The google calendar we are writing to
+    destination_calendar: Mapped[str] = mapped_column(String(), primary_key=True)
