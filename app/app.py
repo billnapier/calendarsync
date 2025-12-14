@@ -1,12 +1,16 @@
+"""
+CalendarSync Flask Application.
+Handles Google Login, session management, and Firestore integration.
+"""
 import os
 import firebase_admin
-from firebase_admin import credentials, firestore, auth
+from firebase_admin import firestore, auth
 from flask import Flask, render_template, request, session, redirect, url_for, jsonify
 
 # Initialize Firebase Admin SDK
 # If GOOGLE_APPLICATION_CREDENTIALS is set (locally or on Cloud Run if explicitly set), it uses that.
 # On Cloud Run, it uses the default service account automatically if no creds provided.
-if not firebase_admin._apps:
+if not firebase_admin._apps: # pylint: disable=protected-access
     project_id = os.environ.get('FIREBASE_PROJECT_ID')
     if project_id:
         firebase_admin.initialize_app(options={'projectId': project_id})
@@ -14,7 +18,7 @@ if not firebase_admin._apps:
         firebase_admin.initialize_app()
 
 app = Flask(__name__)
-# Set a secret key for session management. 
+# Set a secret key for session management.
 # In production, this should be a strong random value from env var.
 app.secret_key = os.environ.get('SECRET_KEY', 'dev_key_for_testing_only')
 
@@ -63,14 +67,14 @@ def login():
             'email': email,
             'picture': picture
         }
-        
+
         return jsonify({'success': True}), 200
 
     except auth.RevokedIdTokenError:
         return jsonify({'error': 'ID token revoked'}), 401
     except auth.InvalidIdTokenError:
         return jsonify({'error': 'Invalid ID token'}), 401
-    except Exception as e:
+    except Exception as e: # pylint: disable=broad-exception-caught
         print(f"Login error: {e}")
         return jsonify({'error': str(e)}), 500
 

@@ -54,7 +54,7 @@ resource "google_cloud_run_service" "default" {
     spec {
       containers {
         image = "${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.repo.repository_id}/${var.service_name}:${var.image_tag}"
-        
+
         env {
           name  = "FIREBASE_API_KEY"
           value = data.google_firebase_web_app_config.default.api_key
@@ -122,8 +122,8 @@ resource "google_project_iam_member" "cloudbuild_run_admin" {
 # --- Firebase & Firestore Configuration ---
 
 provider "google-beta" {
-  project = var.project_id
-  region  = var.region
+  project               = var.project_id
+  region                = var.region
   user_project_override = true
 }
 
@@ -154,7 +154,7 @@ resource "google_firestore_database" "default" {
 resource "google_firebase_project" "default" {
   provider = google-beta
   project  = var.project_id
-  
+
   # Wait for Firebase API to be enabled
   depends_on = [google_project_service.firebase_api, google_project_service.serviceusage_api]
 }
