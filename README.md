@@ -41,10 +41,42 @@ output:
 ```
 
 ### Usage
-Run the sync script:
-```bash
 python main.py --config config.yaml
 ```
+
+## Local Development (With Google Login)
+
+To run the Flask application locally with Google Login support:
+
+### 1. Enable Firebase
+1. Go to the [Firebase Console](https://console.firebase.google.com/).
+2. Click **Add project** and select your existing Google Cloud project (e.g., `calendarsync-napier`).
+3. Inside the project, add a **Web App** (click `</>`) to get your `firebaseConfig`.
+
+### 2. Enable Google Sign-In
+1. In Firebase Console -> Authentication -> Sign-in method.
+2. Enable the **Google** provider.
+
+### 3. Application Credentials
+Run the following to allow your local credentials to access the Auth APIs:
+```bash
+gcloud auth application-default set-quota-project <YOUR_PROJECT_ID>
+```
+
+### 4. Run the App
+Set the Firebase config environment variables (retrieve values from Terraform output `terraform output -json firebase_config` or Firebase Console):
+```bash
+export FIREBASE_API_KEY="AIza..."
+export FIREBASE_AUTH_DOMAIN="<project>.firebaseapp.com"
+export FIREBASE_PROJECT_ID="<project-id>"
+export FIREBASE_STORAGE_BUCKET="<project>.appspot.com"
+export FIREBASE_MESSAGING_SENDER_ID="1234..."
+export FIREBASE_APP_ID="1:..."
+export SECRET_KEY="dev-secret"
+
+python app/app.py
+```
+Open [http://localhost:8080](http://localhost:8080).
 
 ## Contributing
 See `docs/contributing.md` for details on how to contribute to this project.
