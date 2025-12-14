@@ -46,8 +46,6 @@ steps:
       - 'apply'
       - '-auto-approve'
       - '-var'
-      - 'project_id=$PROJECT_ID'
-      - '-var'
       - 'region=$_REGION'
       - '-var'
       - 'service_name=$_SERVICE_NAME'
