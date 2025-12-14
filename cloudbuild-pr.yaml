@@ -1,0 +1,31 @@
+steps:
+  # Terraform Init
+  - name: 'hashicorp/terraform:light'
+    args: ['init']
+    dir: 'terraform'
+    id: 'tf-init'
+
+  # Terraform Plan
+  - name: 'hashicorp/terraform:light'
+    args: 
+      - 'plan'
+      - '-var'
+      - 'region=$_REGION'
+      - '-var'
+      - 'service_name=$_SERVICE_NAME'
+      - '-var'
+      - 'github_owner=$_GITHUB_OWNER'
+      - '-var'
+      - 'github_repo=$_GITHUB_REPO'
+    dir: 'terraform'
+    id: 'tf-plan'
+
+substitutions:
+  _REGION: 'us-central1'
+  _SERVICE_NAME: 'python-cloudrun-app'
+  # GitHub variables passed by the trigger
+  _GITHUB_OWNER: 'billnapier' 
+  _GITHUB_REPO: 'calendarsync'
+
+options:
+  logging: CLOUD_LOGGING_ONLY
