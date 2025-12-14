@@ -20,7 +20,13 @@ variable "github_owner" {
   type        = string
 }
 
+
 variable "github_repo" {
   description = "GitHub repository name"
+  type        = string
+}
+
+variable "image_tag" {
+  description = "The tag of the container image to deploy"
   type        = string
 }

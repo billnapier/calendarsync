@@ -15,8 +15,6 @@ steps:
       - 'build'
       - '-t'
       - '$_REGION-docker.pkg.dev/$PROJECT_ID/$_SERVICE_NAME/$_SERVICE_NAME:$COMMIT_SHA'
-      - '-t'
-      - '$_REGION-docker.pkg.dev/$PROJECT_ID/$_SERVICE_NAME/$_SERVICE_NAME:latest'
       - 'app/'
     id: 'build-image'
 
@@ -24,8 +22,7 @@ steps:
   - name: 'gcr.io/cloud-builders/docker'
     args: 
       - 'push'
-      - '$_REGION-docker.pkg.dev/$PROJECT_ID/$_SERVICE_NAME/$_SERVICE_NAME'
-      - '--all-tags'
+      - '$_REGION-docker.pkg.dev/$PROJECT_ID/$_SERVICE_NAME/$_SERVICE_NAME:$COMMIT_SHA'
     id: 'push-image'
 
   # 4. Terraform Init
@@ -62,6 +59,8 @@ steps:
       - 'github_owner=$_GITHUB_OWNER'
       - '-var'
       - 'github_repo=$_GITHUB_REPO'
+      - '-var'
+      - 'image_tag=$COMMIT_SHA'
     dir: 'terraform'
     id: 'tf-apply'
     env:
