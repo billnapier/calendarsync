@@ -1,7 +1,10 @@
 terraform {
   required_providers {
-    google = {
       source  = "hashicorp/google"
+      version = "~> 4.0"
+    }
+    google-beta = {
+      source  = "hashicorp/google-beta"
       version = "~> 4.0"
     }
   }
@@ -50,6 +53,31 @@ resource "google_cloud_run_service" "default" {
     spec {
       containers {
         image = "${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.repo.repository_id}/${var.service_name}:${var.image_tag}"
+        
+        env {
+          name  = "FIREBASE_API_KEY"
+          value = data.google_firebase_web_app_config.default.api_key
+        }
+        env {
+          name  = "FIREBASE_AUTH_DOMAIN"
+          value = data.google_firebase_web_app_config.default.auth_domain
+        }
+        env {
+          name  = "FIREBASE_PROJECT_ID"
+          value = var.project_id
+        }
+        env {
+          name  = "FIREBASE_STORAGE_BUCKET"
+          value = data.google_firebase_web_app_config.default.storage_bucket
+        }
+        env {
+          name  = "FIREBASE_MESSAGING_SENDER_ID"
+          value = data.google_firebase_web_app_config.default.messaging_sender_id
+        }
+        env {
+          name  = "FIREBASE_APP_ID"
+          value = google_firebase_web_app.default.app_id
+        }
       }
     }
   }
@@ -138,8 +166,57 @@ resource "google_project_iam_member" "cloudbuild_run_admin" {
   member  = "serviceAccount:${data.google_project.project.number}@cloudbuild.gserviceaccount.com"
 }
 
-resource "google_project_iam_member" "cloudbuild_sa_user" {
-  project = var.project_id
-  role    = "roles/iam.serviceAccountUser"
   member  = "serviceAccount:${data.google_project.project.number}@cloudbuild.gserviceaccount.com"
+}
+
+# --- Firebase & Firestore Configuration ---
+
+provider "google-beta" {
+  project = var.project_id
+  region  = var.region
+  user_project_override = true
+}
+
+resource "google_project_service" "firestore_api" {
+  service            = "firestore.googleapis.com"
+  disable_on_destroy = false
+}
+
+resource "google_project_service" "firebase_api" {
+  service            = "firebase.googleapis.com"
+  disable_on_destroy = false
+  depends_on         = [google_project_service.cloudbuild_api]
+}
+
+resource "google_project_service" "serviceusage_api" {
+  service            = "serviceusage.googleapis.com"
+  disable_on_destroy = false
+}
+
+resource "google_firestore_database" "default" {
+  project     = var.project_id
+  name        = "(default)"
+  location_id = var.region
+  type        = "FIRESTORE_NATIVE"
+  depends_on  = [google_project_service.firestore_api]
+}
+
+resource "google_firebase_project" "default" {
+  provider = google-beta
+  project  = var.project_id
+  
+  # Wait for Firebase API to be enabled
+  depends_on = [google_project_service.firebase_api, google_project_service.serviceusage_api]
+}
+
+resource "google_firebase_web_app" "default" {
+  provider     = google-beta
+  project      = var.project_id
+  display_name = "CalendarSync"
+  depends_on   = [google_firebase_project.default]
+}
+
+data "google_firebase_web_app_config" "default" {
+  provider   = google-beta
+  web_app_id = google_firebase_web_app.default.app_id
 }
