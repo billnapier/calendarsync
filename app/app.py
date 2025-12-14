@@ -75,8 +75,8 @@ def login():
     except auth.InvalidIdTokenError:
         return jsonify({'error': 'Invalid ID token'}), 401
     except Exception as e: # pylint: disable=broad-exception-caught
-        print(f"Login error: {e}")
-        return jsonify({'error': str(e)}), 500
+        app.logger.error(f"Login error: {e}")
+        return jsonify({'error': 'An internal error occurred'}), 500
 
 @app.route('/logout')
 def logout():
