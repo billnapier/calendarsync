@@ -5,6 +5,10 @@ terraform {
       version = "~> 4.0"
     }
   }
+  backend "gcs" {
+    bucket  = "calendarsync-napier-tfstate"
+    prefix  = "terraform/state"
+  }
 }
 
 provider "google" {
@@ -87,24 +91,41 @@ resource "google_cloud_run_service_iam_policy" "noauth" {
   policy_data = data.google_iam_policy.noauth.policy_data
 }
 
+# Cloud Build Trigger for PRs
+# resource "google_cloudbuild_trigger" "pull_request" {
+#   name = "${var.service_name}-pr-trigger"
+#
+#   github {
+#     owner = var.github_owner
+#     name  = var.github_repo
+#     pull_request {
+#       branch = "^main$"
+#       comment_control = "COMMENTS_ENABLED"
+#     }
+#   }
+#
+#   filename = "cloudbuild-pr.yaml"
+#   depends_on = [google_project_service.cloudbuild_api]
+# }
+
 # Cloud Build Trigger
 # Note: For GitHub triggers to work via Terraform, the Cloud Build GitHub App must be installed on the repo.
-resource "google_cloudbuild_trigger" "push_on_green" {
-  name = "${var.service_name}-trigger"
+# resource "google_cloudbuild_trigger" "push_on_green" {
+#   name = "${var.service_name}-trigger"
 
-  github {
-    owner = var.github_owner
-    name  = var.github_repo
-    push {
-      branch = "^main$"
-    }
-  }
+#   github {
+#     owner = var.github_owner
+#     name  = var.github_repo
+#     push {
+#       branch = "^main$"
+#     }
+#   }
 
-  # We point to the cloudbuild.yaml in the repo
-  filename = "cloudbuild.yaml"
+#   # We point to the cloudbuild.yaml in the repo
+#   filename = "cloudbuild.yaml"
 
-  depends_on = [google_project_service.cloudbuild_api]
-}
+#   depends_on = [google_project_service.cloudbuild_api]
+# }
 
 # Grant Cloud Build Service Account permissions to deploy to Cloud Run and access Artifact Registry
 # The default Cloud Build Service Account is [PROJECT_NUMBER]@cloudbuild.gserviceaccount.com
