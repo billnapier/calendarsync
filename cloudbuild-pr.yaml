@@ -17,6 +17,8 @@ steps:
       - 'github_owner=$_GITHUB_OWNER'
       - '-var'
       - 'github_repo=$_GITHUB_REPO'
+      - '-var'
+      - 'image_tag=$COMMIT_SHA'
     dir: 'terraform'
     id: 'tf-plan'
 
