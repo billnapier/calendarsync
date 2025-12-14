@@ -7,7 +7,11 @@ from flask import Flask, render_template, request, session, redirect, url_for, j
 # If GOOGLE_APPLICATION_CREDENTIALS is set (locally or on Cloud Run if explicitly set), it uses that.
 # On Cloud Run, it uses the default service account automatically if no creds provided.
 if not firebase_admin._apps:
-    firebase_admin.initialize_app()
+    project_id = os.environ.get('FIREBASE_PROJECT_ID')
+    if project_id:
+        firebase_admin.initialize_app(options={'projectId': project_id})
+    else:
+        firebase_admin.initialize_app()
 
 app = Flask(__name__)
 # Set a secret key for session management. 
