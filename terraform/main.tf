@@ -141,6 +141,7 @@ resource "google_project_service" "firebase_api" {
 resource "google_project_service" "identitytoolkit_api" {
   service            = "identitytoolkit.googleapis.com"
   disable_on_destroy = false
+  depends_on         = [google_project_service.serviceusage_api]
 }
 
 resource "google_project_service" "serviceusage_api" {
@@ -184,7 +185,6 @@ resource "google_identity_platform_config" "default" {
   ]
   depends_on = [google_project_service.identitytoolkit_api]
 }
-
 
 data "google_firebase_web_app_config" "default" {
   provider   = google-beta
