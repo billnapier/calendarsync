@@ -138,6 +138,11 @@ resource "google_project_service" "firebase_api" {
   depends_on         = [google_project_service.cloudbuild_api]
 }
 
+resource "google_project_service" "identitytoolkit_api" {
+  service            = "identitytoolkit.googleapis.com"
+  disable_on_destroy = false
+}
+
 resource "google_project_service" "serviceusage_api" {
   service            = "serviceusage.googleapis.com"
   disable_on_destroy = false
@@ -165,6 +170,8 @@ resource "google_firebase_web_app" "default" {
   display_name = "CalendarSync"
   depends_on   = [google_firebase_project.default]
 }
+
+
 
 data "google_firebase_web_app_config" "default" {
   provider   = google-beta
