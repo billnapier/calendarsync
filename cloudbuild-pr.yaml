@@ -4,6 +4,8 @@ steps:
     args: ['init']
     dir: 'terraform'
     id: 'tf-init'
+    env:
+      - 'TF_WORKSPACE=default'
 
   # Terraform Plan
   - name: 'hashicorp/terraform:light'
@@ -21,6 +23,8 @@ steps:
       - 'image_tag=$COMMIT_SHA'
     dir: 'terraform'
     id: 'tf-plan'
+    env:
+      - 'TF_WORKSPACE=default'
 
 substitutions:
   _REGION: 'us-central1'

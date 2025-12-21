@@ -25,5 +25,8 @@ jobs:
         if [ -f app/requirements.txt ]; then pip install -r app/requirements.txt; fi
         pip install pytest
     - name: Test with pytest
+      env:
+        FLASK_ENV: development
+        SECRET_KEY: test_secret_key
       run: |
         pytest
