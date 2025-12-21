@@ -141,6 +141,7 @@ resource "google_project_service" "firebase_api" {
 resource "google_project_service" "identitytoolkit_api" {
   service            = "identitytoolkit.googleapis.com"
   disable_on_destroy = false
+  depends_on         = [google_project_service.serviceusage_api]
 }
 
 resource "google_project_service" "serviceusage_api" {
@@ -171,20 +172,25 @@ resource "google_firebase_web_app" "default" {
   depends_on   = [google_firebase_project.default]
 }
 
-resource "google_identity_platform_config" "default" {
-  provider = google-beta
-  project  = var.project_id
 
-  authorized_domains = [
+locals {
+  firebase_authorized_domains = [
     "localhost",
     "127.0.0.1",
     "${var.project_id}.firebaseapp.com",
     "${var.project_id}.web.app",
     replace(google_cloud_run_service.default.status[0].url, "https://", "")
   ]
-  depends_on = [google_project_service.identitytoolkit_api]
 }
 
+resource "google_identity_platform_config" "default" {
+  provider = google-beta
+  project  = var.project_id
+
+  authorized_domains = local.firebase_authorized_domains
+
+  depends_on = [google_project_service.identitytoolkit_api]
+}
 
 data "google_firebase_web_app_config" "default" {
   provider   = google-beta
