@@ -20,7 +20,12 @@ if not firebase_admin._apps: # pylint: disable=protected-access
 app = Flask(__name__)
 # Set a secret key for session management.
 # In production, this should be a strong random value from env var.
-app.secret_key = os.environ.get('SECRET_KEY', 'dev_key_for_testing_only')
+if 'SECRET_KEY' in os.environ:
+    app.secret_key = os.environ['SECRET_KEY']
+elif os.environ.get('FLASK_ENV') == 'development' or os.environ.get('FLASK_DEBUG') == '1':
+    app.secret_key = 'dev_key_for_testing_only'
+else:
+    raise ValueError("No SECRET_KEY set for Flask application")
 
 @app.route('/')
 def home():
@@ -74,6 +79,8 @@ def login():
         return jsonify({'error': 'ID token revoked'}), 401
     except auth.InvalidIdTokenError:
         return jsonify({'error': 'Invalid ID token'}), 401
+    except ValueError as e:
+        return jsonify({'error': str(e)}), 400
     except Exception as e: # pylint: disable=broad-exception-caught
         app.logger.error(f"Login error: {e}")
         return jsonify({'error': 'An internal error occurred'}), 500

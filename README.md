@@ -41,6 +41,7 @@ output:
 ```
 
 ### Usage
+```bash
 python main.py --config config.yaml
 ```
 

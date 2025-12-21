@@ -19,7 +19,7 @@
         .header {
             background: white;
             padding: 1rem 2rem;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -48,7 +48,7 @@
             color: white;
             background-color: #1a73e8;
         }
-        
+
         .btn:hover {
             background-color: #1557b0;
         }
@@ -58,7 +58,7 @@
             color: #1a73e8;
             border: 1px solid #1a73e8;
         }
-        
+
         .btn-outline:hover {
             background-color: #f1f8ff;
         }
@@ -95,6 +95,11 @@
             color: #5f6368;
             font-size: 0.9rem;
         }
+
+        .btn-large {
+            font-size: 1.2rem;
+            padding: 0.8rem 1.5rem;
+        }
     </style>
 </head>
 
@@ -103,10 +108,10 @@
         <h1>CalendarSync</h1>
         <div class="user-info">
             {% if user %}
-                <span>Hello, <strong>{{ user.name }}</strong></span>
-                <a href="/logout" class="btn btn-outline">Logout</a>
+            <span>Hello, <strong>{{ user.name }}</strong></span>
+            <a href="/logout" class="btn btn-outline">Logout</a>
             {% else %}
-                <button id="loginBtn" class="btn">Login with Google</button>
+            <button id="loginBtn" class="btn">Login with Google</button>
             {% endif %}
         </div>
     </div>
@@ -114,13 +119,15 @@
     <div class="main-content">
         <div class="hero">
             {% if user %}
-                <h2>Welcome Back!</h2>
-                <p>Your calendars are ready to be synced. Manage your ical feeds and consolidate your schedule into a single, unified view.</p>
-                <button class="btn" style="font-size: 1.2rem; padding: 0.8rem 1.5rem;">Go to Dashboard</button>
+            <h2>Welcome Back!</h2>
+            <p>Your calendars are ready to be synced. Manage your ical feeds and consolidate your schedule into a
+                single, unified view.</p>
+            <button class="btn btn-large">Go to Dashboard</button>
             {% else %}
-                <h2>Sync Your Life, Simplified.</h2>
-                <p>CalendarSync seamlessly merges multiple iCal calendars into a single master calendar. Keep track of work, personal, and shared events all in one place without the hassle.</p>
-                <button id="ctaLoginBtn" class="btn" style="font-size: 1.2rem; padding: 0.8rem 1.5rem;">Get Started with Google</button>
+            <h2>Sync Your Life, Simplified.</h2>
+            <p>CalendarSync seamlessly merges multiple iCal calendars into a single master calendar. Keep track of work,
+                personal, and shared events all in one place without the hassle.</p>
+            <button id="ctaLoginBtn" class="btn btn-large">Get Started with Google</button>
             {% endif %}
         </div>
     </div>
@@ -135,17 +142,17 @@
 
     <script>
         const firebaseConfig = JSON.parse('{{ firebase_config | tojson | safe }}');
-        
+
         // Check if config is present (it might be empty/None if env vars missing during local dev without setup)
         if (firebaseConfig && firebaseConfig.apiKey) {
             firebase.initializeApp(firebaseConfig);
-            
+
             const login = async () => {
                 const provider = new firebase.auth.GoogleAuthProvider();
                 try {
                     const result = await firebase.auth().signInWithPopup(provider);
                     const idToken = await result.user.getIdToken();
-                    
+
                     // Send ID token to backend
                     const response = await fetch('/login', {
                         method: 'POST',
@@ -154,7 +161,7 @@
                         },
                         body: JSON.stringify({ idToken: idToken })
                     });
-                    
+
                     if (response.ok) {
                         window.location.reload();
                     } else {
@@ -169,10 +176,10 @@
 
             const loginBtn = document.getElementById('loginBtn');
             const ctaLoginBtn = document.getElementById('ctaLoginBtn');
-            
+
             if (loginBtn) loginBtn.addEventListener('click', login);
             if (ctaLoginBtn) ctaLoginBtn.addEventListener('click', login);
-            
+
         } else {
             console.warn('Firebase config missing. Login disabled.');
             // Optionally disable buttons or show warning

@@ -2,3 +2,5 @@ venv/
 .terraform/
 *.tfstate
 *.tfstate.*
+venv_*/
+venv/
