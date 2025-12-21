@@ -171,15 +171,7 @@ resource "google_firebase_web_app" "default" {
   depends_on   = [google_firebase_project.default]
 }
 
-resource "google_identity_platform_default_supported_idp_config" "google_sign_in" {
-  provider = google-beta
-  project  = var.project_id
-  enabled  = true
-  idp_id   = "google.com"
-  client_id     = var.google_client_id
-  client_secret = var.google_client_secret
-  depends_on    = [google_project_service.identitytoolkit_api]
-}
+
 
 data "google_firebase_web_app_config" "default" {
   provider   = google-beta
