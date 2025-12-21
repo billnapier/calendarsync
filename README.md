@@ -44,6 +44,17 @@ output:
 python main.py --config config.yaml
 ```
 
+
+## Environments
+
+### Development
+- **URL**: https://calendarsync-dev-j3w4ncaxna-uc.a.run.app
+- **Project ID**: `calendarsync-napier-dev`
+- **Deploy**: Cloud Build triggers on PRs or manual deploy via `cloudbuild-pr-dev.yaml`.
+
+### Production
+- **Project ID**: `calendarsync-napier` (default)
+
 ## Local Development (With Google Login)
 
 To run the Flask application locally with Google Login support:
