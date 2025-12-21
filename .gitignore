@@ -4,3 +4,5 @@ venv/
 *.tfstate.*
 venv_*/
 venv/
+__pycache__/
+*.pyc
