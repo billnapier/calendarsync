@@ -54,36 +54,47 @@ python main.py --config config.yaml
 - **Deploy**: Cloud Build triggers on PRs or manual deploy via `cloudbuild-pr-dev.yaml`.
 
 ### Production
-- **Project ID**: `calendarsync-napier` (default)
+- **Project ID**: `calendarsync-napier`
+- **Service Name**: `python-cloudrun-app`
+- **Deploy**: Cloud Build triggers on push to `main` branch via `cloudbuild.yaml`.
 
 ## Local Development (With Google Login)
 
-To run the Flask application locally with Google Login support:
+To run the Flask application locally using the **Development** environment resources:
 
-### 1. Enable Firebase
-1. Go to the [Firebase Console](https://console.firebase.google.com/).
-2. Click **Add project** and select your existing Google Cloud project (e.g., `calendarsync-napier`).
-3. Inside the project, add a **Web App** (click `</>`) to get your `firebaseConfig`.
-
-### 2. Enable Google Sign-In
-1. In Firebase Console -> Authentication -> Sign-in method.
-2. Enable the **Google** provider.
-
-### 3. Application Credentials
-Run the following to allow your local credentials to access the Auth APIs:
+### 1. Authentication
+Authenticate with Google Cloud and set the quota project to the development project:
 ```bash
-gcloud auth application-default set-quota-project <YOUR_PROJECT_ID>
+gcloud auth application-default login
+gcloud auth application-default set-quota-project calendarsync-napier-dev
 ```
 
-### 4. Run the App
-Set the Firebase config environment variables (retrieve values from Terraform output `terraform output -json firebase_config` or Firebase Console):
+### 2. Configuration
+Retrieve the Firebase configuration and secrets from the development environment.
+
+**Option A: From Terraform (Recommended)**
+If you have Terraform installed and access to the state:
 ```bash
-export FIREBASE_API_KEY="AIza..."
-export FIREBASE_AUTH_DOMAIN="<project>.firebaseapp.com"
-export FIREBASE_PROJECT_ID="<project-id>"
-export FIREBASE_STORAGE_BUCKET="<project>.appspot.com"
-export FIREBASE_MESSAGING_SENDER_ID="1234..."
-export FIREBASE_APP_ID="1:..."
+cd terraform
+terraform workspace select dev
+terraform output -json firebase_config
+```
+
+**Option B: From Cloud Run**
+You can also view the environment variables of the running development service:
+```bash
+gcloud run services describe calendarsync-dev --project calendarsync-napier-dev --region us-central1 --format="value(spec.template.spec.containers[0].env)"
+```
+
+### 3. Run the App
+Export the necessary environment variables (replace values with those retrieved above):
+```bash
+export FIREBASE_API_KEY="..."
+export FIREBASE_AUTH_DOMAIN="calendarsync-napier-dev.firebaseapp.com"
+export FIREBASE_PROJECT_ID="calendarsync-napier-dev"
+export FIREBASE_STORAGE_BUCKET="calendarsync-napier-dev.appspot.com"
+export FIREBASE_MESSAGING_SENDER_ID="..."
+export FIREBASE_APP_ID="..."
 export SECRET_KEY="dev-secret"
 
 python app/app.py
