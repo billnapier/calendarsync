@@ -54,6 +54,7 @@ python main.py --config config.yaml
 - **Deploy**: Cloud Build triggers on PRs or manual deploy via `cloudbuild-pr-dev.yaml`.
 
 ### Production
+- **URL**: https://python-cloudrun-app-upgl3iqnkq-uc.a.run.app
 - **Project ID**: `calendarsync-napier`
 - **Service Name**: `python-cloudrun-app`
 - **Deploy**: Cloud Build triggers on push to `main` branch via `cloudbuild.yaml`.
