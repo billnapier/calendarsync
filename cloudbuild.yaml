@@ -8,6 +8,8 @@ steps:
         pip install -r app/requirements.txt
         python -m pytest tests/
     id: 'run-tests'
+    env:
+      - 'FLASK_ENV=development'
 
   # 2. Build the container image
   - name: 'gcr.io/cloud-builders/docker'
