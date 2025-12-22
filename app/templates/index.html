@@ -111,7 +111,7 @@
             <span>Hello, <strong>{{ user.name }}</strong></span>
             <a href="/logout" class="btn btn-outline">Logout</a>
             {% else %}
-            <button id="loginBtn" class="btn">Login with Google</button>
+            <a href="/login" class="btn">Login with Google</a>
             {% endif %}
         </div>
     </div>
@@ -119,15 +119,37 @@
     <div class="main-content">
         <div class="hero">
             {% if user %}
-            <h2>Welcome Back!</h2>
-            <p>Your calendars are ready to be synced. Manage your ical feeds and consolidate your schedule into a
-                single, unified view.</p>
-            <button class="btn btn-large">Go to Dashboard</button>
+            <h2>Your Syncs</h2>
+            <p>Manage your calendar synchronizations.</p>
+
+            <div style="margin-bottom: 2rem;">
+                <a href="/create_sync" class="btn btn-large">Create New Sync</a>
+            </div>
+
+            {% if syncs %}
+            <div style="text-align: left; max-width: 600px; margin: 0 auto;">
+                {% for sync in syncs %}
+                <div
+                    style="background: white; padding: 1rem; margin-bottom: 1rem; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
+                    <h3 style="margin-top: 0; color: #1a73e8;">Destination: {{ sync.destination_calendar_id }}</h3>
+                    <p style="margin-bottom: 0.5rem;"><strong>Sources:</strong></p>
+                    <ul style="margin-top: 0; color: #555;">
+                        {% for source in sync.source_icals %}
+                        <li>{{ source }}</li>
+                        {% endfor %}
+                    </ul>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <p>You haven't created any syncs yet.</p>
+            {% endif %}
+
             {% else %}
             <h2>Sync Your Life, Simplified.</h2>
             <p>CalendarSync seamlessly merges multiple iCal calendars into a single master calendar. Keep track of work,
                 personal, and shared events all in one place without the hassle.</p>
-            <button id="ctaLoginBtn" class="btn btn-large">Get Started with Google</button>
+            <a href="/login" class="btn btn-large">Get Started with Google</a>
             {% endif %}
         </div>
     </div>
@@ -135,56 +157,6 @@
     <footer>
         Powered by antigravity and Google Deepmind
     </footer>
-
-    <!-- Firebase SDKs (Compat) -->
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-auth-compat.js"></script>
-
-    <script>
-        const firebaseConfig = JSON.parse('{{ firebase_config | tojson | safe }}');
-
-        // Check if config is present (it might be empty/None if env vars missing during local dev without setup)
-        if (firebaseConfig && firebaseConfig.apiKey) {
-            firebase.initializeApp(firebaseConfig);
-
-            const login = async () => {
-                const provider = new firebase.auth.GoogleAuthProvider();
-                try {
-                    const result = await firebase.auth().signInWithPopup(provider);
-                    const idToken = await result.user.getIdToken();
-
-                    // Send ID token to backend
-                    const response = await fetch('/login', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({ idToken: idToken })
-                    });
-
-                    if (response.ok) {
-                        window.location.reload();
-                    } else {
-                        console.error('Login failed on backend');
-                        alert('Login failed. Please try again.');
-                    }
-                } catch (error) {
-                    console.error('Firebase login error', error);
-                    alert('Login failed: ' + error.message);
-                }
-            };
-
-            const loginBtn = document.getElementById('loginBtn');
-            const ctaLoginBtn = document.getElementById('ctaLoginBtn');
-
-            if (loginBtn) loginBtn.addEventListener('click', login);
-            if (ctaLoginBtn) ctaLoginBtn.addEventListener('click', login);
-
-        } else {
-            console.warn('Firebase config missing. Login disabled.');
-            // Optionally disable buttons or show warning
-        }
-    </script>
 </body>
 
 </html>
