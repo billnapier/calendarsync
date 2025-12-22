@@ -9,7 +9,7 @@ steps:
         python -m pytest tests/
     id: 'run-tests'
     env:
-      - 'SECRET_KEY=test_key'
+      - 'FLASK_ENV=development'
 
   # 2. Build the container image
   - name: 'gcr.io/cloud-builders/docker'
