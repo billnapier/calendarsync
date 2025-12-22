@@ -11,7 +11,7 @@ from firebase_admin import firestore
 import google_auth_oauthlib.flow
 from google.cloud import secretmanager
 import google.auth.transport.requests
-
+from google.oauth2 import id_token
 
 
 # Initialize Firebase Admin SDK
@@ -59,7 +59,7 @@ def get_secret(secret_name):
     try:
         pid = os.environ.get('GOOGLE_CLOUD_PROJECT') or os.environ.get('FIREBASE_PROJECT_ID')
         if not pid:
-            app.logger.warning(f"Cannot fetch secret {secret_name}: GOOGLE_CLOUD_PROJECT not set.")
+            app.logger.warning("Cannot fetch secret %s: GOOGLE_CLOUD_PROJECT not set.", secret_name)
             return None
 
         client = secretmanager.SecretManagerServiceClient()
@@ -67,7 +67,7 @@ def get_secret(secret_name):
         response = client.access_secret_version(request={"name": name})
         return response.payload.data.decode("UTF-8")
     except Exception as e:
-        app.logger.error(f"Failed to fetch secret {secret_name}: {e}")
+        app.logger.error("Failed to fetch secret %s: %s", secret_name, e)
         return None
 
 def get_client_config():
@@ -101,7 +101,7 @@ def home():
                 data['id'] = doc.id
                 syncs.append(data)
         except Exception as e:
-            app.logger.error(f"Error fetching syncs: {e}")
+            app.logger.error("Error fetching syncs: %s", e)
 
     return render_template('index.html', user=user, syncs=syncs)
 
@@ -131,7 +131,7 @@ def login():
         session['state'] = state
         return redirect(authorization_url)
     except Exception as e:
-        app.logger.error(f"Login init error: {e}")
+        app.logger.error("Login init error: %s", e)
         return f"Error initializing login: {e}", 500
 
 @app.route('/oauth2callback')
@@ -163,7 +163,6 @@ def oauth2callback():
         # But 'credentials' object has id_token if 'openid' scope was requested
         
         # Verify ID Token
-        from google.oauth2 import id_token
         # We need the Request object to verify
         id_info = id_token.verify_oauth2_token(
             credentials.id_token, session_request, client_config['web']['client_id']
@@ -206,7 +205,7 @@ def oauth2callback():
         return redirect(url_for('home'))
 
     except Exception as e:
-        app.logger.error(f"OAuth callback error: {e}")
+        app.logger.error("OAuth callback error: %s", e)
         return f"Authentication failed: {e}", 400
 
 @app.route('/create_sync', methods=['GET', 'POST'])
