@@ -30,3 +30,8 @@ variable "image_tag" {
   description = "The tag of the container image to deploy"
   type        = string
 }
+
+variable "domain_name" {
+  description = "Custom domain name for the Cloud Run service"
+  type        = string
+}
