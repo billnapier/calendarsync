@@ -8,6 +8,8 @@ steps:
         pip install -r app/requirements.txt
         python -m pytest tests/
     id: 'run-tests'
+    env:
+      - 'SECRET_KEY=test_key'
 
   # 2. Build the container image
   - name: 'gcr.io/cloud-builders/docker'
