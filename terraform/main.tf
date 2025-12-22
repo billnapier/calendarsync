@@ -109,6 +109,20 @@ resource "google_cloud_run_service" "default" {
   depends_on = [google_project_service.run_api]
 }
 
+# Domain Mapping
+resource "google_cloud_run_domain_mapping" "default" {
+  location = var.region
+  name     = var.domain_name
+
+  metadata {
+    namespace = var.project_id
+  }
+
+  spec {
+    route_name = google_cloud_run_service.default.name
+  }
+}
+
 # Allow unauthenticated invocations (public access)
 data "google_iam_policy" "noauth" {
   binding {
@@ -202,7 +216,8 @@ locals {
     "127.0.0.1",
     "${var.project_id}.firebaseapp.com",
     "${var.project_id}.web.app",
-    replace(google_cloud_run_service.default.status[0].url, "https://", "")
+    replace(google_cloud_run_service.default.status[0].url, "https://", ""),
+    var.domain_name
   ]
 }
 
@@ -230,4 +245,8 @@ output "firebase_config" {
     appId             = google_firebase_web_app.default.app_id
   }
   sensitive = true
+}
+
+output "dns_records" {
+  value = google_cloud_run_domain_mapping.default.status
 }
