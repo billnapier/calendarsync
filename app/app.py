@@ -40,8 +40,8 @@ else:
 
 # OAuth2 Configuration
 SCOPES = [
-    'openid', 
-    'https://www.googleapis.com/auth/userinfo.email', 
+    'openid',
+    'https://www.googleapis.com/auth/userinfo.email',
     'https://www.googleapis.com/auth/userinfo.profile',
     'https://www.googleapis.com/auth/calendar'
 ]
@@ -54,7 +54,6 @@ def get_secret(secret_name):
     env_val = os.environ.get(secret_name.upper())
     if env_val:
         return env_val
-    
     # 2. Try Secret Manager (Local Dev)
     try:
         pid = os.environ.get('GOOGLE_CLOUD_PROJECT') or os.environ.get('FIREBASE_PROJECT_ID')
@@ -66,7 +65,7 @@ def get_secret(secret_name):
         name = f"projects/{pid}/secrets/{secret_name}/versions/latest"
         response = client.access_secret_version(request={"name": name})
         return response.payload.data.decode("UTF-8")
-    except Exception as e:
+    except Exception as e: # pylint: disable=broad-exception-caught
         app.logger.error("Failed to fetch secret %s: %s", secret_name, e)
         return None
 
@@ -74,7 +73,7 @@ def get_client_config():
     """Construct client config for OAuth flow."""
     client_id = get_secret('google_client_id')
     client_secret = get_secret('google_client_secret')
-    
+
     if not client_id or not client_secret:
         raise ValueError("Missing GOOGLE_CLIENT_ID or GOOGLE_CLIENT_SECRET")
 
@@ -100,7 +99,7 @@ def home():
                 data = doc.to_dict()
                 data['id'] = doc.id
                 syncs.append(data)
-        except Exception as e:
+        except Exception as e: # pylint: disable=broad-exception-caught
             app.logger.error("Error fetching syncs: %s", e)
 
     return render_template('index.html', user=user, syncs=syncs)
@@ -110,7 +109,7 @@ def login():
     """Initiate Google OAuth2 Flow."""
     try:
         client_config = get_client_config()
-        
+
         # dynamic redirect_uri based on request (handles localhost vs prod)
         redirect_uri = url_for('oauth2callback', _external=True)
         # Ensure HTTPS for prod if behind proxy/load balancer (Cloud Run usually handles this, but good to ensure)
@@ -130,7 +129,7 @@ def login():
 
         session['state'] = state
         return redirect(authorization_url)
-    except Exception as e:
+    except Exception as e: # pylint: disable=broad-exception-caught
         app.logger.error("Login init error: %s", e)
         return f"Error initializing login: {e}", 500
 
@@ -158,16 +157,16 @@ def oauth2callback():
 
         # Get user info
         session_request = google.auth.transport.requests.Request()
- 
+
         # Actually, simpler to just use the token to get user info via an API call or id_token
         # But 'credentials' object has id_token if 'openid' scope was requested
-        
+
         # Verify ID Token
         # We need the Request object to verify
         id_info = id_token.verify_oauth2_token(
             credentials.id_token, session_request, client_config['web']['client_id']
         )
-        
+
         uid = id_info['sub']
         email = id_info.get('email')
         name = id_info.get('name')
@@ -176,18 +175,18 @@ def oauth2callback():
         # Store user & tokens in Firestore
         db = firestore.client()
         user_ref = db.collection('users').document(uid)
-        
+
         user_data = {
             'name': name,
             'email': email,
             'picture': picture,
-            'last_login': firestore.SERVER_TIMESTAMP,
+            'last_login': firestore.SERVER_TIMESTAMP, # pylint: disable=no-member
         }
-        
+
         # IMPORTANT: Store Refresh Token if available
         if credentials.refresh_token:
             user_data['refresh_token'] = credentials.refresh_token
-        
+
         user_ref.set(user_data, merge=True)
 
         session['user'] = {
@@ -198,13 +197,13 @@ def oauth2callback():
         }
         # Clear state
         session.pop('state', None)
-        
+
         # Store credentials in session for short-term use if needed
-        # session['credentials'] = credentials_to_dict(credentials) 
+        # session['credentials'] = credentials_to_dict(credentials)
 
         return redirect(url_for('home'))
 
-    except Exception as e:
+    except Exception as e: # pylint: disable=broad-exception-caught
         app.logger.error("OAuth callback error: %s", e)
         return f"Authentication failed: {e}", 400
 
@@ -220,12 +219,12 @@ def create_sync():
         # For now, we'll let them type it in or future task will add the list.
         # Actually, let's fetch them if we can (requires using stored credentials).
         # We'll skip fetching for this iteration to keep it simple as requested ("Ignore the syncing mechanism for now... create all the UI flows")
-        # BUT the plan said "Select a destination calendar (from a list fetched via API)". 
+        # BUT the plan said "Select a destination calendar (from a list fetched via API)".
         # Let's try to do it if we have credentials.
-        
+
         calendars = []
         # Placeholder for fetching calendars logic
-        
+
         return render_template('create_sync.html', user=user, calendars=calendars)
 
     if request.method == 'POST':
@@ -233,7 +232,7 @@ def create_sync():
         ical_urls = request.form.getlist('ical_urls')
         # Filter empty URLs
         ical_urls = [url for url in ical_urls if url.strip()]
-        
+
         if not destination_id:
             return "Destination Calendar ID is required", 400
 
@@ -243,9 +242,9 @@ def create_sync():
             'user_id': user['uid'],
             'destination_calendar_id': destination_id,
             'source_icals': ical_urls,
-            'created_at': firestore.SERVER_TIMESTAMP
+            'created_at': firestore.SERVER_TIMESTAMP # pylint: disable=no-member
         })
-        
+
         return redirect(url_for('home'))
 
 @app.route('/logout')
