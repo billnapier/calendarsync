@@ -27,16 +27,15 @@ with patch.dict(sys.modules, {
 def client(): # pylint: disable=redefined-outer-name
     flask_app.config['TESTING'] = True
     flask_app.secret_key = 'test_secret'
-    # Mock get_client_config to avoid secret manager calls during login
-    with patch('app.get_client_config') as mock_config:
-        mock_config.return_value = {
-            "web": {
-                "client_id": "test_id",
-                "client_secret": "test_secret",
-                "auth_uri": "https://accounts.google.com/o/oauth2/auth",
-                "token_uri": "https://oauth2.googleapis.com/token",
-            }
-        }
+    
+    # Set environment variables for secrets to bypass Secret Manager
+    env_vars = {
+        'GOOGLE_CLIENT_ID': 'test_id',
+        'GOOGLE_CLIENT_SECRET': 'test_secret',
+        'OAUTHLIB_INSECURE_TRANSPORT': '1'
+    }
+    
+    with patch.dict(os.environ, env_vars):
         with flask_app.test_client() as test_client:
             yield test_client
 
