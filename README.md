@@ -59,47 +59,40 @@ python main.py --config config.yaml
 - **Service Name**: `python-cloudrun-app`
 - **Deploy**: Cloud Build triggers on push to `main` branch via `cloudbuild.yaml`.
 
-## Local Development (With Google Login)
+## Local Development (With Google OAuth)
 
 To run the Flask application locally using the **Development** environment resources:
 
-### 1. Authentication
-Authenticate with Google Cloud and set the quota project to the development project:
+### 1. Prerequisites
+- **OAuth Credentials**: Ensure you have created an OAuth Client ID and Secret in the Google Cloud Console for the `calendarsync-napier-dev` project.
+- **Secrets**: Ensure `google_client_id` and `google_client_secret` are created in Google Secret Manager in the `calendarsync-napier-dev` project.
+- **Permissions**: Your user account must have `Secret Manager Secret Accessor` role on the project.
+
+### 2. Authentication
+Authenticate with Google Cloud and set the quota project:
 ```bash
 gcloud auth application-default login
 gcloud auth application-default set-quota-project calendarsync-napier-dev
 ```
 
-### 2. Configuration
-Retrieve the Firebase configuration and secrets from the development environment.
-
-**Option A: From Terraform (Recommended)**
-If you have Terraform installed and access to the state:
-```bash
-cd terraform
-terraform workspace select dev
-terraform output -json firebase_config
-```
-
-**Option B: From Cloud Run**
-You can also view the environment variables of the running development service:
-```bash
-gcloud run services describe calendarsync-dev --project calendarsync-napier-dev --region us-central1 --format="value(spec.template.spec.containers[0].env)"
-```
-
 ### 3. Run the App
-Export the necessary environment variables (replace values with those retrieved above):
+Setup the environment and run the application:
 ```bash
-export FIREBASE_API_KEY="..."
-export FIREBASE_AUTH_DOMAIN="calendarsync-napier-dev.firebaseapp.com"
-export FIREBASE_PROJECT_ID="calendarsync-napier-dev"
-export FIREBASE_STORAGE_BUCKET="calendarsync-napier-dev.appspot.com"
-export FIREBASE_MESSAGING_SENDER_ID="..."
-export FIREBASE_APP_ID="..."
-export SECRET_KEY="dev-secret"
+# Create and activate virtual environment
+python3 -m venv venv
+source venv/bin/activate
 
+# Install dependencies
+pip install -r app/requirements.txt
+
+# Set Environment Variables
+export GOOGLE_CLOUD_PROJECT=calendarsync-napier-dev
+export FLASK_ENV=development
+
+# Run the application
 python app/app.py
 ```
+Open [http://localhost:8080](http://localhost:8080).
 Open [http://localhost:8080](http://localhost:8080).
 
 ## Contributing

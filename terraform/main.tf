@@ -79,6 +79,24 @@ resource "google_cloud_run_service" "default" {
           name  = "FIREBASE_APP_ID"
           value = google_firebase_web_app.default.app_id
         }
+        env {
+          name = "GOOGLE_CLIENT_ID"
+          value_from {
+            secret_key_ref {
+              name = "google_client_id"
+              key  = "latest"
+            }
+          }
+        }
+        env {
+          name = "GOOGLE_CLIENT_SECRET"
+          value_from {
+            secret_key_ref {
+              name = "google_client_secret"
+              key  = "latest"
+            }
+          }
+        }
       }
     }
   }
@@ -142,6 +160,11 @@ resource "google_project_service" "identitytoolkit_api" {
   service            = "identitytoolkit.googleapis.com"
   disable_on_destroy = false
   depends_on         = [google_project_service.serviceusage_api]
+}
+
+resource "google_project_service" "secretmanager_api" {
+  service            = "secretmanager.googleapis.com"
+  disable_on_destroy = false
 }
 
 resource "google_project_service" "serviceusage_api" {
