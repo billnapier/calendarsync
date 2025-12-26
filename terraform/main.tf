@@ -84,7 +84,7 @@ resource "google_cloud_run_service" "default" {
           value_from {
             secret_key_ref {
               name = "google_client_id"
-              key  = "latest"
+              key  = "1"
             }
           }
         }
@@ -93,7 +93,7 @@ resource "google_cloud_run_service" "default" {
           value_from {
             secret_key_ref {
               name = "google_client_secret"
-              key  = "latest"
+              key  = "1"
             }
           }
         }
@@ -102,7 +102,7 @@ resource "google_cloud_run_service" "default" {
           value_from {
             secret_key_ref {
               name = "flask_secret_key"
-              key  = "latest"
+              key  = "1"
             }
           }
         }
