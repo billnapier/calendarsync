@@ -84,7 +84,7 @@ resource "google_cloud_run_service" "default" {
           value_from {
             secret_key_ref {
               name = "google_client_id"
-              key  = "latest"
+              key  = "1"
             }
           }
         }
@@ -93,7 +93,16 @@ resource "google_cloud_run_service" "default" {
           value_from {
             secret_key_ref {
               name = "google_client_secret"
-              key  = "latest"
+              key  = "1"
+            }
+          }
+        }
+        env {
+          name = "SECRET_KEY"
+          value_from {
+            secret_key_ref {
+              name = "flask_secret_key"
+              key  = "1"
             }
           }
         }
@@ -216,7 +225,7 @@ locals {
     "127.0.0.1",
     "${var.project_id}.firebaseapp.com",
     "${var.project_id}.web.app",
-    replace(google_cloud_run_service.default.status[0].url, "https://", ""),
+    try(replace(google_cloud_run_service.default.status[0].url, "https://", ""), ""),
     var.domain_name
   ]
 }
