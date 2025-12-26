@@ -66,6 +66,7 @@ steps:
     dir: 'terraform'
     id: 'tf-apply'
     env:
+      - 'TF_WORKSPACE=prod'
       - 'GOOGLE_CREDENTIALS=$_GOOGLE_CREDENTIALS' 
       # Note: Cloud Build uses its service account by default, so explicit creds might not be needed if permissions are right.
       # But often terraform needs GOOGLE_APPLICATION_CREDENTIALS.

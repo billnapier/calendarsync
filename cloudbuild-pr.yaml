@@ -5,7 +5,7 @@ steps:
     dir: 'terraform'
     id: 'tf-init'
     env:
-      - 'TF_WORKSPACE=default'
+      - 'TF_WORKSPACE=prod'
 
   # Terraform Plan
   - name: 'hashicorp/terraform:light'
@@ -24,7 +24,7 @@ steps:
     dir: 'terraform'
     id: 'tf-plan'
     env:
-      - 'TF_WORKSPACE=default'
+      - 'TF_WORKSPACE=prod'
 
 substitutions:
   _REGION: 'us-central1'
