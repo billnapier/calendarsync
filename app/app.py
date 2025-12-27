@@ -5,6 +5,7 @@ Handles Google OAuth2, session management, and Firestore integration.
 import os
 import logging
 import time
+from datetime import datetime, timezone
 # Third-party libraries
 from flask import Flask, render_template, request, session, redirect, url_for
 from werkzeug.middleware.proxy_fix import ProxyFix
@@ -18,7 +19,7 @@ from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 import requests
 import icalendar
-from datetime import datetime
+
 
 
 
@@ -371,6 +372,14 @@ def sync_calendar_logic(sync_id):
     # Batching would be ideal here, but for simplicity we'll do one-by-one for now
     # or use simple iteration.
 
+    # Batching for performance
+    batch = service.new_batch_http_request()
+
+    def batch_callback(request_id, _response, exception):
+        if exception:
+            app.logger.error("Failed to import event %s: %s", request_id, exception)
+        # else: success
+
     for event in all_events:
         uid = event.get('UID')
         if not uid:
@@ -391,21 +400,24 @@ def sync_calendar_logic(sync_id):
             dt = dt_prop.dt
             if hasattr(dt, 'tzinfo') and dt.tzinfo:
                 return {'dateTime': dt.isoformat()}
-            else:
-                # All day event or naive datetime
-                if isinstance(dt, datetime):
-                    return {'dateTime': dt.isoformat()}
-                else:
-                    # Date object (all day)
-                    return {'date': dt.isoformat()}
+
+            # All day event or naive datetime
+            if isinstance(dt, datetime):
+                # Naive datetime, assume it's floating time but Google Calendar needs a timezone or UTC.
+                # Best effort: assume UTC or use 'Z' suffix if pure naive.
+                # Or better: set it to UTC.
+                dt = dt.replace(tzinfo=timezone.utc)
+                return {'dateTime': dt.isoformat()}
+
+            # Date object (all day)
+            return {'date': dt.isoformat()}
 
         start = parse_dt(event.get('DTSTART'))
         end = parse_dt(event.get('DTEND'))
 
-        # Fallback for end time if missing (some icals usually have duration or just start)
+        # Fallback for end time if missing
         if not end and start:
-            # logic to calculate end from duration could go here,
-            # but for now let's hope DTEND exists or we skip
+            # logic to calculate end from duration could go here
             pass
 
         if not start:
@@ -423,15 +435,19 @@ def sync_calendar_logic(sync_id):
         # Clean None values
         body = {k: v for k, v in body.items() if v is not None}
 
-        # Check if event exists (import method handles this, or list with iCalUID)
-        # Using import method is good for syncing as it handles existing UIDs
-        try:
+        batch.add(
             service.events().import_(
                 calendarId=destination_id,
                 body=body
-            ).execute()
-        except Exception as e: # pylint: disable=broad-exception-caught
-            app.logger.error("Failed to import event %s: %s", uid, e)
+            ),
+            request_id=uid,
+            callback=batch_callback
+        )
+
+    try:
+        batch.execute()
+    except Exception as e: # pylint: disable=broad-exception-caught
+        app.logger.error("Batch execution failed: %s", e)
 
 
 @app.route('/create_sync', methods=['GET', 'POST'])
@@ -483,6 +499,8 @@ def create_sync():
 
         return redirect(url_for('home'))
 
+    return "Method not allowed", 405
+
 @app.route('/logout')
 def logout():
     session.clear()
@@ -491,5 +509,3 @@ def logout():
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8080))
     app.run(debug=True, host='0.0.0.0', port=port)
-
-
