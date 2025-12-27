@@ -248,6 +248,9 @@ def fetch_user_calendars(user_uid):
     except Exception as e: # pylint: disable=broad-exception-caught
         app.logger.error("Error fetching calendars: %s", e)
     
+    # Sort calendars alphabetically by summary
+    calendars.sort(key=lambda x: x['summary'].lower())
+    
     return calendars
 
 @app.route('/create_sync', methods=['GET', 'POST'])

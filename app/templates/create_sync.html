@@ -111,9 +111,11 @@
                 <label for="destination_calendar_id">Destination Calendar</label>
                 {% if calendars %}
                 <select id="destination_calendar_id" name="destination_calendar_id" required>
-                    <option value="" disabled selected>Select a calendar</option>
+                    <option value="" disabled {% if not calendars|selectattr("summary", "equalto" , "Family" )|list
+                        %}selected{% endif %}>Select a calendar</option>
                     {% for cal in calendars %}
-                    <option value="{{ cal.id }}">{{ cal.summary }}</option>
+                    <option value="{{ cal.id }}" {% if cal.summary=='Family' %}selected{% endif %}>{{ cal.summary }}
+                    </option>
                     {% endfor %}
                 </select>
                 {% else %}
