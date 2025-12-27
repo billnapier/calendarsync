@@ -226,6 +226,7 @@ def fetch_user_calendars(user_uid):
             refresh_token = user_data.get('refresh_token')
             
             if refresh_token:
+                app.logger.info("Found refresh token for user %s, fetching calendars...", user_uid)
                 client_config = get_client_config()
                 creds = Credentials(
                     None, # No access token initially
@@ -239,11 +240,18 @@ def fetch_user_calendars(user_uid):
                 service = build('calendar', 'v3', credentials=creds)
                 calendar_list = service.calendarList().list().execute()
                 
-                for cal in calendar_list.get('items', []):
+                items = calendar_list.get('items', [])
+                app.logger.info("Calendar API response items count: %d", len(items))
+                
+                for cal in items:
                     calendars.append({
                         'id': cal['id'],
                         'summary': cal.get('summary', cal['id'])
                     })
+            else:
+                app.logger.warning("No refresh token found for user %s", user_uid)
+        else:
+             app.logger.warning("User document not found for %s", user_uid)
                     
     except Exception as e: # pylint: disable=broad-exception-caught
         app.logger.error("Error fetching calendars: %s", e)
