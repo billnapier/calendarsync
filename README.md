@@ -51,13 +51,13 @@ python main.py --config config.yaml
 ### Development
 - **URL**: https://calendarsync-dev-j3w4ncaxna-uc.a.run.app
 - **Project ID**: `calendarsync-napier-dev`
-- **Deploy**: Cloud Build triggers on PRs or manual deploy via `cloudbuild-pr-dev.yaml`.
+- **Deploy**: GitHub Actions runs Terraform Plan on Pull Requests to `main`.
 
 ### Production
 - **URL**: https://python-cloudrun-app-upgl3iqnkq-uc.a.run.app
 - **Project ID**: `calendarsync-napier`
 - **Service Name**: `python-cloudrun-app`
-- **Deploy**: Cloud Build triggers on push to `main` branch via `cloudbuild.yaml`.
+- **Deploy**: GitHub Actions triggers on push to `main` branch. Deploys application and applies Terraform changes.
 
 ## Local Development (With Google OAuth)
 
