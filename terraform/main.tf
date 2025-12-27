@@ -36,6 +36,21 @@ resource "google_project_service" "cloudbuild_api" {
   disable_on_destroy = false
 }
 
+resource "google_project_service" "iam_api" {
+  service            = "iam.googleapis.com"
+  disable_on_destroy = false
+}
+
+resource "google_project_service" "cloudresourcemanager_api" {
+  service            = "cloudresourcemanager.googleapis.com"
+  disable_on_destroy = false
+}
+
+resource "google_project_service" "iamcredentials_api" {
+  service            = "iamcredentials.googleapis.com"
+  disable_on_destroy = false
+}
+
 # Artifact Registry Repository
 resource "google_artifact_registry_repository" "repo" {
   location      = var.region
@@ -116,6 +131,13 @@ resource "google_cloud_run_service" "default" {
   }
 
   depends_on = [google_project_service.run_api]
+
+  lifecycle {
+    ignore_changes = [
+      template[0].spec[0].containers[0].image,
+      traffic
+    ]
+  }
 }
 
 # Domain Mapping
