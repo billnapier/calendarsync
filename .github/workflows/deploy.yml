@@ -1,0 +1,52 @@
+name: Deploy to Cloud Run
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - 'terraform/**'
+      - 'docs/**'
+      - 'README.md'
+      - '.github/workflows/terraform.yml'
+
+env:
+  PROJECT_ID: ${{ github.ref == 'refs/heads/main' && vars.GCP_PROJECT_ID || vars.DEV_GCP_PROJECT_ID }}
+  REGION: "us-central1"
+  SERVICE_NAME: ${{ github.ref == 'refs/heads/main' && 'python-cloudrun-app' || 'calendarsync-dev' }}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - id: 'auth'
+        name: 'Authenticate to Google Cloud'
+        uses: 'google-github-actions/auth@v2'
+        with:
+          workload_identity_provider: '${{ github.ref == "refs/heads/main" && secrets.GCP_WIF_PROVIDER || secrets.DEV_GCP_WIF_PROVIDER }}'
+          service_account: '${{ github.ref == "refs/heads/main" && secrets.GCP_WIF_SA_EMAIL || secrets.DEV_GCP_WIF_SA_EMAIL }}'
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Authorize Docker push
+        run: gcloud auth configure-docker ${REGION}-docker.pkg.dev
+
+      - name: Build and Push Container
+        run: |
+          docker build -t ${REGION}-docker.pkg.dev/${PROJECT_ID}/${SERVICE_NAME}/${SERVICE_NAME}:${{ github.sha }} .
+          docker push ${REGION}-docker.pkg.dev/${PROJECT_ID}/${SERVICE_NAME}/${SERVICE_NAME}:${{ github.sha }}
+
+      - name: Deploy to Cloud Run
+        uses: google-github-actions/deploy-cloudrun@v2
+        with:
+          service: ${{ env.SERVICE_NAME }}
+          region: ${{ env.REGION }}
+          image: ${REGION}-docker.pkg.dev/${PROJECT_ID}/${SERVICE_NAME}/${SERVICE_NAME}:${{ github.sha }}
