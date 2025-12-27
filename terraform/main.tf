@@ -26,6 +26,11 @@ resource "google_project_service" "run_api" {
   disable_on_destroy = false
 }
 
+resource "google_project_service" "calendar_api" {
+  service            = "calendar-json.googleapis.com"
+  disable_on_destroy = false
+}
+
 resource "google_project_service" "artifact_registry_api" {
   service            = "artifactregistry.googleapis.com"
   disable_on_destroy = false
