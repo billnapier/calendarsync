@@ -1,0 +1,70 @@
+name: Deploy Reusable Workflow
+
+# This workflow is designed to be reusable for building and deploying
+# Docker containers to Cloud Run in different environments.
+
+on:
+  workflow_call:
+    inputs:
+      project_id:
+        required: true
+        type: string
+        description: "GCP Project ID"
+      service_name:
+        required: true
+        type: string
+        description: "Cloud Run Service Name"
+      region:
+        required: false
+        type: string
+        default: "us-central1"
+        description: "GCP Region"
+    secrets:
+      wif_provider:
+        required: true
+        description: "Workload Identity Provider"
+      wif_service_account:
+        required: true
+        description: "Workload Identity Service Account"
+
+jobs:
+  deploy:
+    name: "Deploy"
+    runs-on: ubuntu-latest
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - id: 'auth'
+        name: 'Authenticate to Google Cloud'
+        uses: 'google-github-actions/auth@v2'
+        with:
+          workload_identity_provider: '${{ secrets.wif_provider }}'
+          service_account: '${{ secrets.wif_service_account }}'
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Authorize Docker push
+        run: gcloud auth configure-docker ${{ inputs.region }}-docker.pkg.dev
+
+      - name: Build and Push Container
+        env:
+          PROJECT_ID: ${{ inputs.project_id }}
+          SERVICE_NAME: ${{ inputs.service_name }}
+          REGION: ${{ inputs.region }}
+        run: |
+          docker build -t ${REGION}-docker.pkg.dev/${PROJECT_ID}/${SERVICE_NAME}/${SERVICE_NAME}:${{ github.sha }} ./app
+          docker push ${REGION}-docker.pkg.dev/${PROJECT_ID}/${SERVICE_NAME}/${SERVICE_NAME}:${{ github.sha }}
+
+      - name: Deploy to Cloud Run
+        id: deploy
+        uses: google-github-actions/deploy-cloudrun@v2
+        with:
+          service: ${{ inputs.service_name }}
+          region: ${{ inputs.region }}
+          image: ${{ inputs.region }}-docker.pkg.dev/${{ inputs.project_id }}/${{ inputs.service_name }}/${{ inputs.service_name }}:${{ github.sha }}
