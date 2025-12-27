@@ -131,13 +131,35 @@
                 {% for sync in syncs %}
                 <div
                     style="background: white; padding: 1rem; margin-bottom: 1rem; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-                    <h3 style="margin-top: 0; color: #1a73e8;">Destination: {{ sync.destination_calendar_id }}</h3>
-                    <p style="margin-bottom: 0.5rem;"><strong>Sources:</strong></p>
-                    <ul style="margin-top: 0; color: #555;">
-                        {% for source in sync.source_icals %}
-                        <li>{{ source }}</li>
-                        {% endfor %}
-                    </ul>
+                    <div style="display: flex; justify-content: space-between; align-items: start;">
+                        <div>
+                            <h3 style="margin-top: 0; color: #1a73e8;">Destination: {{ sync.destination_calendar_id }}
+                            </h3>
+                            <p style="margin-bottom: 0.5rem;"><strong>Sources:</strong></p>
+                            <ul style="margin-top: 0; color: #555;">
+                                {% for source in sync.source_icals %}
+                                <li>
+                                    {% if sync.source_names and sync.source_names[source] %}
+                                    {{ sync.source_names[source] }}
+                                    {% else %}
+                                    {{ source }}
+                                    {% endif %}
+                                </li>
+                                {% endfor %}
+                            </ul>
+                            {% if sync.last_synced_at %}
+                            <p style="font-size: 0.85rem; color: #777; margin-top: 0.5rem;">
+                                Last Synced: {{ sync.last_synced_at.strftime('%Y-%m-%d %H:%M') if
+                                sync.last_synced_at.strftime else sync.last_synced_at }}
+                            </p>
+                            {% endif %}
+                        </div>
+                        <div>
+                            <form action="{{ url_for('run_sync', sync_id=sync.id) }}" method="POST">
+                                <button type="submit" class="btn">Sync Now</button>
+                            </form>
+                        </div>
+                    </div>
                 </div>
                 {% endfor %}
             </div>

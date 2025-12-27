@@ -16,6 +16,11 @@ import google.auth.transport.requests
 from google.oauth2 import id_token
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
+import requests
+import icalendar
+from datetime import datetime
+
+
 
 
 # Initialize Firebase Admin SDK
@@ -221,11 +226,11 @@ def fetch_user_calendars(user_uid):
         db = firestore.client()
         user_ref = db.collection('users').document(user_uid)
         user_doc = user_ref.get()
-        
+
         if user_doc.exists:
             user_data = user_doc.to_dict()
             refresh_token = user_data.get('refresh_token')
-            
+
             if refresh_token:
                 client_config = get_client_config()
                 creds = Credentials(
@@ -236,23 +241,198 @@ def fetch_user_calendars(user_uid):
                     client_secret=client_config['web']['client_secret'],
                     scopes=SCOPES
                 )
-                
+
                 service = build('calendar', 'v3', credentials=creds)
                 calendar_list = service.calendarList().list().execute()
-                
+
                 for cal in calendar_list.get('items', []):
                     calendars.append({
                         'id': cal['id'],
                         'summary': cal.get('summary', cal['id'])
                     })
-                    
+
     except Exception as e: # pylint: disable=broad-exception-caught
         app.logger.error("Error fetching calendars: %s", e)
-    
+
     # Sort calendars alphabetically by summary
     calendars.sort(key=lambda x: x['summary'].lower())
-    
+
     return calendars
+
+def get_calendar_name_from_ical(url):
+    """
+    Fetches the iCal URL and attempts to extract the calendar name (X-WR-CALNAME).
+    Returns the URL if extraction fails or name is not present.
+    """
+    try:
+        response = requests.get(url, timeout=10)
+        response.raise_for_status()
+        cal = icalendar.Calendar.from_ical(response.content)
+        name = cal.get('X-WR-CALNAME')
+        if name:
+            return str(name)
+    except Exception as e: # pylint: disable=broad-exception-caught
+        app.logger.warning("Failed to extract name from %s: %s", url, e)
+    return url
+
+@app.route('/sync/<sync_id>', methods=['POST'])
+def run_sync(sync_id):
+    """
+    Trigger a sync for a specific sync_id.
+    """
+    user = session.get('user')
+    if not user:
+        return redirect(url_for('login'))
+
+    db = firestore.client()
+    sync_ref = db.collection('syncs').document(sync_id)
+    sync_doc = sync_ref.get()
+
+    if not sync_doc.exists:
+        return "Sync not found", 404
+
+    sync_data = sync_doc.to_dict()
+    if sync_data['user_id'] != user['uid']:
+        return "Unauthorized", 403
+
+    try:
+        sync_calendar_logic(sync_id)
+        return redirect(url_for('home'))
+    except Exception as e: # pylint: disable=broad-exception-caught
+        app.logger.error("Sync failed: %s", e)
+        return f"Sync failed: {e}", 500
+
+def sync_calendar_logic(sync_id):
+    """
+    Core logic to sync events from source iFals to destination Google Calendar.
+    """
+    db = firestore.client()
+    sync_ref = db.collection('syncs').document(sync_id)
+    sync_doc = sync_ref.get()
+    sync_data = sync_doc.to_dict()
+
+    user_id = sync_data['user_id']
+    destination_id = sync_data['destination_calendar_id']
+    source_icals = sync_data['source_icals']
+
+    # 1. Get User Credentials
+    user_ref = db.collection('users').document(user_id)
+    user_data = user_ref.get().to_dict()
+    refresh_token = user_data.get('refresh_token')
+
+    if not refresh_token:
+        raise ValueError("User has no refresh token")
+
+    client_config = get_client_config()
+    creds = Credentials(
+        None,
+        refresh_token=refresh_token,
+        token_uri=client_config['web']['token_uri'],
+        client_id=client_config['web']['client_id'],
+        client_secret=client_config['web']['client_secret'],
+        scopes=SCOPES
+    )
+    service = build('calendar', 'v3', credentials=creds)
+
+    # 2. Fetch and Parse parsed sources
+    all_events = []
+    source_names = {}
+
+    for url in source_icals:
+        try:
+            response = requests.get(url, timeout=10)
+            response.raise_for_status()
+            cal = icalendar.Calendar.from_ical(response.content)
+
+            # Extract name
+            cal_name = cal.get('X-WR-CALNAME')
+            if cal_name:
+                source_names[url] = str(cal_name)
+            else:
+                source_names[url] = url
+
+            for component in cal.walk():
+                if component.name == "VEVENT":
+                    all_events.append(component)
+        except Exception as e: # pylint: disable=broad-exception-caught
+            app.logger.error("Failed to fetch/parse %s: %s", url, e)
+            source_names[url] = f"{url} (Failed)"
+
+    # Update source names and last sync time
+    sync_ref.update({
+        'source_names': source_names,
+        'last_synced_at': firestore.SERVER_TIMESTAMP # pylint: disable=no-member
+    })
+
+    # 3. Process Events
+    # Google Calendar events are keyed by 'iCalUID'.
+    # We will iterate through extracted events and upsert them to Google Calendar.
+
+    # Batching would be ideal here, but for simplicity we'll do one-by-one for now
+    # or use simple iteration.
+
+    for event in all_events:
+        uid = event.get('UID')
+        if not uid:
+            continue
+
+        # Convert ical output to string
+        uid = str(uid)
+
+        # Basic fields
+        summary = str(event.get('SUMMARY', ''))
+        description = str(event.get('DESCRIPTION', ''))
+        location = str(event.get('LOCATION', ''))
+
+        # Date parsing helper
+        def parse_dt(dt_prop):
+            if dt_prop is None:
+                return None
+            dt = dt_prop.dt
+            if hasattr(dt, 'tzinfo') and dt.tzinfo:
+                return {'dateTime': dt.isoformat()}
+            else:
+                # All day event or naive datetime
+                if isinstance(dt, datetime):
+                    return {'dateTime': dt.isoformat()}
+                else:
+                    # Date object (all day)
+                    return {'date': dt.isoformat()}
+
+        start = parse_dt(event.get('DTSTART'))
+        end = parse_dt(event.get('DTEND'))
+
+        # Fallback for end time if missing (some icals usually have duration or just start)
+        if not end and start:
+            # logic to calculate end from duration could go here,
+            # but for now let's hope DTEND exists or we skip
+            pass
+
+        if not start:
+            continue
+
+        body = {
+            'summary': summary,
+            'description': description,
+            'location': location,
+            'start': start,
+            'end': end,
+            'iCalUID': uid
+        }
+
+        # Clean None values
+        body = {k: v for k, v in body.items() if v is not None}
+
+        # Check if event exists (import method handles this, or list with iCalUID)
+        # Using import method is good for syncing as it handles existing UIDs
+        try:
+            service.events().import_(
+                calendarId=destination_id,
+                body=body
+            ).execute()
+        except Exception as e: # pylint: disable=broad-exception-caught
+            app.logger.error("Failed to import event %s: %s", uid, e)
+
 
 @app.route('/create_sync', methods=['GET', 'POST'])
 def create_sync():
@@ -270,7 +450,7 @@ def create_sync():
         else:
             app.logger.info("Using cached calendars")
             calendars = session.get('calendars')
-            
+
         return render_template('create_sync.html', user=user, calendars=calendars)
 
     if request.method == 'POST':
@@ -290,6 +470,16 @@ def create_sync():
             'source_icals': ical_urls,
             'created_at': firestore.SERVER_TIMESTAMP # pylint: disable=no-member
         })
+
+        # Populate source names asynchronously (or just do it now for simplicity)
+        try:
+            source_names = {}
+            for url in ical_urls:
+                source_names[url] = get_calendar_name_from_ical(url)
+            new_sync_ref.update({'source_names': source_names})
+        except Exception as e: # pylint: disable=broad-exception-caught
+            app.logger.warning("Failed to populate initial source names: %s", e)
+
 
         return redirect(url_for('home'))
 
