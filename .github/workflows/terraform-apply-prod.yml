@@ -7,6 +7,10 @@ on:
     paths:
       - 'terraform/**'
 
+permissions:
+  contents: 'read'
+  id-token: 'write'
+
 jobs:
   apply-prod:
     uses: ./.github/workflows/reusable-terraform-apply.yml
