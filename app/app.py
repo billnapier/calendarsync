@@ -4,6 +4,7 @@ Handles Google OAuth2, session management, and Firestore integration.
 """
 import os
 import logging
+import time
 # Third-party libraries
 from flask import Flask, render_template, request, session, redirect, url_for
 from werkzeug.middleware.proxy_fix import ProxyFix
@@ -13,6 +14,8 @@ import google_auth_oauthlib.flow
 from google.cloud import secretmanager
 import google.auth.transport.requests
 from google.oauth2 import id_token
+from google.oauth2.credentials import Credentials
+from googleapiclient.discovery import build
 
 
 # Initialize Firebase Admin SDK
@@ -211,6 +214,46 @@ def oauth2callback():
         app.logger.error("OAuth callback error: %s", e)
         return f"Authentication failed: {e}", 400
 
+def fetch_user_calendars(user_uid):
+    """Fetch user's Google Calendars using stored refresh token."""
+    calendars = []
+    try:
+        db = firestore.client()
+        user_ref = db.collection('users').document(user_uid)
+        user_doc = user_ref.get()
+        
+        if user_doc.exists:
+            user_data = user_doc.to_dict()
+            refresh_token = user_data.get('refresh_token')
+            
+            if refresh_token:
+                client_config = get_client_config()
+                creds = Credentials(
+                    None, # No access token initially
+                    refresh_token=refresh_token,
+                    token_uri=client_config['web']['token_uri'],
+                    client_id=client_config['web']['client_id'],
+                    client_secret=client_config['web']['client_secret'],
+                    scopes=SCOPES
+                )
+                
+                service = build('calendar', 'v3', credentials=creds)
+                calendar_list = service.calendarList().list().execute()
+                
+                for cal in calendar_list.get('items', []):
+                    calendars.append({
+                        'id': cal['id'],
+                        'summary': cal.get('summary', cal['id'])
+                    })
+                    
+    except Exception as e: # pylint: disable=broad-exception-caught
+        app.logger.error("Error fetching calendars: %s", e)
+    
+    # Sort calendars alphabetically by summary
+    calendars.sort(key=lambda x: x['summary'].lower())
+    
+    return calendars
+
 @app.route('/create_sync', methods=['GET', 'POST'])
 def create_sync():
     user = session.get('user')
@@ -218,17 +261,16 @@ def create_sync():
         return redirect(url_for('login'))
 
     if request.method == 'GET':
-        # TODO: In a real app, we might fetch the user's calendars here using their stored credentials
-        # and pass them to the template to populate a dropdown.
-        # For now, we'll let them type it in or future task will add the list.
-        # Actually, let's fetch them if we can (requires using stored credentials).
-        # We'll skip fetching for this iteration to keep it simple as requested ("Ignore the syncing mechanism for now... create all the UI flows")
-        # BUT the plan said "Select a destination calendar (from a list fetched via API)".
-        # Let's try to do it if we have credentials.
-
-        calendars = []
-        # Placeholder for fetching calendars logic
-
+        # Cache calendars in session for 5 minutes to avoid repeated API calls.
+        if 'calendars' not in session or time.time() - session.get('calendars_timestamp', 0) > 300:
+            app.logger.info("Fetching calendars from API (cache miss or expired)")
+            calendars = fetch_user_calendars(user['uid'])
+            session['calendars'] = calendars
+            session['calendars_timestamp'] = time.time()
+        else:
+            app.logger.info("Using cached calendars")
+            calendars = session.get('calendars')
+            
         return render_template('create_sync.html', user=user, calendars=calendars)
 
     if request.method == 'POST':
