@@ -6,6 +6,7 @@ import os
 import logging
 # Third-party libraries
 from flask import Flask, render_template, request, session, redirect, url_for
+from werkzeug.middleware.proxy_fix import ProxyFix
 import firebase_admin
 from firebase_admin import firestore
 import google_auth_oauthlib.flow
@@ -23,6 +24,9 @@ if not firebase_admin._apps: # pylint: disable=protected-access
         firebase_admin.initialize_app()
 
 app = Flask(__name__)
+# Fix for Cloud Run (HTTPS behind proxy)
+app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
+
 logging.basicConfig(level=logging.INFO)
 
 # Configuration
