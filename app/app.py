@@ -216,6 +216,7 @@ def oauth2callback():
 def fetch_user_calendars(user_uid):
     """Fetch user's Google Calendars using stored refresh token."""
     calendars = []
+    print(f"DEBUG: Starting fetch_user_calendars for {user_uid}")
     try:
         db = firestore.client()
         user_ref = db.collection('users').document(user_uid)
@@ -226,7 +227,7 @@ def fetch_user_calendars(user_uid):
             refresh_token = user_data.get('refresh_token')
             
             if refresh_token:
-                app.logger.info("Found refresh token for user %s, fetching calendars...", user_uid)
+                print(f"DEBUG: Found refresh token for {user_uid}, building credentials...")
                 client_config = get_client_config()
                 creds = Credentials(
                     None, # No access token initially
@@ -237,11 +238,12 @@ def fetch_user_calendars(user_uid):
                     scopes=SCOPES
                 )
                 
+                print("DEBUG: Calling Google Calendar API...")
                 service = build('calendar', 'v3', credentials=creds)
                 calendar_list = service.calendarList().list().execute()
                 
                 items = calendar_list.get('items', [])
-                app.logger.info("Calendar API response items count: %d", len(items))
+                print(f"DEBUG: Calendar API response items count: {len(items)}")
                 
                 for cal in items:
                     calendars.append({
@@ -249,11 +251,12 @@ def fetch_user_calendars(user_uid):
                         'summary': cal.get('summary', cal['id'])
                     })
             else:
-                app.logger.warning("No refresh token found for user %s", user_uid)
+                print(f"DEBUG: No refresh token found for user {user_uid}")
         else:
-             app.logger.warning("User document not found for %s", user_uid)
+             print(f"DEBUG: User document not found for {user_uid}")
                     
     except Exception as e: # pylint: disable=broad-exception-caught
+        print(f"DEBUG: Error fetching calendars: {e}")
         app.logger.error("Error fetching calendars: %s", e)
     
     return calendars
