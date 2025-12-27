@@ -4,6 +4,7 @@ Handles Google OAuth2, session management, and Firestore integration.
 """
 import os
 import logging
+import time
 # Third-party libraries
 from flask import Flask, render_template, request, session, redirect, url_for
 from werkzeug.middleware.proxy_fix import ProxyFix
@@ -260,7 +261,16 @@ def create_sync():
         return redirect(url_for('login'))
 
     if request.method == 'GET':
-        calendars = fetch_user_calendars(user['uid'])
+        # Cache calendars in session for 5 minutes to avoid repeated API calls.
+        if 'calendars' not in session or time.time() - session.get('calendars_timestamp', 0) > 300:
+            app.logger.info("Fetching calendars from API (cache miss or expired)")
+            calendars = fetch_user_calendars(user['uid'])
+            session['calendars'] = calendars
+            session['calendars_timestamp'] = time.time()
+        else:
+            app.logger.info("Using cached calendars")
+            calendars = session.get('calendars')
+            
         return render_template('create_sync.html', user=user, calendars=calendars)
 
     if request.method == 'POST':
