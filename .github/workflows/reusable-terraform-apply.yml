@@ -1,0 +1,76 @@
+name: Terraform Apply Reusable Workflow
+
+on:
+  workflow_call:
+    inputs:
+      environment_name:
+        required: true
+        type: string
+        description: "Environment name (dev or prod)"
+      tf_workspace:
+        required: true
+        type: string
+        description: "Terraform workspace"
+      project_id:
+        required: true
+        type: string
+        description: "GCP Project ID"
+      service_name:
+        required: true
+        type: string
+        description: "Cloud Run Service Name"
+      domain_name:
+        required: true
+        type: string
+        description: "Domain Name"
+    secrets:
+      wif_provider:
+        required: true
+        description: "Workload Identity Provider"
+      wif_service_account:
+        required: true
+        description: "Workload Identity Service Account"
+
+env:
+  TF_VAR_github_owner: ${{ github.repository_owner }}
+  TF_VAR_github_repo: ${{ github.event.repository.name }}
+  TF_VAR_region: "us-central1"
+  TF_VAR_image_tag: "latest"
+  TF_WORKSPACE: ${{ inputs.tf_workspace }}
+  TF_VAR_project_id: ${{ inputs.project_id }}
+  TF_VAR_service_name: ${{ inputs.service_name }}
+  TF_VAR_domain_name: ${{ inputs.domain_name }}
+
+jobs:
+  apply:
+    name: "Terraform Apply ${{ inputs.environment_name }}"
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: ./terraform
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - id: 'auth'
+        name: 'Authenticate to Google Cloud'
+        uses: 'google-github-actions/auth@v2'
+        with:
+          workload_identity_provider: '${{ secrets.wif_provider }}'
+          service_account: '${{ secrets.wif_service_account }}'
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Init
+        run: terraform init
+
+      - name: Terraform Validate
+        run: terraform validate
+
+      - name: Terraform Apply
+        run: terraform apply -auto-approve -input=false

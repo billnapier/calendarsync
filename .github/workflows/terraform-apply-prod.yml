@@ -7,44 +7,15 @@ on:
     paths:
       - 'terraform/**'
 
-env:
-  TF_VAR_github_owner: ${{ github.repository_owner }}
-  TF_VAR_github_repo: ${{ github.event.repository.name }}
-  TF_VAR_region: "us-central1"
-  TF_VAR_image_tag: "latest"
-  # Prod Variables
-  TF_WORKSPACE: "prod"
-  TF_VAR_project_id: ${{ vars.GCP_PROJECT_ID }}
-  TF_VAR_service_name: "python-cloudrun-app"
-  TF_VAR_domain_name: ${{ vars.DOMAIN_NAME }}
-
 jobs:
   apply-prod:
-    name: "Terraform Apply Prod"
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./terraform
-    permissions:
-      contents: 'read'
-      id-token: 'write'
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - id: 'auth'
-        name: 'Authenticate to Google Cloud'
-        uses: 'google-github-actions/auth@v2'
-        with:
-          workload_identity_provider: '${{ secrets.GCP_WIF_PROVIDER }}'
-          service_account: '${{ secrets.GCP_WIF_SA_EMAIL }}'
-
-      - name: Setup Terraform
-        uses: hashicorp/setup-terraform@v3
-
-      - name: Terraform Init
-        run: terraform init
-
-      - name: Terraform Apply
-        run: terraform apply -auto-approve -input=false
+    uses: ./.github/workflows/reusable-terraform-apply.yml
+    with:
+      environment_name: "Prod"
+      tf_workspace: "prod"
+      project_id: ${{ vars.GCP_PROJECT_ID }}
+      service_name: "python-cloudrun-app"
+      domain_name: ${{ vars.DOMAIN_NAME }}
+    secrets:
+      wif_provider: ${{ secrets.GCP_WIF_PROVIDER }}
+      wif_service_account: ${{ secrets.GCP_WIF_SA_EMAIL }}
