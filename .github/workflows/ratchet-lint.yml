@@ -1,0 +1,17 @@
+name: Ratchet Lint
+
+on:
+  pull_request:
+
+jobs:
+  ratchet-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # ratchet:actions/checkout@v3
+      - name: Install ratchet
+        run: |
+          curl -L -o ratchet.tar.gz https://github.com/sethvargo/ratchet/releases/download/v0.11.4/ratchet_0.11.4_linux_amd64.tar.gz
+          tar -xzvf ratchet.tar.gz
+          sudo mv ratchet /usr/local/bin/
+      - name: Run ratchet lint
+        run: ratchet lint .github/workflows/*.yml
