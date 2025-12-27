@@ -5,6 +5,10 @@ on:
     paths:
       - 'terraform/**'
 
+permissions:
+  contents: 'read'
+  id-token: 'write'
+
 jobs:
   apply-dev:
     uses: ./.github/workflows/reusable-terraform-apply.yml
