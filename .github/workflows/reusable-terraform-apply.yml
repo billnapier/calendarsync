@@ -1,5 +1,8 @@
 name: Terraform Apply Reusable Workflow
 
+# This workflow is designed to be reusable for deploying Terraform changes
+# to different environments (e.g., Dev, Prod) by passing in specific inputs.
+
 on:
   workflow_call:
     inputs:
