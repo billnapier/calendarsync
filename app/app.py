@@ -25,7 +25,7 @@ if not firebase_admin._apps: # pylint: disable=protected-access
 
 app = Flask(__name__)
 # Fix for Cloud Run (HTTPS behind proxy)
-app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
+app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1)
 
 logging.basicConfig(level=logging.INFO)
 
