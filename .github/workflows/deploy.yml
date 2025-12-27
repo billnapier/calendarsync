@@ -3,7 +3,7 @@ name: Deploy to Cloud Run
 on:
   push:
     branches:
-      - main
+      - '**'
     paths-ignore:
       - 'terraform/**'
       - 'docs/**'
@@ -16,6 +16,9 @@ env:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    environment:
+      name: ${{ github.ref == 'refs/heads/main' && 'Production' || 'Development' }}
+      url: ${{ steps.deploy.outputs.url }}
     permissions:
       contents: 'read'
       id-token: 'write'
@@ -58,6 +61,7 @@ jobs:
           docker push ${REGION}-docker.pkg.dev/${PROJECT_ID}/${SERVICE_NAME}/${SERVICE_NAME}:${{ github.sha }}
 
       - name: Deploy to Cloud Run
+        id: deploy
         uses: google-github-actions/deploy-cloudrun@v2
         with:
           service: ${{ env.SERVICE_NAME }}

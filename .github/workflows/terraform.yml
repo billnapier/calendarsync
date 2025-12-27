@@ -19,8 +19,8 @@ env:
   TF_VAR_image_tag: "latest"
 
 jobs:
-  terraform:
-    name: "Terraform"
+  plan:
+    name: "Terraform Plan"
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -106,6 +106,46 @@ jobs:
               body: output
             })
 
+  apply:
+    name: "Terraform Apply"
+    needs: plan
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+    environment:
+      name: Production
+    defaults:
+      run:
+        working-directory: ./terraform
+    permissions:
+      contents: 'read'
+      id-token: 'write'
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Environment
+        id: setup
+        run: |
+          echo "TF_WORKSPACE=prod" >> $GITHUB_ENV
+          echo "TF_VAR_project_id=${{ vars.GCP_PROJECT_ID }}" >> $GITHUB_ENV
+          echo "TF_VAR_service_name=python-cloudrun-app" >> $GITHUB_ENV
+          echo "TF_VAR_domain_name=${{ vars.DOMAIN_NAME }}" >> $GITHUB_ENV
+          echo "wif_provider=${{ secrets.GCP_WIF_PROVIDER }}" >> $GITHUB_OUTPUT
+          echo "wif_sa=${{ secrets.GCP_WIF_SA_EMAIL }}" >> $GITHUB_OUTPUT
+
+      - id: 'auth'
+        name: 'Authenticate to Google Cloud'
+        uses: 'google-github-actions/auth@v2'
+        with:
+          workload_identity_provider: '${{ steps.setup.outputs.wif_provider }}'
+          service_account: '${{ steps.setup.outputs.wif_sa }}'
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform Init
+        run: terraform init
+
       - name: Terraform Apply
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
         run: terraform apply -auto-approve -input=false
