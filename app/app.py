@@ -216,7 +216,6 @@ def oauth2callback():
 def fetch_user_calendars(user_uid):
     """Fetch user's Google Calendars using stored refresh token."""
     calendars = []
-    print(f"DEBUG: Starting fetch_user_calendars for {user_uid}")
     try:
         db = firestore.client()
         user_ref = db.collection('users').document(user_uid)
@@ -227,7 +226,6 @@ def fetch_user_calendars(user_uid):
             refresh_token = user_data.get('refresh_token')
             
             if refresh_token:
-                print(f"DEBUG: Found refresh token for {user_uid}, building credentials...")
                 client_config = get_client_config()
                 creds = Credentials(
                     None, # No access token initially
@@ -238,25 +236,16 @@ def fetch_user_calendars(user_uid):
                     scopes=SCOPES
                 )
                 
-                print("DEBUG: Calling Google Calendar API...")
                 service = build('calendar', 'v3', credentials=creds)
                 calendar_list = service.calendarList().list().execute()
                 
-                items = calendar_list.get('items', [])
-                print(f"DEBUG: Calendar API response items count: {len(items)}")
-                
-                for cal in items:
+                for cal in calendar_list.get('items', []):
                     calendars.append({
                         'id': cal['id'],
                         'summary': cal.get('summary', cal['id'])
                     })
-            else:
-                print(f"DEBUG: No refresh token found for user {user_uid}")
-        else:
-             print(f"DEBUG: User document not found for {user_uid}")
                     
     except Exception as e: # pylint: disable=broad-exception-caught
-        print(f"DEBUG: Error fetching calendars: {e}")
         app.logger.error("Error fetching calendars: %s", e)
     
     return calendars
