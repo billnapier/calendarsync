@@ -620,6 +620,47 @@ def logout():
     session.clear()
     return redirect(url_for('home'))
 
+@app.route('/tasks/sync_all', methods=['POST'])
+def sync_all_users():
+    """
+    Trigger sync for all users.
+    Intended to be called by Cloud Scheduler.
+    """
+    # Simple security check: Ensure it's called by Cloud Scheduler or similar trusted source
+    # Cloud Scheduler (OIDC) adds Authorization header, but here we might just rely on
+    # it being an internal/admin route or check for specific headers if strictly needed.
+    # For now, we trust the IAM invoker permission set in Terraform.
+    
+    app.logger.info("Starting global sync...")
+    
+    db = firestore.client()
+    try:
+        # Stream all syncs
+        # Note: In a massive scale app, this would need pagination or a task queue.
+        # For this scale, iterating is fine.
+        syncs = db.collection('syncs').stream()
+        
+        count = 0
+        error_count = 0
+        
+        for sync_doc in syncs:
+            sync_id = sync_doc.id
+            try:
+                # We could potentially run these in parallel using a thread pool
+                # but let's keep it simple and sequential for now to avoid resource exhaustion.
+                sync_calendar_logic(sync_id)
+                count += 1
+            except Exception as e: # pylint: disable=broad-exception-caught
+                app.logger.error("Error processing sync_id %s: %s", sync_id, e)
+                error_count += 1
+                
+        app.logger.info("Global sync complete. Success: %d, Errors: %d", count, error_count)
+        return f"Sync complete. Success: {count}, Errors: {error_count}", 200
+        
+    except Exception as e: # pylint: disable=broad-exception-caught
+        app.logger.error("Critical error in sync_all_users: %s", e)
+        return f"Internal failure: {e}", 500
+
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8080))
     app.run(debug=True, host='0.0.0.0', port=port)

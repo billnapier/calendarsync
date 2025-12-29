@@ -32,6 +32,12 @@ variable "image_tag" {
 }
 
 variable "domain_name" {
-  description = "Custom domain name for the Cloud Run service"
+  description = "Domain name to map to the Cloud Run service"
   type        = string
+}
+
+variable "sync_schedule" {
+  description = "Cron schedule for syncing all users"
+  type        = string
+  default     = "0 * * * *"
 }
