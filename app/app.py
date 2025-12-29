@@ -25,12 +25,15 @@ import icalendar
 
 
 # Initialize Firebase Admin SDK
-if not firebase_admin._apps: # pylint: disable=protected-access
-    project_id = os.environ.get('FIREBASE_PROJECT_ID') or os.environ.get('GOOGLE_CLOUD_PROJECT')
-    if project_id:
-        firebase_admin.initialize_app(options={'projectId': project_id})
-    else:
-        firebase_admin.initialize_app()
+# Initialize Firebase Admin SDK
+# Skip initialization in development/testing environments to avoid credential errors
+if os.environ.get('FLASK_ENV') != 'development' and not os.environ.get('TESTING'):
+    if not firebase_admin._apps: # pylint: disable=protected-access
+        project_id = os.environ.get('FIREBASE_PROJECT_ID') or os.environ.get('GOOGLE_CLOUD_PROJECT')
+        if project_id:
+            firebase_admin.initialize_app(options={'projectId': project_id})
+        else:
+            firebase_admin.initialize_app()
 
 app = Flask(__name__)
 # Fix for Cloud Run (HTTPS behind proxy)
