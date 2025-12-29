@@ -303,6 +303,71 @@ def run_sync(sync_id):
         app.logger.error("Sync failed: %s", e)
         return f"Sync failed: {e}", 500
 
+@app.route('/edit_sync/<sync_id>', methods=['GET', 'POST'])
+def edit_sync(sync_id):
+    user = session.get('user')
+    if not user:
+        return redirect(url_for('login'))
+
+    db = firestore.client()
+    sync_ref = db.collection('syncs').document(sync_id)
+    sync_doc = sync_ref.get()
+
+    if not sync_doc.exists:
+        return "Sync not found", 404
+
+    sync_data = sync_doc.to_dict()
+    if sync_data['user_id'] != user['uid']:
+        return "Unauthorized", 403
+
+    if request.method == 'GET':
+        # Refresh calendars cache if needed
+        if 'calendars' not in session or time.time() - session.get('calendars_timestamp', 0) > 300:
+            calendars = fetch_user_calendars(user['uid'])
+            session['calendars'] = calendars
+            session['calendars_timestamp'] = time.time()
+        else:
+            calendars = session.get('calendars')
+
+        return render_template('edit_sync.html', user=user, sync=sync_data, calendars=calendars)
+
+    if request.method == 'POST':
+        destination_id = request.form.get('destination_calendar_id')
+        ical_urls = request.form.getlist('ical_urls')
+        event_prefix = request.form.get('event_prefix', '').strip()
+
+        ical_urls = [url for url in ical_urls if url.strip()]
+
+        if not destination_id:
+            return "Destination Calendar ID is required", 400
+
+        # Lookup friendly name
+        destination_summary = destination_id
+        if 'calendars' in session:
+            for cal in session['calendars']:
+                if cal['id'] == destination_id:
+                    destination_summary = cal['summary']
+                    break
+
+        # Re-fetch source names
+        source_names = {}
+        try:
+            for url in ical_urls:
+                source_names[url] = get_calendar_name_from_ical(url)
+        except Exception as e: # pylint: disable=broad-exception-caught
+            app.logger.warning("Failed to refresh names on edit: %s", e)
+
+        sync_ref.update({
+            'destination_calendar_id': destination_id,
+            'destination_calendar_summary': destination_summary,
+            'source_icals': ical_urls,
+            'source_names': source_names,
+            'event_prefix': event_prefix,
+            'updated_at': firestore.SERVER_TIMESTAMP # pylint: disable=no-member
+        })
+
+        return redirect(url_for('home'))
+
 def sync_calendar_logic(sync_id):
     """
     Core logic to sync events from source iFals to destination Google Calendar.
@@ -315,6 +380,7 @@ def sync_calendar_logic(sync_id):
     user_id = sync_data['user_id']
     destination_id = sync_data['destination_calendar_id']
     source_icals = sync_data['source_icals']
+    event_prefix = sync_data.get('event_prefix', '').strip()
 
     # 1. Get User Credentials
     user_ref = db.collection('users').document(user_id)
@@ -392,6 +458,10 @@ def sync_calendar_logic(sync_id):
         summary = str(event.get('SUMMARY', ''))
         description = str(event.get('DESCRIPTION', ''))
         location = str(event.get('LOCATION', ''))
+
+        # Apply Prefix
+        if event_prefix:
+            summary = f"[{event_prefix}] {summary}"
 
         # Date parsing helper
         def parse_dt(dt_prop):
@@ -478,12 +548,32 @@ def create_sync():
         if not destination_id:
             return "Destination Calendar ID is required", 400
 
+        event_prefix = request.form.get('event_prefix', '').strip()
+
+        # Lookup destination summary from cached calendars
+        # Note: 'calendars' might not be in session if user came directly to POST?
+        # Ideally we should fetch again if not in session, or just store ID if fetch fails.
+        # For robustness, let's try to get it from session, else unknown.
+        # But wait, we just fetched or checked cache in GET, but this is POST.
+        # Let's check session.
+        destination_summary = destination_id
+        if 'calendars' in session:
+            for cal in session['calendars']:
+                if cal['id'] == destination_id:
+                    destination_summary = cal['summary']
+                    break
+        else:
+            # Fallback: could fetch again, but for now defaults to ID.
+            pass
+
         db = firestore.client()
         new_sync_ref = db.collection('syncs').document()
         new_sync_ref.set({
             'user_id': user['uid'],
             'destination_calendar_id': destination_id,
+            'destination_calendar_summary': destination_summary,
             'source_icals': ical_urls,
+            'event_prefix': event_prefix,
             'created_at': firestore.SERVER_TIMESTAMP # pylint: disable=no-member
         })
 

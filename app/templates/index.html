@@ -133,8 +133,16 @@
                     style="background: white; padding: 1rem; margin-bottom: 1rem; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
                     <div style="display: flex; justify-content: space-between; align-items: start;">
                         <div>
-                            <h3 style="margin-top: 0; color: #1a73e8;">Destination: {{ sync.destination_calendar_id }}
+                            <h3 style="margin-top: 0; color: #1a73e8;">
+                                To: {{ sync.destination_calendar_summary or sync.destination_calendar_id }}
                             </h3>
+                            {% if sync.event_prefix %}
+                            <p style="margin-bottom: 0.5rem; color: #5f6368; font-size: 0.9rem;">
+                                <strong>Prefix:</strong> <span
+                                    style="background: #e8f0fe; padding: 2px 6px; border-radius: 4px; color: #1a73e8;">[{{
+                                    sync.event_prefix }}]</span>
+                            </p>
+                            {% endif %}
                             <p style="margin-bottom: 0.5rem;"><strong>Sources:</strong></p>
                             <ul style="margin-top: 0; color: #555;">
                                 {% for source in sync.source_icals %}
@@ -142,7 +150,7 @@
                                     {% if sync.source_names and sync.source_names[source] %}
                                     {{ sync.source_names[source] }}
                                     {% else %}
-                                    {{ source }}
+                                    <span style="font-size: 0.85rem; color: #777;">{{ source }}</span>
                                     {% endif %}
                                 </li>
                                 {% endfor %}
@@ -154,9 +162,12 @@
                             </p>
                             {% endif %}
                         </div>
-                        <div>
+                        <div style="display: flex; gap: 0.5rem;">
+                            <a href="{{ url_for('edit_sync', sync_id=sync.id) }}" class="btn btn-outline"
+                                style="font-size: 0.9rem; padding: 0.5rem 0.75rem;">Edit</a>
                             <form action="{{ url_for('run_sync', sync_id=sync.id) }}" method="POST">
-                                <button type="submit" class="btn">Sync Now</button>
+                                <button type="submit" class="btn"
+                                    style="font-size: 0.9rem; padding: 0.5rem 0.75rem;">Sync Now</button>
                             </form>
                         </div>
                     </div>
