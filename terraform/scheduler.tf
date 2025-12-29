@@ -3,7 +3,6 @@ resource "google_cloud_scheduler_job" "sync_all" {
   description = "Trigger sync for all users"
   schedule    = var.sync_schedule
   time_zone   = "Etc/UTC"
-  region      = var.region
 
   http_target {
     http_method = "POST"
@@ -31,10 +30,4 @@ resource "google_cloud_run_service_iam_member" "scheduler_invoker" {
 resource "google_project_service" "cloudscheduler_api" {
   service            = "cloudscheduler.googleapis.com"
   disable_on_destroy = false
-}
-
-# App Engine Application is often required for Cloud Scheduler
-resource "google_app_engine_application" "app" {
-  project     = var.project_id
-  location_id = var.region
 }
