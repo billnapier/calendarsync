@@ -317,6 +317,7 @@ def edit_sync(sync_id):
         return "Sync not found", 404
 
     sync_data = sync_doc.to_dict()
+    sync_data['id'] = sync_doc.id
     if sync_data['user_id'] != user['uid']:
         return "Unauthorized", 403
 
