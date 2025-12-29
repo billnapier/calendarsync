@@ -21,7 +21,7 @@ with patch.dict(sys.modules, {
     'google.cloud.secretmanager': MagicMock(),
 }):
     import app
-    from app import app as flask_app
+    from app.app import app as flask_app
 
 @pytest.fixture
 def client(): # pylint: disable=redefined-outer-name
@@ -41,7 +41,7 @@ def client(): # pylint: disable=redefined-outer-name
 
 def test_home_page(client): # pylint: disable=redefined-outer-name
     """Test that the home page returns 200 and contains the expected text."""
-    with patch('app.session', {}): # just in case
+    with patch('app.app.session', {}): # just in case
         response = client.get('/')
         assert response.status_code == 200
         assert b"CalendarSync" in response.data
