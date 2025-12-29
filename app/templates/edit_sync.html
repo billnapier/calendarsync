@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Create New Sync - CalendarSync</title>
+    <title>Edit Sync - CalendarSync</title>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -105,23 +105,22 @@
 
 <body>
     <div class="container">
-        <h1>Create New Sync</h1>
-        <form action="/create_sync" method="POST">
+        <h1>Edit Sync</h1>
+        <form action="/edit_sync/{{ sync.id }}" method="POST">
             <div class="form-group">
                 <label for="destination_calendar_id">Destination Calendar</label>
                 {% if calendars %}
                 <select id="destination_calendar_id" name="destination_calendar_id" required>
-                    <option value="" disabled {% if not calendars|selectattr("summary", "equalto" , "Family" )|list
-                        %}selected{% endif %}>Select a calendar</option>
+                    <option value="" disabled>Select a calendar</option>
                     {% for cal in calendars %}
-                    <option value="{{ cal.id }}" {% if cal.summary=='Family' %}selected{% endif %}>{{ cal.summary }}
+                    <option value="{{ cal.id }}" {% if cal.id==sync.destination_calendar_id %}selected{% endif %}>
+                        {{ cal.summary }}
                     </option>
                     {% endfor %}
                 </select>
                 {% else %}
-                <!-- Fallback if no calendars found or error -->
                 <input type="text" id="destination_calendar_id" name="destination_calendar_id"
-                    placeholder="e.g., primary or calendar_id@group.calendar.google.com" required>
+                    value="{{ sync.destination_calendar_id }}" required>
                 {% endif %}
                 <div class="helper-text">Select the Google Calendar you want to sync events TO.</div>
             </div>
@@ -129,22 +128,32 @@
             <div class="form-group">
                 <label>Source iCal URLs</label>
                 <div id="ical-container">
+                    {% for url in sync.source_icals %}
+                    <div class="ical-entry">
+                        <input type="text" name="ical_urls" value="{{ url }}"
+                            placeholder="https://example.com/calendar.ics">
+                    </div>
+                    {% endfor %}
+                    <!-- Ensure at least one input if empty, though ideally shouldn't be -->
+                    {% if not sync.source_icals %}
                     <div class="ical-entry">
                         <input type="text" name="ical_urls" placeholder="https://example.com/calendar.ics">
                     </div>
+                    {% endif %}
                 </div>
                 <button type="button" class="add-btn" onclick="addIcalInput()">+ Add another URL</button>
             </div>
 
             <div class="form-group">
                 <label for="event_prefix">Event Prefix (Optional)</label>
-                <input type="text" id="event_prefix" name="event_prefix" placeholder="e.g. School">
+                <input type="text" id="event_prefix" name="event_prefix" value="{{ sync.event_prefix or '' }}"
+                    placeholder="e.g. School">
                 <div class="helper-text">This prefix will be added to the title of every synced event.</div>
             </div>
 
             <div class="buttons">
                 <a href="/" class="btn btn-secondary">Cancel</a>
-                <button type="submit" class="btn">Create Sync</button>
+                <button type="submit" class="btn">Update Sync</button>
             </div>
         </form>
     </div>

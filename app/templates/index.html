@@ -100,6 +100,75 @@
             font-size: 1.2rem;
             padding: 0.8rem 1.5rem;
         }
+
+        /* Sync List Styles */
+        .sync-list {
+            text-align: left;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .sync-card {
+            background: white;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+        }
+
+        .sync-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+        }
+
+        .sync-title {
+            margin-top: 0;
+            color: #1a73e8;
+        }
+
+        .sync-prefix {
+            margin-bottom: 0.5rem;
+            color: #5f6368;
+            font-size: 0.9rem;
+        }
+
+        .prefix-badge {
+            background: #e8f0fe;
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: #1a73e8;
+        }
+
+        .source-label {
+            margin-bottom: 0.5rem;
+        }
+
+        .source-list {
+            margin-top: 0;
+            color: #555;
+        }
+
+        .source-url {
+            font-size: 0.85rem;
+            color: #777;
+        }
+
+        .last-synced {
+            font-size: 0.85rem;
+            color: #777;
+            margin-top: 0.5rem;
+        }
+
+        .sync-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .btn-sm {
+            font-size: 0.9rem;
+            padding: 0.5rem 0.75rem;
+        }
     </style>
 </head>
 
@@ -127,36 +196,44 @@
             </div>
 
             {% if syncs %}
-            <div style="text-align: left; max-width: 600px; margin: 0 auto;">
+            <div class="sync-list">
                 {% for sync in syncs %}
-                <div
-                    style="background: white; padding: 1rem; margin-bottom: 1rem; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);">
-                    <div style="display: flex; justify-content: space-between; align-items: start;">
-                        <div>
-                            <h3 style="margin-top: 0; color: #1a73e8;">Destination: {{ sync.destination_calendar_id }}
+                <div class="sync-card">
+                    <div class="sync-header">
+                        <div class="sync-details">
+                            <h3 class="sync-title">
+                                To: {{ sync.destination_calendar_summary or sync.destination_calendar_id }}
                             </h3>
-                            <p style="margin-bottom: 0.5rem;"><strong>Sources:</strong></p>
-                            <ul style="margin-top: 0; color: #555;">
+                            {% if sync.event_prefix %}
+                            <p class="sync-prefix">
+                                <strong>Prefix:</strong> <span class="prefix-badge">[{{
+                                    sync.event_prefix }}]</span>
+                            </p>
+                            {% endif %}
+                            <p class="source-label"><strong>Sources:</strong></p>
+                            <ul class="source-list">
                                 {% for source in sync.source_icals %}
                                 <li>
                                     {% if sync.source_names and sync.source_names[source] %}
                                     {{ sync.source_names[source] }}
                                     {% else %}
-                                    {{ source }}
+                                    <span class="source-url">{{ source }}</span>
                                     {% endif %}
                                 </li>
                                 {% endfor %}
                             </ul>
                             {% if sync.last_synced_at %}
-                            <p style="font-size: 0.85rem; color: #777; margin-top: 0.5rem;">
+                            <p class="last-synced">
                                 Last Synced: {{ sync.last_synced_at.strftime('%Y-%m-%d %H:%M') if
                                 sync.last_synced_at.strftime else sync.last_synced_at }}
                             </p>
                             {% endif %}
                         </div>
-                        <div>
+                        <div class="sync-actions">
+                            <a href="{{ url_for('edit_sync', sync_id=sync.id) }}"
+                                class="btn btn-outline btn-sm">Edit</a>
                             <form action="{{ url_for('run_sync', sync_id=sync.id) }}" method="POST">
-                                <button type="submit" class="btn">Sync Now</button>
+                                <button type="submit" class="btn btn-sm">Sync Now</button>
                             </form>
                         </div>
                     </div>

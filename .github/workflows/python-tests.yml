@@ -28,5 +28,6 @@ jobs:
         env:
           FLASK_ENV: development
           SECRET_KEY: test_secret_key
+          PYTHONPATH: .
         run: |
           pytest
