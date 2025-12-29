@@ -4,6 +4,8 @@ from unittest.mock import patch, MagicMock, ANY
 from app.app import sync_calendar_logic
 
 
+import requests
+
 class TestSyncLogic(unittest.TestCase):
 
     @patch('app.app.firestore.client')
@@ -94,64 +96,43 @@ class TestSyncLogic(unittest.TestCase):
     @patch('app.app.requests.get')
     def test_sync_calendar_logic_failure(self, mock_get, mock_build, mock_creds, mock_config, mock_firestore):
          # Mock Exception on Fetch
-         mock_get.side_effect = Exception("Fetch failed")
+         mock_get.side_effect = requests.exceptions.RequestException("Fetch failed")
          
          mock_db = MagicMock()
          mock_firestore.return_value = mock_db
          
          # Mock Sync Document (No prefix this time)
          mock_sync_doc = MagicMock()
+         mock_sync_doc.exists = True
          mock_sync_doc.to_dict.return_value = {
             'user_id': 'test_user',
             'destination_calendar_id': 'dest_cal',
             'source_icals': ['http://fail.com/cal.ics']
          }
-         # Setup chaining again (simplified)
-         mock_db.collection.return_value.document.return_value.get.return_value = mock_sync_doc
          
-         # Note: sync_calendar_logic fetches user creds first.
-         # So we need user mock to succeed even if ical fails later.
-         # User mock setup:
+         # Simplify mocking for failure case using side_effect logic from above
+         mock_sync_ref = MagicMock()
+         mock_sync_ref.get.return_value = mock_sync_doc
+         
+         mock_user_ref = MagicMock()
          mock_user_doc = MagicMock()
          mock_user_doc.to_dict.return_value = {'refresh_token': 'dummy_token'}
-         # ... mocking hell. 
-         # Let's try to ensure the mocks are robust enough or catch the error.
-         
-         # Actually sync_calendar_logic catches fetch exceptions and logs them, 
-         # but continues. It updates source_names with "(Failed)".
-         
-         # We need to properly mock the firestore structure to reach the user fetch AND the sync update.
-         mock_sync_ref = MagicMock()
-         mock_user_ref = MagicMock()
          mock_user_ref.get.return_value = mock_user_doc
          
+         mock_sync_col = MagicMock()
+         mock_sync_col.document.return_value = mock_sync_ref
+         
+         mock_user_col = MagicMock()
+         mock_user_col.document.return_value = mock_user_ref
+         
          def collection_effect(name):
-             if name == 'users':
-                 m = MagicMock()
-                 m.document.return_value = mock_user_ref
-                 return m
-             return MagicMock() # generic for syncs
+             if name == 'syncs':
+                 return mock_sync_col
+             elif name == 'users':
+                 return mock_user_col
+             return MagicMock()
          
          mock_db.collection.side_effect = collection_effect
-         mock_db.collection.return_value.document.return_value = mock_sync_ref # Default path if side_effect not met perfectly?
-         # Wait, side_effect overrides return_value.
-         # We need to handle 'syncs' specifically if called.
-         # sync_calendar_logic calls:
-         # 1. db.collection('syncs').document(sync_id).get()
-         # 2. db.collection('users').document(user_id).get()
-         # 3. db.collection('syncs').document(sync_id).update(...)
-         
-         # Let's fix the side effect:
-         def collection_se(name):
-             col = MagicMock()
-             if name == 'syncs':
-                 col.document.return_value = mock_sync_ref
-                 mock_sync_ref.get.return_value = mock_sync_doc
-             elif name == 'users':
-                 col.document.return_value = mock_user_ref
-             return col
-         
-         mock_db.collection.side_effect = collection_se
 
          # Run
          sync_calendar_logic('sync_fail')

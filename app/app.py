@@ -376,6 +376,9 @@ def sync_calendar_logic(sync_id):
     db = firestore.client()
     sync_ref = db.collection('syncs').document(sync_id)
     sync_doc = sync_ref.get()
+    if not sync_doc.exists:
+        app.logger.error("Sync logic called for non-existent sync_id: %s", sync_id)
+        return
     sync_data = sync_doc.to_dict()
 
     user_id = sync_data['user_id']
@@ -422,7 +425,7 @@ def sync_calendar_logic(sync_id):
             for component in cal.walk():
                 if component.name == "VEVENT":
                     all_events.append(component)
-        except Exception as e: # pylint: disable=broad-exception-caught
+        except (requests.exceptions.RequestException, ValueError) as e: # pylint: disable=broad-exception-caught
             app.logger.error("Failed to fetch/parse %s: %s", url, e)
             source_names[url] = f"{url} (Failed)"
 
@@ -488,8 +491,28 @@ def sync_calendar_logic(sync_id):
 
         # Fallback for end time if missing
         if not end and start:
-            # logic to calculate end from duration could go here
-            pass
+            duration = event.get('DURATION')
+            if duration:
+                # DURATION is a timedelta
+                # We need to add it to start
+                # start is a dict {'dateTime': iso} or {'date': iso}
+                # But we don't have the original dt object easily here unless we refactor parse_dt or store it.
+                # Let's peek at event.get('DTSTART').dt again.
+                dt_start_prop = event.get('DTSTART')
+                if dt_start_prop:
+                    start_dt_obj = dt_start_prop.dt
+                    duration_td = duration.dt
+                    end_dt_obj = start_dt_obj + duration_td
+                    
+                    if hasattr(end_dt_obj, 'tzinfo') and end_dt_obj.tzinfo:
+                         end = {'dateTime': end_dt_obj.isoformat()}
+                    elif isinstance(end_dt_obj, datetime):
+                         # naive
+                         end_dt_obj = end_dt_obj.replace(tzinfo=timezone.utc)
+                         end = {'dateTime': end_dt_obj.isoformat()}
+                    else:
+                         # date
+                         end = {'date': end_dt_obj.isoformat()}
 
         if not start:
             continue
