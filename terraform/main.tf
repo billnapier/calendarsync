@@ -170,7 +170,12 @@ resource "google_cloud_run_service" "default" {
     latest_revision = true
   }
 
-  depends_on = [google_project_service.run_api]
+  depends_on = [
+    google_project_service.run_api,
+    google_project_iam_member.app_runner_secrets,
+    google_project_iam_member.app_runner_firestore,
+    google_project_iam_member.app_runner_logging
+  ]
 
   lifecycle {
     ignore_changes = [
