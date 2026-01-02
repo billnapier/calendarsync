@@ -58,6 +58,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # ratchet:actions/checkout@v4
 
+      - name: Debug Inputs
+        run: |
+          echo "Debug: Identifying Environment Variables"
+          echo "TF_VAR_project_id: $TF_VAR_project_id"
+          echo "Inputs project_id: ${{ inputs.project_id }}"
+
+
       - id: 'auth'
         name: 'Authenticate to Google Cloud'
         uses: 'google-github-actions/auth@c200f3691d83b41bf9bbd8638997a462592937ed' # ratchet:google-github-actions/auth@v2
