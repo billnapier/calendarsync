@@ -43,6 +43,13 @@ jobs:
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # ratchet:hashicorp/setup-terraform@v3
 
+      - name: Debug Identity
+        run: |
+          echo "Debug: Authenticated Identity"
+          gcloud auth list
+          gcloud config list
+          echo "Service Account Email: ${{ secrets.GCP_WIF_SA_EMAIL }}"
+
       - name: Terraform Init
         run: terraform init
 
