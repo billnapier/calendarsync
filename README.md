@@ -113,7 +113,7 @@ terraform plan -var-file=dev.tfvars
 ### Production
 ```bash
 terraform workspace select prod
-terraform plan -var-file=terraform.tfvars
+terraform plan -var-file=prod.tfvars
 ```
 
 

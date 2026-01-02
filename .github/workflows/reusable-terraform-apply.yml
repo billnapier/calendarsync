@@ -22,10 +22,10 @@ on:
         required: true
         type: string
         description: "Cloud Run Service Name"
-      domain_name:
-        required: true
+      var_file:
+        required: false
         type: string
-        description: "Domain Name"
+        description: "Terraform variable file (e.g. dev.tfvars)"
     secrets:
       wif_provider:
         required: true
@@ -85,4 +85,9 @@ jobs:
         run: terraform validate
 
       - name: Terraform Apply
-        run: terraform apply -auto-approve -input=false
+        run: |
+          if [ -n "${{ inputs.var_file }}" ]; then
+            terraform apply -auto-approve -input=false -var-file=${{ inputs.var_file }}
+          else
+            terraform apply -auto-approve -input=false
+          fi
