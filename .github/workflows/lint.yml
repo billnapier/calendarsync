@@ -20,4 +20,4 @@ jobs:
           if [ -f app/requirements.txt ]; then pip install -r app/requirements.txt; fi
       - name: Analysing the code with pylint
         run: |
-          pylint app/app.py tests/test_app.py
+          pylint app tests
