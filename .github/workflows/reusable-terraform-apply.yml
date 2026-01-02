@@ -22,6 +22,10 @@ on:
         required: true
         type: string
         description: "Cloud Run Service Name"
+      domain_name:
+        required: true
+        type: string
+        description: "Domain Name"
       var_file:
         required: false
         type: string
