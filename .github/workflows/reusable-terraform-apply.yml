@@ -26,6 +26,10 @@ on:
         required: true
         type: string
         description: "Domain Name"
+      var_file:
+        required: false
+        type: string
+        description: "Terraform variable file (e.g. dev.tfvars)"
     secrets:
       wif_provider:
         required: true
@@ -58,6 +62,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # ratchet:actions/checkout@v4
 
+      - name: Debug Inputs
+        run: |
+          echo "Debug: Identifying Environment Variables"
+          echo "TF_VAR_project_id: $TF_VAR_project_id"
+          echo "Inputs project_id: ${{ inputs.project_id }}"
+
+
       - id: 'auth'
         name: 'Authenticate to Google Cloud'
         uses: 'google-github-actions/auth@c200f3691d83b41bf9bbd8638997a462592937ed' # ratchet:google-github-actions/auth@v2
@@ -72,10 +83,15 @@ jobs:
         run: terraform init
 
       - name: Select Workspace
-        run: terraform workspace select ${{ inputs.tf_workspace }} || terraform workspace new ${{ inputs.tf_workspace }}
+        run: terraform workspace select ${{ inputs.tf_workspace }}
 
       - name: Terraform Validate
         run: terraform validate
 
       - name: Terraform Apply
-        run: terraform apply -auto-approve -input=false
+        run: |
+          if [ -n "${{ inputs.var_file }}" ]; then
+            terraform apply -auto-approve -input=false -var-file=${{ inputs.var_file }}
+          else
+            terraform apply -auto-approve -input=false
+          fi

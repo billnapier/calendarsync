@@ -70,9 +70,10 @@ resource "google_project_iam_member" "github_actions_wif_admin" {
   member  = "serviceAccount:${google_service_account.github_actions.email}"
 }
 
-resource "google_project_iam_member" "github_actions_sa_admin" {
+
+resource "google_project_iam_member" "github_actions_editor" {
   project = var.project_id
-  role    = "roles/iam.serviceAccountAdmin"
+  role    = "roles/editor"
   member  = "serviceAccount:${google_service_account.github_actions.email}"
 }
 
