@@ -95,5 +95,27 @@ python app/app.py
 Open [http://localhost:8080](http://localhost:8080).
 Open [http://localhost:8080](http://localhost:8080).
 
+## Terraform
+
+To manage infrastructure via Terraform locally:
+
+1. Navigate to the `terraform` directory:
+   ```bash
+   cd terraform
+   ```
+
+### Development
+```bash
+terraform workspace select dev
+terraform plan -var-file=dev.tfvars
+```
+
+### Production
+```bash
+terraform workspace select prod
+terraform plan -var-file=terraform.tfvars
+```
+
+
 ## Contributing
 See `docs/contributing.md` for details on how to contribute to this project.
