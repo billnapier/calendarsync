@@ -23,6 +23,8 @@ from googleapiclient.discovery import build
 import requests
 import icalendar
 
+from app.security import safe_requests_get
+
 
 
 
@@ -272,7 +274,7 @@ def get_calendar_name_from_ical(url):
     Returns the URL if extraction fails or name is not present.
     """
     try:
-        response = requests.get(url, timeout=10)
+        response = safe_requests_get(url, timeout=10)
         response.raise_for_status()
         cal = icalendar.Calendar.from_ical(response.content)
         name = cal.get('X-WR-CALNAME')
@@ -417,7 +419,7 @@ def sync_calendar_logic(sync_id):
 
     for url in source_icals:
         try:
-            response = requests.get(url, timeout=10)
+            response = safe_requests_get(url, timeout=10)
             response.raise_for_status()
             cal = icalendar.Calendar.from_ical(response.content)
 
