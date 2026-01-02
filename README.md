@@ -118,4 +118,4 @@ terraform plan -var-file=prod.tfvars
 
 
 ## Contributing
-See `docs/contributing.md` for details on how to contribute to this project.
+Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details on our code of conduct, and the process for submitting pull requests to us.
