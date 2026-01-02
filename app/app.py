@@ -54,7 +54,9 @@ if os.environ.get("FLASK_ENV") == "development" or os.environ.get("FLASK_DEBUG")
 if "SECRET_KEY" in os.environ:
     app.secret_key = os.environ["SECRET_KEY"]
 elif (
-    os.environ.get("FLASK_ENV") == "development" or os.environ.get("FLASK_DEBUG") == "1"
+    os.environ.get("FLASK_ENV") == "development"
+    or os.environ.get("FLASK_DEBUG") == "1"
+    or os.environ.get("TESTING")
 ):
     app.secret_key = "dev_key_for_testing_only"
 else:

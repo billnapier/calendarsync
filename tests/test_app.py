@@ -1,11 +1,13 @@
 # pylint: disable=redefined-outer-name
 import sys
 import os
+
+os.environ["TESTING"] = "1"
 from unittest.mock import MagicMock, patch
 import pytest
 
 # Add the app directory to the path
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../app")))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../")))
 
 # Initial mocks for import safety
 mock_firestore = MagicMock()

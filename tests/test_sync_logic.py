@@ -1,5 +1,8 @@
 # pylint: disable=too-many-locals,too-many-arguments,too-many-positional-arguments,unused-argument
 import unittest
+import os
+
+os.environ["TESTING"] = "1"
 from unittest.mock import patch, MagicMock
 import requests
 from app.app import sync_calendar_logic
