@@ -4,8 +4,8 @@ resource "google_project_service" "tasks_api" {
 }
 
 resource "google_cloud_tasks_queue" "sync_queue" {
-  name     = "sync-queue"
-  location = var.region
+  name       = "sync-queue"
+  location   = var.region
   depends_on = [google_project_service.tasks_api]
 }
 
