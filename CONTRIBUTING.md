@@ -61,7 +61,10 @@ To maintain a clean history, we enforce a strict branching strategy.
 ## 4. Pull Request Workflow
 
 1.  **Push Changes**: Push your branch to the repository.
-2.  **Wait for checks**: **CRITICAL**. Do not assume your code is good. Wait for all GitHub Actions to complete.
+2.  **Wait for checks**: **MANDATORY**. You **MUST** wait for all GitHub Actions to complete.
+    *   Do not assume your code works because it runs locally.
+    *   **Verify** that every check (Lint, Python Tests, Black, Ratchet, Terraform) is **GREEN**.
+    *   If a check fails, fix it immediately and push updates. **Repeat this process until all checks pass.**
 3.  **Verify Checks**: ensure Lint, Python Tests, Terraform Plan, and any other triggered workflows are **GREEN (Passing)**.
 4.  **Address Review Comments**: **CRITICAL**. Review ALL comments left by `gemini-code-assist` or human reviewers.
     *   Fix the issues raised.
