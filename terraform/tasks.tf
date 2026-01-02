@@ -14,5 +14,5 @@ resource "google_cloud_tasks_queue" "sync_queue" {
 resource "google_project_iam_member" "cloud_run_tasks_enqueuer" {
   project = var.project_id
   role    = "roles/cloudtasks.enqueuer"
-  member  = "serviceAccount:${data.google_project.project.number}-compute@developer.gserviceaccount.com"
+  member  = "serviceAccount:${google_service_account.app_runner.email}"
 }

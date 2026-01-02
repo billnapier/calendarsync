@@ -65,6 +65,32 @@ resource "google_artifact_registry_repository" "repo" {
   depends_on    = [google_project_service.artifact_registry_api]
 }
 
+
+
+resource "google_service_account" "app_runner" {
+  account_id   = "app-runner"
+  display_name = "Cloud Run Service Account"
+}
+
+# Grant necessary permissions to the App Runner SA
+resource "google_project_iam_member" "app_runner_firestore" {
+  project = var.project_id
+  role    = "roles/datastore.user"
+  member  = "serviceAccount:${google_service_account.app_runner.email}"
+}
+
+resource "google_project_iam_member" "app_runner_secrets" {
+  project = var.project_id
+  role    = "roles/secretmanager.secretAccessor"
+  member  = "serviceAccount:${google_service_account.app_runner.email}"
+}
+
+resource "google_project_iam_member" "app_runner_logging" {
+  project = var.project_id
+  role    = "roles/logging.logWriter"
+  member  = "serviceAccount:${google_service_account.app_runner.email}"
+}
+
 # Cloud Run Service
 resource "google_cloud_run_service" "default" {
   name     = var.service_name
@@ -72,6 +98,7 @@ resource "google_cloud_run_service" "default" {
 
   template {
     spec {
+      service_account_name = google_service_account.app_runner.email
       containers {
         image = "${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.repo.repository_id}/${var.service_name}:${var.image_tag}"
 

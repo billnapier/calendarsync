@@ -6,6 +6,9 @@ import os
 import logging
 import time
 from datetime import datetime, timezone
+import json
+from google.cloud import tasks_v2
+
 # Third-party libraries
 from flask import Flask, render_template, request, session, redirect, url_for
 from werkzeug.middleware.proxy_fix import ProxyFix
@@ -623,11 +626,7 @@ def logout():
     session.clear()
     return redirect(url_for('home'))
 
-import json
-from google.cloud import tasks_v2
-from google.protobuf import timestamp_pb2
-
-# ... (rest of imports)
+# ... (rest of imports removed from here)
 
 # ... (existing code)
 
@@ -637,6 +636,7 @@ def sync_one_user():
     Worker endpoint to sync a single user.
     Called by Cloud Tasks.
     """
+    sync_id = None
     try:
         payload = request.get_json()
         if not payload or 'sync_id' not in payload:

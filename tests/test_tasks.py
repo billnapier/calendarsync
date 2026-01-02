@@ -1,5 +1,6 @@
-import sys
 import os
+os.environ['TESTING'] = 'True'
+import sys
 from unittest.mock import MagicMock, patch
 import pytest
 
@@ -7,7 +8,7 @@ import pytest
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../app')))
 
 from app.app import app as flask_app
-from app import app
+from app.app import app as flask_app
 
 @pytest.fixture
 def client_with_mocks():
@@ -61,3 +62,9 @@ def test_sync_one_user_worker(mock_sync_logic, client_with_mocks):
     mock_sync_logic.side_effect = RuntimeError("Sync fail")
     response_fail = client_with_mocks.post('/tasks/sync_one', json={'sync_id': 'sync_123'})
     assert response_fail.status_code == 500
+
+def test_sync_one_user_worker_invalid_payload(client_with_mocks):
+    """Test the worker endpoint with an invalid payload."""
+    response = client_with_mocks.post('/tasks/sync_one', json={'wrong_key': 'some_value'})
+    assert response.status_code == 400
+    assert b"Invalid payload" in response.data
