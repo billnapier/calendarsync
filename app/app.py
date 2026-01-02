@@ -478,10 +478,10 @@ def sync_calendar_logic(sync_id):
         # Date parsing helper
         def parse_dt(dt_prop):
             if dt_prop is None:
-                return None
+                return None, None
             dt = dt_prop.dt
             if hasattr(dt, 'tzinfo') and dt.tzinfo:
-                return {'dateTime': dt.isoformat()}
+                return {'dateTime': dt.isoformat()}, dt
 
             # All day event or naive datetime
             if isinstance(dt, datetime):
@@ -489,38 +489,32 @@ def sync_calendar_logic(sync_id):
                 # Best effort: assume UTC or use 'Z' suffix if pure naive.
                 # Or better: set it to UTC.
                 dt = dt.replace(tzinfo=timezone.utc)
-                return {'dateTime': dt.isoformat()}
+                return {'dateTime': dt.isoformat()}, dt
 
             # Date object (all day)
-            return {'date': dt.isoformat()}
+            return {'date': dt.isoformat()}, dt
 
-        start = parse_dt(event.get('DTSTART'))
-        end = parse_dt(event.get('DTEND'))
+        start, start_dt_obj = parse_dt(event.get('DTSTART'))
+        end, _ = parse_dt(event.get('DTEND'))
 
         # Fallback for end time if missing
-        if not end and start:
+        if not end and start and start_dt_obj:
             duration = event.get('DURATION')
             if duration:
                 # DURATION is a timedelta
                 # We need to add it to start
-                # start is a dict {'dateTime': iso} or {'date': iso}
-                # But we don't have the original dt object easily here unless we refactor parse_dt or store it.
-                # Let's peek at event.get('DTSTART').dt again.
-                dt_start_prop = event.get('DTSTART')
-                if dt_start_prop:
-                    start_dt_obj = dt_start_prop.dt
-                    duration_td = duration.dt
-                    end_dt_obj = start_dt_obj + duration_td
-                    
-                    if hasattr(end_dt_obj, 'tzinfo') and end_dt_obj.tzinfo:
-                         end = {'dateTime': end_dt_obj.isoformat()}
-                    elif isinstance(end_dt_obj, datetime):
-                         # naive
-                         end_dt_obj = end_dt_obj.replace(tzinfo=timezone.utc)
-                         end = {'dateTime': end_dt_obj.isoformat()}
-                    else:
-                         # date
-                         end = {'date': end_dt_obj.isoformat()}
+                duration_td = duration.dt
+                end_dt_obj = start_dt_obj + duration_td
+
+                if hasattr(end_dt_obj, 'tzinfo') and end_dt_obj.tzinfo:
+                    end = {'dateTime': end_dt_obj.isoformat()}
+                elif isinstance(end_dt_obj, datetime):
+                    # naive
+                    end_dt_obj = end_dt_obj.replace(tzinfo=timezone.utc)
+                    end = {'dateTime': end_dt_obj.isoformat()}
+                else:
+                    # date
+                    end = {'date': end_dt_obj.isoformat()}
 
         if not start:
             continue
