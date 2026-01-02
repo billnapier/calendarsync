@@ -72,7 +72,7 @@ jobs:
         run: terraform init
 
       - name: Select Workspace
-        run: terraform workspace select ${{ inputs.tf_workspace }} || terraform workspace new ${{ inputs.tf_workspace }}
+        run: terraform workspace select ${{ inputs.tf_workspace }}
 
       - name: Terraform Validate
         run: terraform validate
