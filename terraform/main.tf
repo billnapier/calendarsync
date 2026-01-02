@@ -126,6 +126,14 @@ resource "google_cloud_run_service" "default" {
             }
           }
         }
+        env {
+          name  = "GCP_REGION"
+          value = var.region
+        }
+        env {
+          name  = "SCHEDULER_INVOKER_EMAIL"
+          value = google_service_account.scheduler_invoker.email
+        }
       }
     }
   }

@@ -17,54 +17,47 @@ def client_with_mocks():
     with flask_app.test_client() as test_client:
         yield test_client
 
+@patch('app.app.tasks_v2.CloudTasksClient')
 @patch('app.app.firestore.client')
-@patch('app.app.sync_calendar_logic')
-def test_sync_all_users_success(mock_sync_logic, mock_firestore_client, client_with_mocks):
-    """Test the synchronous execution of sync_all_users."""
+def test_sync_all_users_dispatch(mock_firestore_client, mock_tasks_client, client_with_mocks):
+    """Test the dispatch behavior of sync_all_users."""
     
-    # Mock Firestore streaming
+    # Mock mocks
     mock_db = MagicMock()
     mock_firestore_client.return_value = mock_db
     
-    # Mock sync docs
     mock_sync_doc1 = MagicMock()
     mock_sync_doc1.id = "sync_1"
     mock_sync_doc2 = MagicMock()
     mock_sync_doc2.id = "sync_2"
     
     mock_db.collection.return_value.stream.return_value = [mock_sync_doc1, mock_sync_doc2]
-
-    response = client_with_mocks.post('/tasks/sync_all')
+    
+    # Mock Env vars used in dispatch
+    with patch.dict(os.environ, {
+        'GOOGLE_CLOUD_PROJECT': 'test-project',
+        'GCP_REGION': 'us-central1',
+        'SCHEDULER_INVOKER_EMAIL': 'invoker@example.com'
+    }):
+        response = client_with_mocks.post('/tasks/sync_all')
     
     assert response.status_code == 200
-    assert b"Success: 2" in response.data
+    assert b"Dispatched 2 tasks" in response.data
     
-    # Verify calls
-    assert mock_sync_logic.call_count == 2
-    mock_sync_logic.assert_any_call("sync_1")
-    mock_sync_logic.assert_any_call("sync_2")
+    # Verify create_task called twice
+    assert mock_tasks_client.return_value.create_task.call_count == 2
 
-@patch('app.app.firestore.client')
+
 @patch('app.app.sync_calendar_logic')
-def test_sync_all_users_partial_failure(mock_sync_logic, mock_firestore_client, client_with_mocks):
-    """Test sync_all_users behavior when individual syncs fail."""
+def test_sync_one_user_worker(mock_sync_logic, client_with_mocks):
+    """Test the worker endpoint."""
     
-    mock_db = MagicMock()
-    mock_firestore_client.return_value = mock_db
-    
-    mock_sync_doc1 = MagicMock()
-    mock_sync_doc1.id = "sync_1" 
-    mock_sync_doc2 = MagicMock()
-    mock_sync_doc2.id = "sync_2"
-    
-    mock_db.collection.return_value.stream.return_value = [mock_sync_doc1, mock_sync_doc2]
-    
-    # Side effect: first call success, second call raises exception
-    mock_sync_logic.side_effect = [None, RuntimeError("Sync failed")]
-    
-    response = client_with_mocks.post('/tasks/sync_all')
-    
+    # Test success
+    response = client_with_mocks.post('/tasks/sync_one', json={'sync_id': 'sync_123'})
     assert response.status_code == 200
-    # Should report 1 success, 1 error
-    assert b"Success: 1" in response.data
-    assert b"Errors: 1" in response.data
+    mock_sync_logic.assert_called_with('sync_123')
+    
+    # Test failure (should return 500)
+    mock_sync_logic.side_effect = RuntimeError("Sync fail")
+    response_fail = client_with_mocks.post('/tasks/sync_one', json={'sync_id': 'sync_123'})
+    assert response_fail.status_code == 500

@@ -623,45 +623,91 @@ def logout():
     session.clear()
     return redirect(url_for('home'))
 
+import json
+from google.cloud import tasks_v2
+from google.protobuf import timestamp_pb2
+
+# ... (rest of imports)
+
+# ... (existing code)
+
+@app.route('/tasks/sync_one', methods=['POST'])
+def sync_one_user():
+    """
+    Worker endpoint to sync a single user.
+    Called by Cloud Tasks.
+    """
+    try:
+        payload = request.get_json()
+        if not payload or 'sync_id' not in payload:
+            app.logger.error("Invalid payload for sync_one: %s", payload)
+            return "Invalid payload", 400
+            
+        sync_id = payload['sync_id']
+        app.logger.info("Worker starting sync for sync_id: %s", sync_id)
+        
+        sync_calendar_logic(sync_id)
+        
+        return "Sync successful", 200
+    except Exception as e: # pylint: disable=broad-exception-caught
+        app.logger.error("Worker failed for sync_id %s: %s", sync_id, e)
+        # Return 500 to trigger Cloud Tasks retry
+        return f"Worker failed: {e}", 500
+
 @app.route('/tasks/sync_all', methods=['POST'])
 def sync_all_users():
     """
-    Trigger sync for all users.
-    Intended to be called by Cloud Scheduler.
+    Dispatcher endpoint.
+    Triggered by Cloud Scheduler, enqueues tasks for all users.
     """
-    # Simple security check: Ensure it's called by Cloud Scheduler or similar trusted source
-    # Cloud Scheduler (OIDC) adds Authorization header, but here we might just rely on
-    # it being an internal/admin route or check for specific headers if strictly needed.
-    # For now, we trust the IAM invoker permission set in Terraform.
-    
-    app.logger.info("Starting global sync...")
+    app.logger.info("Starting global sync dispatch...")
     
     db = firestore.client()
+    project = os.environ.get('GOOGLE_CLOUD_PROJECT') or os.environ.get('FIREBASE_PROJECT_ID')
+    location = os.environ.get('GCP_REGION', 'us-central1')
+    queue = 'sync-queue'
+    invoker_email = os.environ.get('SCHEDULER_INVOKER_EMAIL')
+    
+    if not project or not invoker_email:
+        app.logger.error("Missing required env vars for Cloud Tasks dispatch")
+        return "Configuration error", 500
+
+    client = tasks_v2.CloudTasksClient()
+    parent = client.queue_path(project, location, queue)
+    
     try:
-        # Stream all syncs
-        # Note: In a massive scale app, this would need pagination or a task queue.
-        # For this scale, iterating is fine.
         syncs = db.collection('syncs').stream()
-        
         count = 0
-        error_count = 0
         
         for sync_doc in syncs:
             sync_id = sync_doc.id
+            
+            # Construct Task
+            task = {
+                'http_request': {
+                    'http_method': tasks_v2.HttpMethod.POST,
+                    'url': url_for('sync_one_user', _external=True),
+                    'headers': {'Content-Type': 'application/json'},
+                    'oidc_token': {
+                        'service_account_email': invoker_email,
+                    }
+                }
+            }
+            
+            payload = {'sync_id': sync_id}
+            task['http_request']['body'] = json.dumps(payload).encode()
+            
             try:
-                # We could potentially run these in parallel using a thread pool
-                # but let's keep it simple and sequential for now to avoid resource exhaustion.
-                sync_calendar_logic(sync_id)
+                client.create_task(request={'parent': parent, 'task': task})
                 count += 1
             except Exception as e: # pylint: disable=broad-exception-caught
-                app.logger.error("Error processing sync_id %s: %s", sync_id, e)
-                error_count += 1
-                
-        app.logger.info("Global sync complete. Success: %d, Errors: %d", count, error_count)
-        return f"Sync complete. Success: {count}, Errors: {error_count}", 200
+                app.logger.error("Failed to enqueue task for sync_id %s: %s", sync_id, e)
+        
+        app.logger.info("Dispatched %d sync tasks.", count)
+        return f"Dispatched {count} tasks", 200
         
     except Exception as e: # pylint: disable=broad-exception-caught
-        app.logger.error("Critical error in sync_all_users: %s", e)
+        app.logger.error("Critical error in dispatcher: %s", e)
         return f"Internal failure: {e}", 500
 
 if __name__ == '__main__':
