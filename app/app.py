@@ -6,6 +6,9 @@ import os
 import logging
 import time
 from datetime import datetime, timezone
+import json
+from google.cloud import tasks_v2
+
 # Third-party libraries
 from flask import Flask, render_template, request, session, redirect, url_for
 from werkzeug.middleware.proxy_fix import ProxyFix
@@ -25,12 +28,15 @@ import icalendar
 
 
 # Initialize Firebase Admin SDK
-if not firebase_admin._apps: # pylint: disable=protected-access
-    project_id = os.environ.get('FIREBASE_PROJECT_ID') or os.environ.get('GOOGLE_CLOUD_PROJECT')
-    if project_id:
-        firebase_admin.initialize_app(options={'projectId': project_id})
-    else:
-        firebase_admin.initialize_app()
+# Initialize Firebase Admin SDK
+# Skip initialization in development/testing environments to avoid credential errors
+if os.environ.get('FLASK_ENV') != 'development' and not os.environ.get('TESTING'):
+    if not firebase_admin._apps: # pylint: disable=protected-access
+        project_id = os.environ.get('FIREBASE_PROJECT_ID') or os.environ.get('GOOGLE_CLOUD_PROJECT')
+        if project_id:
+            firebase_admin.initialize_app(options={'projectId': project_id})
+        else:
+            firebase_admin.initialize_app()
 
 app = Flask(__name__)
 # Fix for Cloud Run (HTTPS behind proxy)
@@ -619,6 +625,90 @@ def create_sync():
 def logout():
     session.clear()
     return redirect(url_for('home'))
+
+# ... (rest of imports removed from here)
+
+# ... (existing code)
+
+@app.route('/tasks/sync_one', methods=['POST'])
+def sync_one_user():
+    """
+    Worker endpoint to sync a single user.
+    Called by Cloud Tasks.
+    """
+    sync_id = None
+    try:
+        payload = request.get_json()
+        if not payload or 'sync_id' not in payload:
+            app.logger.error("Invalid payload for sync_one: %s", payload)
+            return "Invalid payload", 400
+            
+        sync_id = payload['sync_id']
+        app.logger.info("Worker starting sync for sync_id: %s", sync_id)
+        
+        sync_calendar_logic(sync_id)
+        
+        return "Sync successful", 200
+    except Exception as e: # pylint: disable=broad-exception-caught
+        app.logger.error("Worker failed for sync_id %s: %s", sync_id, e)
+        # Return 500 to trigger Cloud Tasks retry
+        return f"Worker failed: {e}", 500
+
+@app.route('/tasks/sync_all', methods=['POST'])
+def sync_all_users():
+    """
+    Dispatcher endpoint.
+    Triggered by Cloud Scheduler, enqueues tasks for all users.
+    """
+    app.logger.info("Starting global sync dispatch...")
+    
+    db = firestore.client()
+    project = os.environ.get('GOOGLE_CLOUD_PROJECT') or os.environ.get('FIREBASE_PROJECT_ID')
+    location = os.environ.get('GCP_REGION', 'us-central1')
+    queue = 'sync-queue'
+    invoker_email = os.environ.get('SCHEDULER_INVOKER_EMAIL')
+    
+    if not project or not invoker_email:
+        app.logger.error("Missing required env vars for Cloud Tasks dispatch")
+        return "Configuration error", 500
+
+    client = tasks_v2.CloudTasksClient()
+    parent = client.queue_path(project, location, queue)
+    
+    try:
+        syncs = db.collection('syncs').stream()
+        count = 0
+        
+        for sync_doc in syncs:
+            sync_id = sync_doc.id
+            
+            # Construct Task
+            task = {
+                'http_request': {
+                    'http_method': tasks_v2.HttpMethod.POST,
+                    'url': url_for('sync_one_user', _external=True),
+                    'headers': {'Content-Type': 'application/json'},
+                    'oidc_token': {
+                        'service_account_email': invoker_email,
+                    }
+                }
+            }
+            
+            payload = {'sync_id': sync_id}
+            task['http_request']['body'] = json.dumps(payload).encode()
+            
+            try:
+                client.create_task(request={'parent': parent, 'task': task})
+                count += 1
+            except Exception as e: # pylint: disable=broad-exception-caught
+                app.logger.error("Failed to enqueue task for sync_id %s: %s", sync_id, e)
+        
+        app.logger.info("Dispatched %d sync tasks.", count)
+        return f"Dispatched {count} tasks", 200
+        
+    except Exception as e: # pylint: disable=broad-exception-caught
+        app.logger.error("Critical error in dispatcher: %s", e)
+        return f"Internal failure: {e}", 500
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 8080))

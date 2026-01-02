@@ -1,0 +1,498 @@
+Terraform Plan Prod	Set up job	﻿2026-01-02T06:12:46.9228615Z Current runner version: '2.330.0'
+Terraform Plan Prod	Set up job	2026-01-02T06:12:46.9252871Z ##[group]Runner Image Provisioner
+Terraform Plan Prod	Set up job	2026-01-02T06:12:46.9253814Z Hosted Compute Agent
+Terraform Plan Prod	Set up job	2026-01-02T06:12:46.9254426Z Version: 20251211.462
+Terraform Plan Prod	Set up job	2026-01-02T06:12:46.9255385Z Commit: 6cbad8c2bb55d58165063d031ccabf57e2d2db61
+Terraform Plan Prod	Set up job	2026-01-02T06:12:46.9256241Z Build Date: 2025-12-11T16:28:49Z
+Terraform Plan Prod	Set up job	2026-01-02T06:12:46.9256921Z Worker ID: {42a4ed2b-b368-4b8e-a355-b405631f48b4}
+Terraform Plan Prod	Set up job	2026-01-02T06:12:46.9257589Z ##[endgroup]
+Terraform Plan Prod	Set up job	2026-01-02T06:12:46.9258115Z ##[group]Operating System
+Terraform Plan Prod	Set up job	2026-01-02T06:12:46.9258700Z Ubuntu
+Terraform Plan Prod	Set up job	2026-01-02T06:12:46.9259210Z 24.04.3
+Terraform Plan Prod	Set up job	2026-01-02T06:12:46.9259693Z LTS
+Terraform Plan Prod	Set up job	2026-01-02T06:12:46.9260181Z ##[endgroup]
+Terraform Plan Prod	Set up job	2026-01-02T06:12:46.9260682Z ##[group]Runner Image
+Terraform Plan Prod	Set up job	2026-01-02T06:12:46.9261290Z Image: ubuntu-24.04
+Terraform Plan Prod	Set up job	2026-01-02T06:12:46.9261776Z Version: 20251215.174.1
+Terraform Plan Prod	Set up job	2026-01-02T06:12:46.9262852Z Included Software: https://github.com/actions/runner-images/blob/ubuntu24/20251215.174/images/ubuntu/Ubuntu2404-Readme.md
+Terraform Plan Prod	Set up job	2026-01-02T06:12:46.9264291Z Image Release: https://github.com/actions/runner-images/releases/tag/ubuntu24%2F20251215.174
+Terraform Plan Prod	Set up job	2026-01-02T06:12:46.9265611Z ##[endgroup]
+Terraform Plan Prod	Set up job	2026-01-02T06:12:46.9266882Z ##[group]GITHUB_TOKEN Permissions
+Terraform Plan Prod	Set up job	2026-01-02T06:12:46.9268814Z Contents: read
+Terraform Plan Prod	Set up job	2026-01-02T06:12:46.9269504Z Metadata: read
+Terraform Plan Prod	Set up job	2026-01-02T06:12:46.9270046Z PullRequests: write
+Terraform Plan Prod	Set up job	2026-01-02T06:12:46.9270550Z ##[endgroup]
+Terraform Plan Prod	Set up job	2026-01-02T06:12:46.9272694Z Secret source: Actions
+Terraform Plan Prod	Set up job	2026-01-02T06:12:46.9273428Z Prepare workflow directory
+Terraform Plan Prod	Set up job	2026-01-02T06:12:46.9811117Z Prepare all required actions
+Terraform Plan Prod	Set up job	2026-01-02T06:12:46.9848669Z Getting action download info
+Terraform Plan Prod	Set up job	2026-01-02T06:12:47.2950977Z Download action repository 'actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5' (SHA:34e114876b0b11c390a56381ad16ebd13914f8d5)
+Terraform Plan Prod	Set up job	2026-01-02T06:12:47.4073739Z Download action repository 'google-github-actions/auth@c200f3691d83b41bf9bbd8638997a462592937ed' (SHA:c200f3691d83b41bf9bbd8638997a462592937ed)
+Terraform Plan Prod	Set up job	2026-01-02T06:12:47.7376529Z Download action repository 'hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd' (SHA:b9cd54a3c349d3f38e8881555d616ced269862dd)
+Terraform Plan Prod	Set up job	2026-01-02T06:12:48.0809910Z Download action repository 'actions/github-script@d7906e4ad0b1822421a7e6a35d5ca353c962f410' (SHA:d7906e4ad0b1822421a7e6a35d5ca353c962f410)
+Terraform Plan Prod	Set up job	2026-01-02T06:12:48.7922766Z Complete job name: Terraform Plan Prod
+Terraform Plan Prod	Checkout	﻿2026-01-02T06:12:48.9017525Z ##[group]Run actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5
+Terraform Plan Prod	Checkout	2026-01-02T06:12:48.9019125Z with:
+Terraform Plan Prod	Checkout	2026-01-02T06:12:48.9019948Z   repository: billnapier/calendarsync
+Terraform Plan Prod	Checkout	2026-01-02T06:12:48.9021239Z   token: ***
+Terraform Plan Prod	Checkout	2026-01-02T06:12:48.9022009Z   ssh-strict: true
+Terraform Plan Prod	Checkout	2026-01-02T06:12:48.9022795Z   ssh-user: git
+Terraform Plan Prod	Checkout	2026-01-02T06:12:48.9023599Z   persist-credentials: true
+Terraform Plan Prod	Checkout	2026-01-02T06:12:48.9024472Z   clean: true
+Terraform Plan Prod	Checkout	2026-01-02T06:12:48.9025455Z   sparse-checkout-cone-mode: true
+Terraform Plan Prod	Checkout	2026-01-02T06:12:48.9026402Z   fetch-depth: 1
+Terraform Plan Prod	Checkout	2026-01-02T06:12:48.9027176Z   fetch-tags: false
+Terraform Plan Prod	Checkout	2026-01-02T06:12:48.9027987Z   show-progress: true
+Terraform Plan Prod	Checkout	2026-01-02T06:12:48.9028808Z   lfs: false
+Terraform Plan Prod	Checkout	2026-01-02T06:12:48.9029581Z   submodules: false
+Terraform Plan Prod	Checkout	2026-01-02T06:12:48.9030483Z   set-safe-directory: true
+Terraform Plan Prod	Checkout	2026-01-02T06:12:48.9031581Z env:
+Terraform Plan Prod	Checkout	2026-01-02T06:12:48.9032353Z   TF_VAR_github_owner: billnapier
+Terraform Plan Prod	Checkout	2026-01-02T06:12:48.9033422Z   TF_VAR_github_repo: calendarsync
+Terraform Plan Prod	Checkout	2026-01-02T06:12:48.9034384Z   TF_VAR_region: us-central1
+Terraform Plan Prod	Checkout	2026-01-02T06:12:48.9035623Z   TF_VAR_image_tag: latest
+Terraform Plan Prod	Checkout	2026-01-02T06:12:48.9036616Z   TF_VAR_project_id: calendarsync-napier
+Terraform Plan Prod	Checkout	2026-01-02T06:12:48.9037674Z   TF_VAR_service_name: python-cloudrun-app
+Terraform Plan Prod	Checkout	2026-01-02T06:12:48.9038784Z   TF_VAR_domain_name: calendarsync.billnapier.com
+Terraform Plan Prod	Checkout	2026-01-02T06:12:48.9039835Z ##[endgroup]
+Terraform Plan Prod	Checkout	2026-01-02T06:12:49.0187587Z Syncing repository: billnapier/calendarsync
+Terraform Plan Prod	Checkout	2026-01-02T06:12:49.0190085Z ##[group]Getting Git version info
+Terraform Plan Prod	Checkout	2026-01-02T06:12:49.0191395Z Working directory is '/home/runner/work/calendarsync/calendarsync'
+Terraform Plan Prod	Checkout	2026-01-02T06:12:49.0193276Z [command]/usr/bin/git version
+Terraform Plan Prod	Checkout	2026-01-02T06:12:49.0749623Z git version 2.52.0
+Terraform Plan Prod	Checkout	2026-01-02T06:12:49.0787592Z ##[endgroup]
+Terraform Plan Prod	Checkout	2026-01-02T06:12:49.0816746Z Temporarily overriding HOME='/home/runner/work/_temp/f2f0e7b2-4e09-4e76-b1fa-3186d0ca0a41' before making global git config changes
+Terraform Plan Prod	Checkout	2026-01-02T06:12:49.0826191Z Adding repository directory to the temporary git global config as a safe directory
+Terraform Plan Prod	Checkout	2026-01-02T06:12:49.0842405Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/calendarsync/calendarsync
+Terraform Plan Prod	Checkout	2026-01-02T06:12:49.1251549Z Deleting the contents of '/home/runner/work/calendarsync/calendarsync'
+Terraform Plan Prod	Checkout	2026-01-02T06:12:49.1256938Z ##[group]Initializing the repository
+Terraform Plan Prod	Checkout	2026-01-02T06:12:49.1263087Z [command]/usr/bin/git init /home/runner/work/calendarsync/calendarsync
+Terraform Plan Prod	Checkout	2026-01-02T06:12:49.6884911Z hint: Using 'master' as the name for the initial branch. This default branch name
+Terraform Plan Prod	Checkout	2026-01-02T06:12:49.6887091Z hint: will change to "main" in Git 3.0. To configure the initial branch name
+Terraform Plan Prod	Checkout	2026-01-02T06:12:49.6889288Z hint: to use in all of your new repositories, which will suppress this warning,
+Terraform Plan Prod	Checkout	2026-01-02T06:12:49.6889998Z hint: call:
+Terraform Plan Prod	Checkout	2026-01-02T06:12:49.6890368Z hint:
+Terraform Plan Prod	Checkout	2026-01-02T06:12:49.6890906Z hint: 	git config --global init.defaultBranch <name>
+Terraform Plan Prod	Checkout	2026-01-02T06:12:49.6891458Z hint:
+Terraform Plan Prod	Checkout	2026-01-02T06:12:49.6891987Z hint: Names commonly chosen instead of 'master' are 'main', 'trunk' and
+Terraform Plan Prod	Checkout	2026-01-02T06:12:49.6892856Z hint: 'development'. The just-created branch can be renamed via this command:
+Terraform Plan Prod	Checkout	2026-01-02T06:12:49.6893582Z hint:
+Terraform Plan Prod	Checkout	2026-01-02T06:12:49.6893981Z hint: 	git branch -m <name>
+Terraform Plan Prod	Checkout	2026-01-02T06:12:49.6894396Z hint:
+Terraform Plan Prod	Checkout	2026-01-02T06:12:49.6895176Z hint: Disable this message with "git config set advice.defaultBranchName false"
+Terraform Plan Prod	Checkout	2026-01-02T06:12:49.6896170Z Initialized empty Git repository in /home/runner/work/calendarsync/calendarsync/.git/
+Terraform Plan Prod	Checkout	2026-01-02T06:12:49.6910749Z [command]/usr/bin/git remote add origin https://github.com/billnapier/calendarsync
+Terraform Plan Prod	Checkout	2026-01-02T06:12:49.7790492Z ##[endgroup]
+Terraform Plan Prod	Checkout	2026-01-02T06:12:49.7791142Z ##[group]Disabling automatic garbage collection
+Terraform Plan Prod	Checkout	2026-01-02T06:12:49.7795737Z [command]/usr/bin/git config --local gc.auto 0
+Terraform Plan Prod	Checkout	2026-01-02T06:12:49.7826209Z ##[endgroup]
+Terraform Plan Prod	Checkout	2026-01-02T06:12:49.7827061Z ##[group]Setting up auth
+Terraform Plan Prod	Checkout	2026-01-02T06:12:49.7834336Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+Terraform Plan Prod	Checkout	2026-01-02T06:12:49.7865173Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+Terraform Plan Prod	Checkout	2026-01-02T06:12:49.8234389Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+Terraform Plan Prod	Checkout	2026-01-02T06:12:49.8265517Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+Terraform Plan Prod	Checkout	2026-01-02T06:12:49.8486262Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+Terraform Plan Prod	Checkout	2026-01-02T06:12:49.8524924Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+Terraform Plan Prod	Checkout	2026-01-02T06:12:49.8747434Z [command]/usr/bin/git config --local http.https://github.com/.extraheader AUTHORIZATION: basic ***
+Terraform Plan Prod	Checkout	2026-01-02T06:12:49.8782089Z ##[endgroup]
+Terraform Plan Prod	Checkout	2026-01-02T06:12:49.8782988Z ##[group]Fetching the repository
+Terraform Plan Prod	Checkout	2026-01-02T06:12:49.8791768Z [command]/usr/bin/git -c protocol.version=2 fetch --no-tags --prune --no-recurse-submodules --depth=1 origin +691114fcef12a26ba92bd46c3a5354cd7691e8ce:refs/remotes/origin/feature/add-workflow-dispatch
+Terraform Plan Prod	Checkout	2026-01-02T06:12:50.1000133Z From https://github.com/billnapier/calendarsync
+Terraform Plan Prod	Checkout	2026-01-02T06:12:50.1001801Z  * [new ref]         691114fcef12a26ba92bd46c3a5354cd7691e8ce -> origin/feature/add-workflow-dispatch
+Terraform Plan Prod	Checkout	2026-01-02T06:12:50.1036803Z ##[endgroup]
+Terraform Plan Prod	Checkout	2026-01-02T06:12:50.1037768Z ##[group]Determining the checkout info
+Terraform Plan Prod	Checkout	2026-01-02T06:12:50.1039248Z ##[endgroup]
+Terraform Plan Prod	Checkout	2026-01-02T06:12:50.1045190Z [command]/usr/bin/git sparse-checkout disable
+Terraform Plan Prod	Checkout	2026-01-02T06:12:50.1093640Z [command]/usr/bin/git config --local --unset-all extensions.worktreeConfig
+Terraform Plan Prod	Checkout	2026-01-02T06:12:50.1122315Z ##[group]Checking out the ref
+Terraform Plan Prod	Checkout	2026-01-02T06:12:50.1127524Z [command]/usr/bin/git checkout --progress --force -B feature/add-workflow-dispatch refs/remotes/origin/feature/add-workflow-dispatch
+Terraform Plan Prod	Checkout	2026-01-02T06:12:50.1202365Z Switched to a new branch 'feature/add-workflow-dispatch'
+Terraform Plan Prod	Checkout	2026-01-02T06:12:50.1205696Z branch 'feature/add-workflow-dispatch' set up to track 'origin/feature/add-workflow-dispatch'.
+Terraform Plan Prod	Checkout	2026-01-02T06:12:50.1212116Z ##[endgroup]
+Terraform Plan Prod	Checkout	2026-01-02T06:12:50.1250966Z [command]/usr/bin/git log -1 --format=%H
+Terraform Plan Prod	Checkout	2026-01-02T06:12:50.1275506Z 691114fcef12a26ba92bd46c3a5354cd7691e8ce
+Terraform Plan Prod	Authenticate to Google Cloud	﻿2026-01-02T06:12:50.1514965Z ##[group]Run google-github-actions/auth@c200f3691d83b41bf9bbd8638997a462592937ed
+Terraform Plan Prod	Authenticate to Google Cloud	2026-01-02T06:12:50.1515471Z with:
+Terraform Plan Prod	Authenticate to Google Cloud	2026-01-02T06:12:50.1516216Z   workload_identity_provider: ***
+Terraform Plan Prod	Authenticate to Google Cloud	2026-01-02T06:12:50.1516686Z   service_account: ***
+Terraform Plan Prod	Authenticate to Google Cloud	2026-01-02T06:12:50.1581002Z   create_credentials_file: true
+Terraform Plan Prod	Authenticate to Google Cloud	2026-01-02T06:12:50.1581415Z   export_environment_variables: true
+Terraform Plan Prod	Authenticate to Google Cloud	2026-01-02T06:12:50.1581724Z   universe: googleapis.com
+Terraform Plan Prod	Authenticate to Google Cloud	2026-01-02T06:12:50.1582042Z   cleanup_credentials: true
+Terraform Plan Prod	Authenticate to Google Cloud	2026-01-02T06:12:50.1582364Z   access_token_lifetime: 3600s
+Terraform Plan Prod	Authenticate to Google Cloud	2026-01-02T06:12:50.1582859Z   access_token_scopes: https://www.googleapis.com/auth/cloud-platform
+Terraform Plan Prod	Authenticate to Google Cloud	2026-01-02T06:12:50.1583295Z   id_token_include_email: false
+Terraform Plan Prod	Authenticate to Google Cloud	2026-01-02T06:12:50.1583566Z env:
+Terraform Plan Prod	Authenticate to Google Cloud	2026-01-02T06:12:50.1583780Z   TF_VAR_github_owner: billnapier
+Terraform Plan Prod	Authenticate to Google Cloud	2026-01-02T06:12:50.1584059Z   TF_VAR_github_repo: calendarsync
+Terraform Plan Prod	Authenticate to Google Cloud	2026-01-02T06:12:50.1584334Z   TF_VAR_region: us-central1
+Terraform Plan Prod	Authenticate to Google Cloud	2026-01-02T06:12:50.1584724Z   TF_VAR_image_tag: latest
+Terraform Plan Prod	Authenticate to Google Cloud	2026-01-02T06:12:50.1585142Z   TF_VAR_project_id: calendarsync-napier
+Terraform Plan Prod	Authenticate to Google Cloud	2026-01-02T06:12:50.1585497Z   TF_VAR_service_name: python-cloudrun-app
+Terraform Plan Prod	Authenticate to Google Cloud	2026-01-02T06:12:50.1585859Z   TF_VAR_domain_name: calendarsync.billnapier.com
+Terraform Plan Prod	Authenticate to Google Cloud	2026-01-02T06:12:50.1586253Z ##[endgroup]
+Terraform Plan Prod	Authenticate to Google Cloud	2026-01-02T06:12:50.3683375Z Created credentials file at "/home/runner/work/calendarsync/calendarsync/gha-creds-b6153f8f4633812a.json"
+Terraform Plan Prod	Setup Terraform	﻿2026-01-02T06:12:50.5079876Z ##[group]Run hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd
+Terraform Plan Prod	Setup Terraform	2026-01-02T06:12:50.5080314Z with:
+Terraform Plan Prod	Setup Terraform	2026-01-02T06:12:50.5080534Z   cli_config_credentials_hostname: app.terraform.io
+Terraform Plan Prod	Setup Terraform	2026-01-02T06:12:50.5080819Z   terraform_version: latest
+Terraform Plan Prod	Setup Terraform	2026-01-02T06:12:50.5081041Z   terraform_wrapper: true
+Terraform Plan Prod	Setup Terraform	2026-01-02T06:12:50.5081243Z env:
+Terraform Plan Prod	Setup Terraform	2026-01-02T06:12:50.5081436Z   TF_VAR_github_owner: billnapier
+Terraform Plan Prod	Setup Terraform	2026-01-02T06:12:50.5081684Z   TF_VAR_github_repo: calendarsync
+Terraform Plan Prod	Setup Terraform	2026-01-02T06:12:50.5081943Z   TF_VAR_region: us-central1
+Terraform Plan Prod	Setup Terraform	2026-01-02T06:12:50.5082165Z   TF_VAR_image_tag: latest
+Terraform Plan Prod	Setup Terraform	2026-01-02T06:12:50.5082393Z   TF_VAR_project_id: calendarsync-napier
+Terraform Plan Prod	Setup Terraform	2026-01-02T06:12:50.5082671Z   TF_VAR_service_name: python-cloudrun-app
+Terraform Plan Prod	Setup Terraform	2026-01-02T06:12:50.5082958Z   TF_VAR_domain_name: calendarsync.billnapier.com
+Terraform Plan Prod	Setup Terraform	2026-01-02T06:12:50.5083525Z   CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE: /home/runner/work/calendarsync/calendarsync/gha-creds-b6153f8f4633812a.json
+Terraform Plan Prod	Setup Terraform	2026-01-02T06:12:50.5084261Z   GOOGLE_APPLICATION_CREDENTIALS: /home/runner/work/calendarsync/calendarsync/gha-creds-b6153f8f4633812a.json
+Terraform Plan Prod	Setup Terraform	2026-01-02T06:12:50.5085210Z   GOOGLE_GHA_CREDS_PATH: /home/runner/work/calendarsync/calendarsync/gha-creds-b6153f8f4633812a.json
+Terraform Plan Prod	Setup Terraform	2026-01-02T06:12:50.5085686Z   CLOUDSDK_CORE_PROJECT: calendarsync-napier-dev
+Terraform Plan Prod	Setup Terraform	2026-01-02T06:12:50.5085984Z   CLOUDSDK_PROJECT: calendarsync-napier-dev
+Terraform Plan Prod	Setup Terraform	2026-01-02T06:12:50.5086263Z   GCLOUD_PROJECT: calendarsync-napier-dev
+Terraform Plan Prod	Setup Terraform	2026-01-02T06:12:50.5086534Z   GCP_PROJECT: calendarsync-napier-dev
+Terraform Plan Prod	Setup Terraform	2026-01-02T06:12:50.5086810Z   GOOGLE_CLOUD_PROJECT: calendarsync-napier-dev
+Terraform Plan Prod	Setup Terraform	2026-01-02T06:12:50.5087071Z ##[endgroup]
+Terraform Plan Prod	Setup Terraform	2026-01-02T06:12:50.9981341Z [command]/usr/bin/unzip -o -q /home/runner/work/_temp/5d206b2e-c0a4-4cc1-869c-808cffff7b0b
+Terraform Plan Prod	Debug Identity	﻿2026-01-02T06:12:51.6923086Z ##[group]Run echo "Debug: Authenticated Identity"
+Terraform Plan Prod	Debug Identity	2026-01-02T06:12:51.6923517Z [36;1mecho "Debug: Authenticated Identity"[0m
+Terraform Plan Prod	Debug Identity	2026-01-02T06:12:51.6923802Z [36;1mgcloud auth list[0m
+Terraform Plan Prod	Debug Identity	2026-01-02T06:12:51.6924025Z [36;1mgcloud config list[0m
+Terraform Plan Prod	Debug Identity	2026-01-02T06:12:51.6924743Z [36;1mecho "Service Account Email: ***"[0m
+Terraform Plan Prod	Debug Identity	2026-01-02T06:12:51.6960809Z shell: /usr/bin/bash -e {0}
+Terraform Plan Prod	Debug Identity	2026-01-02T06:12:51.6961056Z env:
+Terraform Plan Prod	Debug Identity	2026-01-02T06:12:51.6961246Z   TF_VAR_github_owner: billnapier
+Terraform Plan Prod	Debug Identity	2026-01-02T06:12:51.6961562Z   TF_VAR_github_repo: calendarsync
+Terraform Plan Prod	Debug Identity	2026-01-02T06:12:51.6961804Z   TF_VAR_region: us-central1
+Terraform Plan Prod	Debug Identity	2026-01-02T06:12:51.6962014Z   TF_VAR_image_tag: latest
+Terraform Plan Prod	Debug Identity	2026-01-02T06:12:51.6962239Z   TF_VAR_project_id: calendarsync-napier
+Terraform Plan Prod	Debug Identity	2026-01-02T06:12:51.6962513Z   TF_VAR_service_name: python-cloudrun-app
+Terraform Plan Prod	Debug Identity	2026-01-02T06:12:51.6962811Z   TF_VAR_domain_name: calendarsync.billnapier.com
+Terraform Plan Prod	Debug Identity	2026-01-02T06:12:51.6963359Z   CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE: /home/runner/work/calendarsync/calendarsync/gha-creds-b6153f8f4633812a.json
+Terraform Plan Prod	Debug Identity	2026-01-02T06:12:51.6964123Z   GOOGLE_APPLICATION_CREDENTIALS: /home/runner/work/calendarsync/calendarsync/gha-creds-b6153f8f4633812a.json
+Terraform Plan Prod	Debug Identity	2026-01-02T06:12:51.6964918Z   GOOGLE_GHA_CREDS_PATH: /home/runner/work/calendarsync/calendarsync/gha-creds-b6153f8f4633812a.json
+Terraform Plan Prod	Debug Identity	2026-01-02T06:12:51.6965383Z   CLOUDSDK_CORE_PROJECT: calendarsync-napier-dev
+Terraform Plan Prod	Debug Identity	2026-01-02T06:12:51.6965689Z   CLOUDSDK_PROJECT: calendarsync-napier-dev
+Terraform Plan Prod	Debug Identity	2026-01-02T06:12:51.6965961Z   GCLOUD_PROJECT: calendarsync-napier-dev
+Terraform Plan Prod	Debug Identity	2026-01-02T06:12:51.6966220Z   GCP_PROJECT: calendarsync-napier-dev
+Terraform Plan Prod	Debug Identity	2026-01-02T06:12:51.6966491Z   GOOGLE_CLOUD_PROJECT: calendarsync-napier-dev
+Terraform Plan Prod	Debug Identity	2026-01-02T06:12:51.6966868Z   TERRAFORM_CLI_PATH: /home/runner/work/_temp/8940fed6-a3d9-4ab1-8051-d8f81b8895eb
+Terraform Plan Prod	Debug Identity	2026-01-02T06:12:51.6967225Z ##[endgroup]
+Terraform Plan Prod	Debug Identity	2026-01-02T06:12:51.7038215Z Debug: Authenticated Identity
+Terraform Plan Prod	Debug Identity	2026-01-02T06:12:56.0189574Z 
+Terraform Plan Prod	Debug Identity	2026-01-02T06:12:56.0190091Z No credentialed accounts.
+Terraform Plan Prod	Debug Identity	2026-01-02T06:12:56.0190409Z 
+Terraform Plan Prod	Debug Identity	2026-01-02T06:12:56.0190511Z To login, run:
+Terraform Plan Prod	Debug Identity	2026-01-02T06:12:56.0190791Z   $ gcloud auth login `ACCOUNT`
+Terraform Plan Prod	Debug Identity	2026-01-02T06:12:56.0190990Z 
+Terraform Plan Prod	Debug Identity	2026-01-02T06:12:57.6715571Z [auth]
+Terraform Plan Prod	Debug Identity	2026-01-02T06:12:57.6716312Z credential_file_override = /home/runner/work/calendarsync/calendarsync/gha-creds-b6153f8f4633812a.json
+Terraform Plan Prod	Debug Identity	2026-01-02T06:12:57.6716974Z [core]
+Terraform Plan Prod	Debug Identity	2026-01-02T06:12:57.6717330Z disable_usage_reporting = True
+Terraform Plan Prod	Debug Identity	2026-01-02T06:12:57.6717744Z project = calendarsync-napier-dev
+Terraform Plan Prod	Debug Identity	2026-01-02T06:12:57.6718209Z 
+Terraform Plan Prod	Debug Identity	2026-01-02T06:12:57.6718380Z Your active configuration is: [default]
+Terraform Plan Prod	Debug Identity	2026-01-02T06:12:57.7748570Z Service Account Email: ***
+Terraform Plan Prod	Terraform Init	﻿2026-01-02T06:12:57.7777945Z ##[group]Run terraform init
+Terraform Plan Prod	Terraform Init	2026-01-02T06:12:57.7778242Z [36;1mterraform init[0m
+Terraform Plan Prod	Terraform Init	2026-01-02T06:12:57.7810223Z shell: /usr/bin/bash -e {0}
+Terraform Plan Prod	Terraform Init	2026-01-02T06:12:57.7810454Z env:
+Terraform Plan Prod	Terraform Init	2026-01-02T06:12:57.7810638Z   TF_VAR_github_owner: billnapier
+Terraform Plan Prod	Terraform Init	2026-01-02T06:12:57.7810887Z   TF_VAR_github_repo: calendarsync
+Terraform Plan Prod	Terraform Init	2026-01-02T06:12:57.7811123Z   TF_VAR_region: us-central1
+Terraform Plan Prod	Terraform Init	2026-01-02T06:12:57.7811335Z   TF_VAR_image_tag: latest
+Terraform Plan Prod	Terraform Init	2026-01-02T06:12:57.7811571Z   TF_VAR_project_id: calendarsync-napier
+Terraform Plan Prod	Terraform Init	2026-01-02T06:12:57.7811847Z   TF_VAR_service_name: python-cloudrun-app
+Terraform Plan Prod	Terraform Init	2026-01-02T06:12:57.7812151Z   TF_VAR_domain_name: calendarsync.billnapier.com
+Terraform Plan Prod	Terraform Init	2026-01-02T06:12:57.7812708Z   CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE: /home/runner/work/calendarsync/calendarsync/gha-creds-b6153f8f4633812a.json
+Terraform Plan Prod	Terraform Init	2026-01-02T06:12:57.7813454Z   GOOGLE_APPLICATION_CREDENTIALS: /home/runner/work/calendarsync/calendarsync/gha-creds-b6153f8f4633812a.json
+Terraform Plan Prod	Terraform Init	2026-01-02T06:12:57.7814112Z   GOOGLE_GHA_CREDS_PATH: /home/runner/work/calendarsync/calendarsync/gha-creds-b6153f8f4633812a.json
+Terraform Plan Prod	Terraform Init	2026-01-02T06:12:57.7814827Z   CLOUDSDK_CORE_PROJECT: calendarsync-napier-dev
+Terraform Plan Prod	Terraform Init	2026-01-02T06:12:57.7815147Z   CLOUDSDK_PROJECT: calendarsync-napier-dev
+Terraform Plan Prod	Terraform Init	2026-01-02T06:12:57.7815420Z   GCLOUD_PROJECT: calendarsync-napier-dev
+Terraform Plan Prod	Terraform Init	2026-01-02T06:12:57.7815690Z   GCP_PROJECT: calendarsync-napier-dev
+Terraform Plan Prod	Terraform Init	2026-01-02T06:12:57.7815968Z   GOOGLE_CLOUD_PROJECT: calendarsync-napier-dev
+Terraform Plan Prod	Terraform Init	2026-01-02T06:12:57.7816341Z   TERRAFORM_CLI_PATH: /home/runner/work/_temp/8940fed6-a3d9-4ab1-8051-d8f81b8895eb
+Terraform Plan Prod	Terraform Init	2026-01-02T06:12:57.7816699Z ##[endgroup]
+Terraform Plan Prod	Terraform Init	2026-01-02T06:13:00.0507980Z [0m[1mInitializing the backend...[0m
+Terraform Plan Prod	Terraform Init	2026-01-02T06:13:00.4297376Z [0m[32m
+Terraform Plan Prod	Terraform Init	2026-01-02T06:13:00.4298117Z Successfully configured the backend "gcs"! Terraform will automatically
+Terraform Plan Prod	Terraform Init	2026-01-02T06:13:00.4299360Z use this backend unless the backend configuration changes.[0m
+Terraform Plan Prod	Terraform Init	2026-01-02T06:13:00.6022601Z [0m[1mInitializing provider plugins...[0m
+Terraform Plan Prod	Terraform Init	2026-01-02T06:13:00.6023356Z - Reusing previous version of hashicorp/google from the dependency lock file
+Terraform Plan Prod	Terraform Init	2026-01-02T06:13:00.6549771Z - Reusing previous version of hashicorp/google-beta from the dependency lock file
+Terraform Plan Prod	Terraform Init	2026-01-02T06:13:00.7447573Z - Installing hashicorp/google v4.85.0...
+Terraform Plan Prod	Terraform Init	2026-01-02T06:13:01.8592901Z - Installed hashicorp/google v4.85.0 (signed by HashiCorp)
+Terraform Plan Prod	Terraform Init	2026-01-02T06:13:01.9313961Z - Installing hashicorp/google-beta v4.85.0...
+Terraform Plan Prod	Terraform Init	2026-01-02T06:13:03.1041231Z - Installed hashicorp/google-beta v4.85.0 (signed by HashiCorp)
+Terraform Plan Prod	Terraform Init	2026-01-02T06:13:03.1041838Z 
+Terraform Plan Prod	Terraform Init	2026-01-02T06:13:03.1042513Z [0m[1m[32mTerraform has been successfully initialized![0m[32m[0m
+Terraform Plan Prod	Terraform Init	2026-01-02T06:13:03.1043189Z [0m[32m
+Terraform Plan Prod	Terraform Init	2026-01-02T06:13:03.1043760Z You may now begin working with Terraform. Try running "terraform plan" to see
+Terraform Plan Prod	Terraform Init	2026-01-02T06:13:03.1044967Z any changes that are required for your infrastructure. All Terraform commands
+Terraform Plan Prod	Terraform Init	2026-01-02T06:13:03.1045626Z should now work.
+Terraform Plan Prod	Terraform Init	2026-01-02T06:13:03.1045824Z 
+Terraform Plan Prod	Terraform Init	2026-01-02T06:13:03.1046165Z If you ever set or change modules or backend configuration for Terraform,
+Terraform Plan Prod	Terraform Init	2026-01-02T06:13:03.1047132Z rerun this command to reinitialize your working directory. If you forget, other
+Terraform Plan Prod	Terraform Init	2026-01-02T06:13:03.1048237Z commands will detect it and remind you to do so if necessary.[0m
+Terraform Plan Prod	Select Workspace	﻿2026-01-02T06:13:03.1372884Z ##[group]Run terraform workspace select prod
+Terraform Plan Prod	Select Workspace	2026-01-02T06:13:03.1373262Z [36;1mterraform workspace select prod[0m
+Terraform Plan Prod	Select Workspace	2026-01-02T06:13:03.1405507Z shell: /usr/bin/bash -e {0}
+Terraform Plan Prod	Select Workspace	2026-01-02T06:13:03.1405736Z env:
+Terraform Plan Prod	Select Workspace	2026-01-02T06:13:03.1405919Z   TF_VAR_github_owner: billnapier
+Terraform Plan Prod	Select Workspace	2026-01-02T06:13:03.1406162Z   TF_VAR_github_repo: calendarsync
+Terraform Plan Prod	Select Workspace	2026-01-02T06:13:03.1406397Z   TF_VAR_region: us-central1
+Terraform Plan Prod	Select Workspace	2026-01-02T06:13:03.1406605Z   TF_VAR_image_tag: latest
+Terraform Plan Prod	Select Workspace	2026-01-02T06:13:03.1406831Z   TF_VAR_project_id: calendarsync-napier
+Terraform Plan Prod	Select Workspace	2026-01-02T06:13:03.1407111Z   TF_VAR_service_name: python-cloudrun-app
+Terraform Plan Prod	Select Workspace	2026-01-02T06:13:03.1407402Z   TF_VAR_domain_name: calendarsync.billnapier.com
+Terraform Plan Prod	Select Workspace	2026-01-02T06:13:03.1407937Z   CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE: /home/runner/work/calendarsync/calendarsync/gha-creds-b6153f8f4633812a.json
+Terraform Plan Prod	Select Workspace	2026-01-02T06:13:03.1408660Z   GOOGLE_APPLICATION_CREDENTIALS: /home/runner/work/calendarsync/calendarsync/gha-creds-b6153f8f4633812a.json
+Terraform Plan Prod	Select Workspace	2026-01-02T06:13:03.1409317Z   GOOGLE_GHA_CREDS_PATH: /home/runner/work/calendarsync/calendarsync/gha-creds-b6153f8f4633812a.json
+Terraform Plan Prod	Select Workspace	2026-01-02T06:13:03.1409804Z   CLOUDSDK_CORE_PROJECT: calendarsync-napier-dev
+Terraform Plan Prod	Select Workspace	2026-01-02T06:13:03.1410094Z   CLOUDSDK_PROJECT: calendarsync-napier-dev
+Terraform Plan Prod	Select Workspace	2026-01-02T06:13:03.1410361Z   GCLOUD_PROJECT: calendarsync-napier-dev
+Terraform Plan Prod	Select Workspace	2026-01-02T06:13:03.1410624Z   GCP_PROJECT: calendarsync-napier-dev
+Terraform Plan Prod	Select Workspace	2026-01-02T06:13:03.1410895Z   GOOGLE_CLOUD_PROJECT: calendarsync-napier-dev
+Terraform Plan Prod	Select Workspace	2026-01-02T06:13:03.1411273Z   TERRAFORM_CLI_PATH: /home/runner/work/_temp/8940fed6-a3d9-4ab1-8051-d8f81b8895eb
+Terraform Plan Prod	Select Workspace	2026-01-02T06:13:03.1411623Z ##[endgroup]
+Terraform Plan Prod	Select Workspace	2026-01-02T06:13:03.7505158Z [0m[32mSwitched to workspace "prod".[0m
+Terraform Plan Prod	Terraform Validate	﻿2026-01-02T06:13:03.7640731Z ##[group]Run terraform validate
+Terraform Plan Prod	Terraform Validate	2026-01-02T06:13:03.7641220Z [36;1mterraform validate[0m
+Terraform Plan Prod	Terraform Validate	2026-01-02T06:13:03.7687152Z shell: /usr/bin/bash -e {0}
+Terraform Plan Prod	Terraform Validate	2026-01-02T06:13:03.7687537Z env:
+Terraform Plan Prod	Terraform Validate	2026-01-02T06:13:03.7687870Z   TF_VAR_github_owner: billnapier
+Terraform Plan Prod	Terraform Validate	2026-01-02T06:13:03.7688319Z   TF_VAR_github_repo: calendarsync
+Terraform Plan Prod	Terraform Validate	2026-01-02T06:13:03.7688843Z   TF_VAR_region: us-central1
+Terraform Plan Prod	Terraform Validate	2026-01-02T06:13:03.7689243Z   TF_VAR_image_tag: latest
+Terraform Plan Prod	Terraform Validate	2026-01-02T06:13:03.7689655Z   TF_VAR_project_id: calendarsync-napier
+Terraform Plan Prod	Terraform Validate	2026-01-02T06:13:03.7690146Z   TF_VAR_service_name: python-cloudrun-app
+Terraform Plan Prod	Terraform Validate	2026-01-02T06:13:03.7690674Z   TF_VAR_domain_name: calendarsync.billnapier.com
+Terraform Plan Prod	Terraform Validate	2026-01-02T06:13:03.7691624Z   CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE: /home/runner/work/calendarsync/calendarsync/gha-creds-b6153f8f4633812a.json
+Terraform Plan Prod	Terraform Validate	2026-01-02T06:13:03.7692924Z   GOOGLE_APPLICATION_CREDENTIALS: /home/runner/work/calendarsync/calendarsync/gha-creds-b6153f8f4633812a.json
+Terraform Plan Prod	Terraform Validate	2026-01-02T06:13:03.7694427Z   GOOGLE_GHA_CREDS_PATH: /home/runner/work/calendarsync/calendarsync/gha-creds-b6153f8f4633812a.json
+Terraform Plan Prod	Terraform Validate	2026-01-02T06:13:03.7695577Z   CLOUDSDK_CORE_PROJECT: calendarsync-napier-dev
+Terraform Plan Prod	Terraform Validate	2026-01-02T06:13:03.7696119Z   CLOUDSDK_PROJECT: calendarsync-napier-dev
+Terraform Plan Prod	Terraform Validate	2026-01-02T06:13:03.7696613Z   GCLOUD_PROJECT: calendarsync-napier-dev
+Terraform Plan Prod	Terraform Validate	2026-01-02T06:13:03.7697092Z   GCP_PROJECT: calendarsync-napier-dev
+Terraform Plan Prod	Terraform Validate	2026-01-02T06:13:03.7697592Z   GOOGLE_CLOUD_PROJECT: calendarsync-napier-dev
+Terraform Plan Prod	Terraform Validate	2026-01-02T06:13:03.7698276Z   TERRAFORM_CLI_PATH: /home/runner/work/_temp/8940fed6-a3d9-4ab1-8051-d8f81b8895eb
+Terraform Plan Prod	Terraform Validate	2026-01-02T06:13:03.7698916Z ##[endgroup]
+Terraform Plan Prod	Terraform Validate	2026-01-02T06:13:04.6769061Z [32m[1mSuccess![0m The configuration is valid.
+Terraform Plan Prod	Terraform Validate	2026-01-02T06:13:04.6769674Z [0m
+Terraform Plan Prod	Terraform Plan	﻿2026-01-02T06:13:04.6908863Z ##[group]Run terraform plan -no-color -input=false -var-file=prod.tfvars
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:04.6909366Z [36;1mterraform plan -no-color -input=false -var-file=prod.tfvars[0m
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:04.6942965Z shell: /usr/bin/bash -e {0}
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:04.6943209Z env:
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:04.6943395Z   TF_VAR_github_owner: billnapier
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:04.6943650Z   TF_VAR_github_repo: calendarsync
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:04.6943891Z   TF_VAR_region: us-central1
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:04.6944101Z   TF_VAR_image_tag: latest
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:04.6944336Z   TF_VAR_project_id: calendarsync-napier
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:04.6944842Z   TF_VAR_service_name: python-cloudrun-app
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:04.6945153Z   TF_VAR_domain_name: calendarsync.billnapier.com
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:04.6945692Z   CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE: /home/runner/work/calendarsync/calendarsync/gha-creds-b6153f8f4633812a.json
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:04.6946424Z   GOOGLE_APPLICATION_CREDENTIALS: /home/runner/work/calendarsync/calendarsync/gha-creds-b6153f8f4633812a.json
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:04.6947116Z   GOOGLE_GHA_CREDS_PATH: /home/runner/work/calendarsync/calendarsync/gha-creds-b6153f8f4633812a.json
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:04.6947581Z   CLOUDSDK_CORE_PROJECT: calendarsync-napier-dev
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:04.6947904Z   CLOUDSDK_PROJECT: calendarsync-napier-dev
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:04.6948180Z   GCLOUD_PROJECT: calendarsync-napier-dev
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:04.6948591Z   GCP_PROJECT: calendarsync-napier-dev
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:04.6949109Z   GOOGLE_CLOUD_PROJECT: calendarsync-napier-dev
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:04.6949773Z   TERRAFORM_CLI_PATH: /home/runner/work/_temp/8940fed6-a3d9-4ab1-8051-d8f81b8895eb
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:04.6950345Z ##[endgroup]
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.1016378Z google_iam_workload_identity_pool.github_pool: Refreshing state... [id=projects/calendarsync-napier/locations/global/workloadIdentityPools/github-pool]
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.1169285Z google_project_service.artifact_registry_api: Refreshing state... [id=calendarsync-napier/artifactregistry.googleapis.com]
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.1170632Z google_project_service.cloudbuild_api: Refreshing state... [id=calendarsync-napier/cloudbuild.googleapis.com]
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.1172736Z google_project_service.run_api: Refreshing state... [id=calendarsync-napier/run.googleapis.com]
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.1176700Z data.google_project.project: Reading...
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.1177585Z google_project_service.firestore_api: Refreshing state... [id=calendarsync-napier/firestore.googleapis.com]
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.1178717Z google_project_service.iam_api: Refreshing state... [id=calendarsync-napier/iam.googleapis.com]
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.1179499Z data.google_iam_policy.noauth: Reading...
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.1180514Z google_project_service.cloudresourcemanager_api: Refreshing state... [id=calendarsync-napier/cloudresourcemanager.googleapis.com]
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.1192418Z data.google_iam_policy.noauth: Read complete after 0s [id=3450855414]
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.1201240Z google_project_service.serviceusage_api: Refreshing state... [id=calendarsync-napier/serviceusage.googleapis.com]
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.1205540Z google_project_service.iamcredentials_api: Refreshing state... [id=calendarsync-napier/iamcredentials.googleapis.com]
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.4170819Z google_project_service.secretmanager_api: Refreshing state... [id=calendarsync-napier/secretmanager.googleapis.com]
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.5189367Z google_service_account.github_actions: Refreshing state... [id=projects/calendarsync-napier/serviceAccounts/github-actions-sa@calendarsync-napier.iam.gserviceaccount.com]
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7315699Z 
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7316422Z Terraform used the selected providers to generate the following execution
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7317224Z plan. Resource actions are indicated with the following symbols:
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7317740Z   + create
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7317906Z 
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7318226Z Terraform planned the following actions, but then encountered a problem:
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7319876Z 
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7320827Z   # google_project_service.calendar_api will be created
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7341987Z 
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7345139Z Error: Error when reading or editing IAMBetaWorkloadIdentityPool "projects/calendarsync-napier/locations/global/workloadIdentityPools/github-pool": googleapi: Error 403: Caller does not have required permission to use project calendarsync-napier. Grant the caller the roles/serviceusage.serviceUsageConsumer role, or a custom role with the serviceusage.services.use permission, by visiting https://console.developers.google.com/iam-admin/iam/project?project=calendarsync-napier and then retry. Propagation of the new permission may take a few minutes.
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7348197Z Details:
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7348502Z [
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7348776Z   {
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7349142Z     "@type": "type.googleapis.com/google.rpc.ErrorInfo",
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7349645Z     "domain": "googleapis.com",
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7350025Z     "metadata": {
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7350400Z       "consumer": "projects/calendarsync-napier",
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7350900Z       "containerInfo": "calendarsync-napier",
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7351391Z       "service": "iam.googleapis.com"
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7351785Z     },
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7352095Z     "reason": "USER_PROJECT_DENIED"
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7352483Z   },
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7352757Z   {
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7353158Z     "@type": "type.googleapis.com/google.rpc.LocalizedMessage",
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7353662Z     "locale": "en-US",
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7356204Z     "message": "Caller does not have required permission to use project calendarsync-napier. Grant the caller the roles/serviceusage.serviceUsageConsumer role, or a custom role with the serviceusage.services.use permission, by visiting https://console.developers.google.com/iam-admin/iam/project?project=calendarsync-napier and then retry. Propagation of the new permission may take a few minutes."
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7358586Z   },
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7358871Z   {
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7359231Z     "@type": "type.googleapis.com/google.rpc.Help",
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7359687Z     "links": [
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7359992Z       {
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7360362Z         "description": "Google developer console IAM admin",
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7361224Z         "url": "https://console.developers.google.com/iam-admin/iam/project?project=calendarsync-napier"
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7361970Z       }
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7362243Z     ]
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7362607Z   + resource "google_project_service" "calendar_api" {
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7363110Z       + disable_on_destroy = false
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7363537Z       + id                 = (known after apply)
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7363987Z       + project            = (known after apply)
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7364502Z       + service            = "calendar-json.googleapis.com"
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7365193Z     }
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7365354Z 
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7365526Z Plan: 1 to add, 0 to change, 0 to destroy.
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7365963Z   }
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7366231Z ]
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7366396Z 
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7366610Z   with google_iam_workload_identity_pool.github_pool,
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7367290Z   on iam.tf line 1, in resource "google_iam_workload_identity_pool" "github_pool":
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7368054Z    1: resource "google_iam_workload_identity_pool" "github_pool" {
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7368783Z 
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7368791Z 
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7370264Z Error: Error when reading or editing Service Account "projects/calendarsync-napier/serviceAccounts/github-actions-sa@calendarsync-napier.iam.gserviceaccount.com": googleapi: Error 403: Permission 'iam.serviceAccounts.get' denied on resource (or it may not exist).
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7372003Z Details:
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7372304Z [
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7372578Z   {
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7372956Z     "@type": "type.googleapis.com/google.rpc.ErrorInfo",
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7373472Z     "domain": "iam.googleapis.com",
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7373882Z     "metadata": {
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7374268Z       "permission": "iam.serviceAccounts.get"
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7374917Z     },
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7375256Z     "reason": "IAM_PERMISSION_DENIED"
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7375991Z   }
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7376263Z ]
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7376566Z , forbidden
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7376753Z 
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7376952Z   with google_service_account.github_actions,
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7377577Z   on iam.tf line 25, in resource "google_service_account" "github_actions":
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7378244Z   25: resource "google_service_account" "github_actions" {
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7378540Z 
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7378546Z 
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7379029Z Error: Error when reading or editing Project Service calendarsync-napier/run.googleapis.com: googleapi: Error 403: The caller does not have permission, forbidden
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7379581Z 
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7379684Z   with google_project_service.run_api,
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7379997Z   on main.tf line 24, in resource "google_project_service" "run_api":
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7380353Z   24: resource "google_project_service" "run_api" {
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7380686Z 
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7380709Z 
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7381612Z Error: Error when reading or editing Project Service calendarsync-napier/artifactregistry.googleapis.com: googleapi: Error 403: The caller does not have permission, forbidden
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7382645Z 
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7382839Z   with google_project_service.artifact_registry_api,
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7383542Z   on main.tf line 34, in resource "google_project_service" "artifact_registry_api":
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7384248Z   34: resource "google_project_service" "artifact_registry_api" {
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7384797Z 
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7417244Z 
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7418510Z Error: Error when reading or editing Project Service calendarsync-napier/cloudbuild.googleapis.com: googleapi: Error 403: The caller does not have permission, forbidden
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7419744Z 
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7420013Z   with google_project_service.cloudbuild_api,
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7421843Z   on main.tf line 39, in resource "google_project_service" "cloudbuild_api":
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7422461Z   39: resource "google_project_service" "cloudbuild_api" {
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7422826Z 
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7442824Z 
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7445687Z Error: Error when reading or editing Project Service calendarsync-napier/iam.googleapis.com: googleapi: Error 403: The caller does not have permission, forbidden
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7448405Z 
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7448618Z   with google_project_service.iam_api,
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7449224Z   on main.tf line 44, in resource "google_project_service" "iam_api":
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7449866Z   44: resource "google_project_service" "iam_api" {
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7450211Z 
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7462858Z 
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7464281Z Error: Error when reading or editing Project Service calendarsync-napier/cloudresourcemanager.googleapis.com: googleapi: Error 403: The caller does not have permission, forbidden
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7466513Z 
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7466769Z   with google_project_service.cloudresourcemanager_api,
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7467490Z   on main.tf line 49, in resource "google_project_service" "cloudresourcemanager_api":
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7468267Z   49: resource "google_project_service" "cloudresourcemanager_api" {
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7469096Z 
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7480398Z 
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7481563Z Error: Error when reading or editing Project Service calendarsync-napier/iamcredentials.googleapis.com: googleapi: Error 403: The caller does not have permission, forbidden
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7482635Z 
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7482841Z   with google_project_service.iamcredentials_api,
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7483491Z   on main.tf line 54, in resource "google_project_service" "iamcredentials_api":
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7484179Z   54: resource "google_project_service" "iamcredentials_api" {
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7484731Z 
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7496696Z 
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7497213Z Error: the user does not have permission to access Project "calendarsync-napier" or it may not exist
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7497608Z 
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7497716Z   with data.google_project.project,
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7498239Z   on main.tf line 182, in data "google_project" "project":
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7498549Z  182: data "google_project" "project" {}
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7498723Z 
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7511116Z 
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7512069Z Error: Error when reading or editing Project Service calendarsync-napier/firestore.googleapis.com: googleapi: Error 403: The caller does not have permission, forbidden
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7513109Z 
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7513286Z   with google_project_service.firestore_api,
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7513892Z   on main.tf line 198, in resource "google_project_service" "firestore_api":
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7514705Z  198: resource "google_project_service" "firestore_api" {
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7515073Z 
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7527499Z 
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7528535Z Error: Error when reading or editing Project Service calendarsync-napier/secretmanager.googleapis.com: googleapi: Error 403: The caller does not have permission, forbidden
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7529582Z 
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7529793Z   with google_project_service.secretmanager_api,
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7530467Z   on main.tf line 215, in resource "google_project_service" "secretmanager_api":
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7531185Z  215: resource "google_project_service" "secretmanager_api" {
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7531573Z 
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7546969Z 
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7547871Z Error: Error when reading or editing Project Service calendarsync-napier/serviceusage.googleapis.com: googleapi: Error 403: The caller does not have permission, forbidden
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7548813Z 
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7549003Z   with google_project_service.serviceusage_api,
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7549539Z   on main.tf line 220, in resource "google_project_service" "serviceusage_api":
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7550040Z  220: resource "google_project_service" "serviceusage_api" {
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.7550293Z 
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.8372679Z ##[error]Terraform exited with code 1.
+Terraform Plan Prod	Terraform Plan	2026-01-02T06:13:07.8403319Z ##[error]Process completed with exit code 1.
+Terraform Plan Prod	Plan Status	﻿2026-01-02T06:13:07.8460631Z ##[group]Run exit 1
+Terraform Plan Prod	Plan Status	2026-01-02T06:13:07.8460863Z [36;1mexit 1[0m
+Terraform Plan Prod	Plan Status	2026-01-02T06:13:07.8493355Z shell: /usr/bin/bash -e {0}
+Terraform Plan Prod	Plan Status	2026-01-02T06:13:07.8493589Z env:
+Terraform Plan Prod	Plan Status	2026-01-02T06:13:07.8493774Z   TF_VAR_github_owner: billnapier
+Terraform Plan Prod	Plan Status	2026-01-02T06:13:07.8494045Z   TF_VAR_github_repo: calendarsync
+Terraform Plan Prod	Plan Status	2026-01-02T06:13:07.8494291Z   TF_VAR_region: us-central1
+Terraform Plan Prod	Plan Status	2026-01-02T06:13:07.8494507Z   TF_VAR_image_tag: latest
+Terraform Plan Prod	Plan Status	2026-01-02T06:13:07.8494997Z   TF_VAR_project_id: calendarsync-napier
+Terraform Plan Prod	Plan Status	2026-01-02T06:13:07.8495278Z   TF_VAR_service_name: python-cloudrun-app
+Terraform Plan Prod	Plan Status	2026-01-02T06:13:07.8495570Z   TF_VAR_domain_name: calendarsync.billnapier.com
+Terraform Plan Prod	Plan Status	2026-01-02T06:13:07.8496099Z   CLOUDSDK_AUTH_CREDENTIAL_FILE_OVERRIDE: /home/runner/work/calendarsync/calendarsync/gha-creds-b6153f8f4633812a.json
+Terraform Plan Prod	Plan Status	2026-01-02T06:13:07.8496811Z   GOOGLE_APPLICATION_CREDENTIALS: /home/runner/work/calendarsync/calendarsync/gha-creds-b6153f8f4633812a.json
+Terraform Plan Prod	Plan Status	2026-01-02T06:13:07.8497468Z   GOOGLE_GHA_CREDS_PATH: /home/runner/work/calendarsync/calendarsync/gha-creds-b6153f8f4633812a.json
+Terraform Plan Prod	Plan Status	2026-01-02T06:13:07.8497980Z   CLOUDSDK_CORE_PROJECT: calendarsync-napier-dev
+Terraform Plan Prod	Plan Status	2026-01-02T06:13:07.8498272Z   CLOUDSDK_PROJECT: calendarsync-napier-dev
+Terraform Plan Prod	Plan Status	2026-01-02T06:13:07.8498726Z   GCLOUD_PROJECT: calendarsync-napier-dev
+Terraform Plan Prod	Plan Status	2026-01-02T06:13:07.8498991Z   GCP_PROJECT: calendarsync-napier-dev
+Terraform Plan Prod	Plan Status	2026-01-02T06:13:07.8499264Z   GOOGLE_CLOUD_PROJECT: calendarsync-napier-dev
+Terraform Plan Prod	Plan Status	2026-01-02T06:13:07.8499641Z   TERRAFORM_CLI_PATH: /home/runner/work/_temp/8940fed6-a3d9-4ab1-8051-d8f81b8895eb
+Terraform Plan Prod	Plan Status	2026-01-02T06:13:07.8499994Z ##[endgroup]
+Terraform Plan Prod	Plan Status	2026-01-02T06:13:07.8552901Z ##[error]Process completed with exit code 1.
+Terraform Plan Prod	Post Authenticate to Google Cloud	﻿2026-01-02T06:13:07.8636794Z Post job cleanup.
+Terraform Plan Prod	Post Authenticate to Google Cloud	2026-01-02T06:13:07.9473144Z Removed exported credentials at "/home/runner/work/calendarsync/calendarsync/gha-creds-b6153f8f4633812a.json".
+Terraform Plan Prod	Post Checkout	﻿2026-01-02T06:13:07.9590723Z Post job cleanup.
+Terraform Plan Prod	Post Checkout	2026-01-02T06:13:08.0558575Z [command]/usr/bin/git version
+Terraform Plan Prod	Post Checkout	2026-01-02T06:13:08.0597642Z git version 2.52.0
+Terraform Plan Prod	Post Checkout	2026-01-02T06:13:08.0643360Z Temporarily overriding HOME='/home/runner/work/_temp/90d94c4d-36f2-4943-9e70-a29e5649dac7' before making global git config changes
+Terraform Plan Prod	Post Checkout	2026-01-02T06:13:08.0644804Z Adding repository directory to the temporary git global config as a safe directory
+Terraform Plan Prod	Post Checkout	2026-01-02T06:13:08.0657953Z [command]/usr/bin/git config --global --add safe.directory /home/runner/work/calendarsync/calendarsync
+Terraform Plan Prod	Post Checkout	2026-01-02T06:13:08.0696159Z [command]/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+Terraform Plan Prod	Post Checkout	2026-01-02T06:13:08.0730799Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+Terraform Plan Prod	Post Checkout	2026-01-02T06:13:08.0968495Z [command]/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+Terraform Plan Prod	Post Checkout	2026-01-02T06:13:08.0990446Z http.https://github.com/.extraheader
+Terraform Plan Prod	Post Checkout	2026-01-02T06:13:08.1003713Z [command]/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+Terraform Plan Prod	Post Checkout	2026-01-02T06:13:08.1034991Z [command]/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+Terraform Plan Prod	Post Checkout	2026-01-02T06:13:08.1260820Z [command]/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+Terraform Plan Prod	Post Checkout	2026-01-02T06:13:08.1293945Z [command]/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+Terraform Plan Prod	Complete job	﻿2026-01-02T06:13:08.1658886Z Cleaning up orphan processes
