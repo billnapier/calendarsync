@@ -595,8 +595,18 @@ def create_sync():
                     destination_summary = cal['summary']
                     break
         else:
-            # Fallback: could fetch again, but for now defaults to ID.
-            pass
+            # Fallback: fetch again to try and resolve the friendly name
+            try:
+                calendars = fetch_user_calendars(user['uid'])
+                if calendars:
+                    session['calendars'] = calendars
+                    session['calendars_timestamp'] = time.time()
+                    for cal in calendars:
+                        if cal['id'] == destination_id:
+                            destination_summary = cal['summary']
+                            break
+            except Exception as e: # pylint: disable=broad-exception-caught
+                app.logger.error("Failed to fetch calendars on POST fallback: %s", e)
 
         db = firestore.client()
         new_sync_ref = db.collection('syncs').document()
