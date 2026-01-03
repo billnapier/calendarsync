@@ -23,7 +23,11 @@ from googleapiclient.discovery import build
 import requests
 import icalendar
 
-from app.security import safe_requests_get
+
+try:
+    from app.security import safe_requests_get
+except ImportError:
+    from security import safe_requests_get
 
 
 # Initialize Firebase Admin SDK

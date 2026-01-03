@@ -19,6 +19,10 @@ on:
         type: string
         default: "us-central1"
         description: "GCP Region"
+      custom_url:
+        required: false
+        type: string
+        description: "Custom URL to checking smoke test against"
     secrets:
       wif_provider:
         required: true
@@ -68,3 +72,12 @@ jobs:
           service: ${{ inputs.service_name }}
           region: ${{ inputs.region }}
           image: ${{ inputs.region }}-docker.pkg.dev/${{ inputs.project_id }}/${{ inputs.service_name }}/${{ inputs.service_name }}:${{ github.sha }}
+
+      - name: Smoke Test
+        run: |
+          TARGET_URL="${{ inputs.custom_url }}"
+          if [ -z "$TARGET_URL" ]; then
+            TARGET_URL="${{ steps.deploy.outputs.url }}"
+          fi
+          echo "Smoke testing URL: $TARGET_URL"
+          curl -f "$TARGET_URL"
