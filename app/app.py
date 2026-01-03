@@ -356,6 +356,24 @@ def edit_sync(sync_id):
         )
 
     if request.method == "POST":
+        app.logger.info("DEBUG: Handling POST for edit_sync")
+        # Refresh calendars cache if needed
+        if (
+            "calendars" not in session
+            or time.time() - session.get("calendars_timestamp", 0) > 300
+        ):
+
+            try:
+                calendars = fetch_user_calendars(user["uid"])
+                session["calendars"] = calendars
+                session["calendars_timestamp"] = time.time()
+            except Exception as e:  # pylint: disable=broad-exception-caught
+                app.logger.error("Failed to fetch calendars on edit POST: %s", e)
+                calendars = session.get("calendars")
+        else:
+            # calendars = session.get("calendars") # Optimized out
+            pass
+
         return _handle_edit_sync_post(request, sync_ref, session.get("calendars"))
 
     return "Method not allowed", 405
@@ -586,24 +604,25 @@ def _handle_create_sync_post(user):
 
     # Lookup destination summary from cached calendars
     destination_summary = destination_id
-    if "calendars" in session:
-        for cal in session["calendars"]:
+    user_calendars = session.get("calendars")
+
+    # If calendars are missing from the session.
+    # We check for the *absence* of the key to avoid re-fetching if the user
+    # legitimately has an empty list of calendars.
+    if "calendars" not in session:
+        try:
+            user_calendars = fetch_user_calendars(user["uid"])
+            if user_calendars:
+                session["calendars"] = user_calendars
+                session["calendars_timestamp"] = time.time()
+        except Exception as e:  # pylint: disable=broad-exception-caught
+            app.logger.error("Failed to fetch calendars on create POST: %s", e)
+
+    if user_calendars:
+        for cal in user_calendars:
             if cal["id"] == destination_id:
                 destination_summary = cal["summary"]
                 break
-    else:
-        # Fallback: fetch again to try and resolve the friendly name
-        try:
-            calendars = fetch_user_calendars(user["uid"])
-            if calendars:
-                session["calendars"] = calendars
-                session["calendars_timestamp"] = time.time()
-                for cal in calendars:
-                    if cal["id"] == destination_id:
-                        destination_summary = cal["summary"]
-                        break
-        except Exception as e:  # pylint: disable=broad-exception-caught
-            app.logger.error("Failed to fetch calendars on POST fallback: %s", e)
 
     db = firestore.client()
     new_sync_ref = db.collection("syncs").document()
