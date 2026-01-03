@@ -68,3 +68,6 @@ jobs:
           service: ${{ inputs.service_name }}
           region: ${{ inputs.region }}
           image: ${{ inputs.region }}-docker.pkg.dev/${{ inputs.project_id }}/${{ inputs.service_name }}/${{ inputs.service_name }}:${{ github.sha }}
+
+      - name: Smoke Test
+        run: curl -f ${{ steps.deploy.outputs.url }}
