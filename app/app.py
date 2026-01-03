@@ -8,6 +8,7 @@ import logging
 import time
 from datetime import datetime, timezone
 import json
+import re
 from flask import Flask, render_template, request, session, redirect, url_for
 from werkzeug.middleware.proxy_fix import ProxyFix
 import firebase_admin
@@ -355,6 +356,15 @@ def edit_sync(sync_id):
         else:
             calendars = session.get("calendars")
 
+        if "sources" not in sync_data:
+            # Backward compatibility: Construct sources if missing
+            sources = []
+            old_icals = sync_data.get("source_icals", [])
+            old_prefix = sync_data.get("event_prefix", "").strip()
+            for url in old_icals:
+                sources.append({"url": url, "prefix": old_prefix})
+            sync_data["sources"] = sources
+
         return render_template(
             "edit_sync.html", user=user, sync=sync_data, calendars=calendars
         )
@@ -383,13 +393,31 @@ def edit_sync(sync_id):
     return "Method not allowed", 405
 
 
+def _get_sources_from_form(form):
+    """Helper to extract sources from form data and sanitize them."""
+    urls = form.getlist("source_urls")
+    prefixes = form.getlist("source_prefixes")
+    sources = []
+
+    for i, url in enumerate(urls):
+        url = url.strip()
+        if not url:
+            continue
+        prefix = ""
+        if i < len(prefixes):
+            raw_prefix = prefixes[i].strip()
+            # Allow alphanumerics, spaces, dashes, underscores, brackets
+            # Remove anything else to prevent HTML injection etc.
+            prefix = re.sub(r"[^a-zA-Z0-9 \-_\[\]\(\)]", "", raw_prefix)
+
+        sources.append({"url": url, "prefix": prefix})
+    return sources
+
+
 def _handle_edit_sync_post(req, sync_ref, calendars):
     """Handle POST request for edit_sync."""
     destination_id = req.form.get("destination_calendar_id")
-    ical_urls = req.form.getlist("ical_urls")
-    event_prefix = req.form.get("event_prefix", "").strip()
-
-    ical_urls = [url for url in ical_urls if url.strip()]
+    sources = _get_sources_from_form(req.form)
 
     if not destination_id:
         return "Destination Calendar ID is required", 400
@@ -405,7 +433,8 @@ def _handle_edit_sync_post(req, sync_ref, calendars):
     # Re-fetch source names
     source_names = {}
     try:
-        for url in ical_urls:
+        for source in sources:
+            url = source["url"]
             source_names[url] = get_calendar_name_from_ical(url)
     except Exception as e:  # pylint: disable=broad-exception-caught
         app.logger.warning("Failed to refresh names on edit: %s", e)
@@ -414,9 +443,8 @@ def _handle_edit_sync_post(req, sync_ref, calendars):
         {
             "destination_calendar_id": destination_id,
             "destination_calendar_summary": destination_summary,
-            "source_icals": ical_urls,
+            "sources": sources,
             "source_names": source_names,
-            "event_prefix": event_prefix,
             "updated_at": firestore.SERVER_TIMESTAMP,  # pylint: disable=no-member
         }
     )
@@ -459,12 +487,18 @@ def _calculate_end_time(start_dt_prop, duration_prop):
     return {"date": end_dt_obj.isoformat()}
 
 
-def _fetch_source_events(source_icals):
-    """Fetch and parse events from source iCal URLs."""
-    all_events = []
+def _fetch_source_events(sources):
+    """
+    Fetch and parse events from source iCal URLs.
+    Returns a list of dicts: {'component': event, 'prefix': prefix}
+    """
+    all_events_items = []
     source_names = {}
 
-    for url in source_icals:
+    for source in sources:
+        url = source["url"]
+        prefix = source.get("prefix", "")
+
         try:
             response = safe_requests_get(url, timeout=10)
             response.raise_for_status()
@@ -476,7 +510,7 @@ def _fetch_source_events(source_icals):
 
             for component in cal.walk():
                 if component.name == "VEVENT":
-                    all_events.append(component)
+                    all_events_items.append({"component": component, "prefix": prefix})
         except (
             requests.exceptions.RequestException,
             ValueError,
@@ -484,11 +518,14 @@ def _fetch_source_events(source_icals):
             app.logger.error("Failed to fetch/parse %s: %s", url, e)
             source_names[url] = f"{url} (Failed)"
 
-    return all_events, source_names
+    return all_events_items, source_names
 
 
-def _batch_upsert_events(service, destination_id, events, event_prefix):
-    """Batch upsert events to Google Calendar."""
+def _batch_upsert_events(service, destination_id, events_items):
+    """
+    Batch upsert events to Google Calendar.
+    events_items: list of {'component': event_obj, 'prefix': str}
+    """
     # pylint: disable=no-member
     batch = service.new_batch_http_request()
 
@@ -496,7 +533,10 @@ def _batch_upsert_events(service, destination_id, events, event_prefix):
         if exception:
             app.logger.error("Failed to import event %s: %s", request_id, exception)
 
-    for event in events:
+    for item in events_items:
+        event = item["component"]
+        prefix = item["prefix"]
+
         uid = event.get("UID")
         if not uid:
             continue
@@ -512,8 +552,8 @@ def _batch_upsert_events(service, destination_id, events, event_prefix):
             continue
 
         summary = str(event.get("SUMMARY", ""))
-        if event_prefix:
-            summary = f"[{event_prefix}] {summary}"
+        if prefix:
+            summary = f"[{prefix}] {summary}"
 
         body = {
             "summary": summary,
@@ -574,14 +614,21 @@ def sync_calendar_logic(sync_id):
 
     user_id = sync_data["user_id"]
     destination_id = sync_data["destination_calendar_id"]
-    source_icals = sync_data["source_icals"]
-    event_prefix = sync_data.get("event_prefix", "").strip()
+
+    # Backward compatibility: Construct sources if missing
+    sources = sync_data.get("sources")
+    if not sources:
+        sources = []
+        old_icals = sync_data.get("source_icals", [])
+        old_prefix = sync_data.get("event_prefix", "").strip()
+        for url in old_icals:
+            sources.append({"url": url, "prefix": old_prefix})
 
     # 1. Get User Credentials
     service = _get_google_service(db, user_id)
 
     # 2. Fetch and Parse
-    all_events, source_names = _fetch_source_events(source_icals)
+    all_events_items, source_names = _fetch_source_events(sources)
 
     # Update source names and last sync time
     sync_ref.update(
@@ -592,19 +639,15 @@ def sync_calendar_logic(sync_id):
     )
 
     # 3. Process Events
-    _batch_upsert_events(service, destination_id, all_events, event_prefix)
+    _batch_upsert_events(service, destination_id, all_events_items)
 
 
 def _handle_create_sync_post(user):
     destination_id = request.form.get("destination_calendar_id")
-    ical_urls = request.form.getlist("ical_urls")
-    # Filter empty URLs
-    ical_urls = [url for url in ical_urls if url.strip()]
+    sources = _get_sources_from_form(request.form)
 
     if not destination_id:
         return "Destination Calendar ID is required", 400
-
-    event_prefix = request.form.get("event_prefix", "").strip()
 
     # Lookup destination summary from cached calendars
     destination_summary = destination_id
@@ -635,8 +678,7 @@ def _handle_create_sync_post(user):
             "user_id": user["uid"],
             "destination_calendar_id": destination_id,
             "destination_calendar_summary": destination_summary,
-            "source_icals": ical_urls,
-            "event_prefix": event_prefix,
+            "sources": sources,
             "created_at": firestore.SERVER_TIMESTAMP,  # pylint: disable=no-member
         }
     )
@@ -644,7 +686,8 @@ def _handle_create_sync_post(user):
     # Populate source names asynchronously (or just do it now for simplicity)
     try:
         source_names = {}
-        for url in ical_urls:
+        for source in sources:
+            url = source["url"]
             source_names[url] = get_calendar_name_from_ical(url)
         new_sync_ref.update({"source_names": source_names})
     except Exception as e:  # pylint: disable=broad-exception-caught

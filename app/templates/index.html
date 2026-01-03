@@ -204,20 +204,27 @@
                             <h3 class="sync-title">
                                 To: {{ sync.destination_calendar_summary or sync.destination_calendar_id }}
                             </h3>
-                            {% if sync.event_prefix %}
-                            <p class="sync-prefix">
-                                <strong>Prefix:</strong> <span class="prefix-badge">[{{
-                                    sync.event_prefix }}]</span>
-                            </p>
-                            {% endif %}
                             <p class="source-label"><strong>Sources:</strong></p>
                             <ul class="source-list">
-                                {% for source in sync.source_icals %}
+                                {% set sources = sync.sources %}
+                                {% if not sources and sync.source_icals %}
+                                {# Backward compatibility #}
+                                {% set sources = [] %}
+                                {% for url in sync.source_icals %}
+                                {% set _ = sources.append({'url': url, 'prefix': sync.event_prefix}) %}
+                                {% endfor %}
+                                {% endif %}
+
+                                {% for source in sources %}
                                 <li>
-                                    {% if sync.source_names and sync.source_names[source] %}
-                                    {{ sync.source_names[source] }}
+                                    {% if source.prefix %}
+                                    <span class="prefix-badge">[{{ source.prefix }}]</span>
+                                    {% endif %}
+
+                                    {% if sync.source_names and sync.source_names[source.url] %}
+                                    {{ sync.source_names[source.url] }}
                                     {% else %}
-                                    <span class="source-url">{{ source }}</span>
+                                    <span class="source-url">{{ source.url }}</span>
                                     {% endif %}
                                 </li>
                                 {% endfor %}
