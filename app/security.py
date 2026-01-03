@@ -1,10 +1,12 @@
 """
 Security utilities for the application.
 """
+
 import socket
 import ipaddress
 from urllib.parse import urlparse, urljoin
 import requests
+
 
 def validate_url(url):
     """
@@ -16,7 +18,7 @@ def validate_url(url):
     except Exception as e:
         raise ValueError(f"Invalid URL format: {e}") from e
 
-    if parsed.scheme not in ('http', 'https'):
+    if parsed.scheme not in ("http", "https"):
         raise ValueError("Invalid scheme: Only HTTP and HTTPS are allowed")
 
     hostname = parsed.hostname
@@ -47,25 +49,27 @@ def validate_url(url):
         # but requests will fail later anyway.
         pass
 
+
 def safe_requests_get(url, **kwargs):
     """
     Drop-in replacement for requests.get that validates the URL and any redirects.
     """
     validate_url(url)
 
-    def check_redirect(resp, *args, **kwargs): # pylint: disable=unused-argument
-        if resp.is_redirect and 'Location' in resp.headers:
-            new_url = urljoin(resp.url, resp.headers['Location'])
+    def check_redirect(resp, *args, **kwargs):  # pylint: disable=unused-argument
+        if resp.is_redirect and "Location" in resp.headers:
+            new_url = urljoin(resp.url, resp.headers["Location"])
             validate_url(new_url)
 
     # Add our hook to existing hooks if any, or create new dict
-    hooks = kwargs.get('hooks', {})
-    if 'response' not in hooks:
-        hooks['response'] = []
-    elif not isinstance(hooks['response'], list):
-        hooks['response'] = [hooks['response']]
+    hooks = kwargs.get("hooks", {})
+    if "response" not in hooks:
+        hooks["response"] = []
+    elif not isinstance(hooks["response"], list):
+        hooks["response"] = [hooks["response"]]
 
-    hooks['response'].append(check_redirect)
-    kwargs['hooks'] = hooks
+    hooks["response"].append(check_redirect)
+    kwargs["hooks"] = hooks
 
+    kwargs.setdefault("timeout", 10)
     return requests.get(url, **kwargs)

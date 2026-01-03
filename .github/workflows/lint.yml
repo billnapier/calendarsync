@@ -19,5 +19,8 @@ jobs:
           pip install pylint
           if [ -f app/requirements.txt ]; then pip install -r app/requirements.txt; fi
       - name: Analysing the code with pylint
+        env:
+          SECRET_KEY: "lint_secret_key"
+          PYTHONPATH: .
         run: |
-          pylint app/app.py tests/test_app.py
+          pylint app tests

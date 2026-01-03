@@ -1,5 +1,6 @@
 [MAIN]
 fail-under=8.0
+extension-pkg-whitelist=google.cloud.tasks_v2
 
 [MESSAGES CONTROL]
 disable=
