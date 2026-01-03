@@ -39,7 +39,7 @@ class TestSyncLogic(unittest.TestCase):
         mock_user_ref = MagicMock()
         mock_user_doc = MagicMock()
         mock_user_doc.to_dict.return_value = {"refresh_token": "dummy_token"}
-        
+
         mock_sync_col = MagicMock()
         mock_sync_col.document.return_value = mock_sync_ref
 
@@ -115,7 +115,7 @@ class TestSyncLogic(unittest.TestCase):
             "sources": [
                 {"url": "http://site1.com/cal.ics", "prefix": "P1"},
                 {"url": "http://site2.com/cal.ics", "prefix": "P2"},
-            ]
+            ],
         }
         mock_db.collection.return_value.document.return_value = mock_sync_ref
         mock_sync_ref.get.return_value = mock_sync_doc
@@ -123,7 +123,7 @@ class TestSyncLogic(unittest.TestCase):
         mock_user_ref = MagicMock()
         mock_user_doc = MagicMock()
         mock_user_doc.to_dict.return_value = {"refresh_token": "dummy_token"}
-        
+
         mock_sync_col = MagicMock()
         mock_sync_col.document.return_value = mock_sync_ref
         mock_user_col = MagicMock()
@@ -135,6 +135,7 @@ class TestSyncLogic(unittest.TestCase):
             if name == "users":
                 return mock_user_col
             return MagicMock()
+
         mock_db.collection.side_effect = collection_side_effect
 
         # Mock requests.get to return different content based on URL
@@ -156,7 +157,7 @@ class TestSyncLogic(unittest.TestCase):
                     b"END:VEVENT\r\nEND:VCALENDAR"
                 )
             return resp
-        
+
         mock_get.side_effect = get_side_effect
 
         # Mock Service
@@ -170,7 +171,7 @@ class TestSyncLogic(unittest.TestCase):
 
         # Verify
         self.assertEqual(mock_batch.add.call_count, 2)
-        
+
         # Check calls
         # We need to find which call is which based on iCalUID or Summary
         calls = mock_service.events.return_value.import_.call_args_list
@@ -178,10 +179,9 @@ class TestSyncLogic(unittest.TestCase):
         for call_args in calls:
             _, kwargs = call_args
             summaries.append(kwargs["body"]["summary"])
-        
+
         self.assertIn("[P1] Event One", summaries)
         self.assertIn("[P2] Event Two", summaries)
-
 
     @patch("app.app.firestore.client")
     @patch("app.app.get_client_config")

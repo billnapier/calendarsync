@@ -8,6 +8,7 @@ import logging
 import time
 from datetime import datetime, timezone
 import json
+import re
 from flask import Flask, render_template, request, session, redirect, url_for
 from werkzeug.middleware.proxy_fix import ProxyFix
 import firebase_admin
@@ -397,9 +398,7 @@ def _get_sources_from_form(form):
     urls = form.getlist("source_urls")
     prefixes = form.getlist("source_prefixes")
     sources = []
-    
-    import re
-    
+
     for i, url in enumerate(urls):
         url = url.strip()
         if not url:
@@ -409,8 +408,8 @@ def _get_sources_from_form(form):
             raw_prefix = prefixes[i].strip()
             # Allow alphanumerics, spaces, dashes, underscores, brackets
             # Remove anything else to prevent HTML injection etc.
-            prefix = re.sub(r'[^a-zA-Z0-9 \-_\[\]\(\)]', '', raw_prefix)
-            
+            prefix = re.sub(r"[^a-zA-Z0-9 \-_\[\]\(\)]", "", raw_prefix)
+
         sources.append({"url": url, "prefix": prefix})
     return sources
 
