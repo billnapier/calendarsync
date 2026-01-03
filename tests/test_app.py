@@ -53,7 +53,9 @@ def test_home_page(client):  # pylint: disable=redefined-outer-name
         response = client.get("/")
         assert response.status_code == 200
         assert b"CalendarSync" in response.data
-        assert b"Login with Google" in response.data
+        # We changed "Login with Google" link to g_id_signin div
+        # Checking for the GIS signin class
+        assert b"g_id_signin" in response.data
 
 
 def test_login_redirect(client):  # pylint: disable=redefined-outer-name

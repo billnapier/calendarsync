@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>CalendarSync</title>
+    <script src="https://accounts.google.com/gsi/client" async></script>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -180,7 +181,19 @@
             <span>Hello, <strong>{{ user.name }}</strong></span>
             <a href="/logout" class="btn btn-outline">Logout</a>
             {% else %}
-            <a href="/login" class="btn">Login with Google</a>
+            <div id="g_id_onload"
+                 data-client_id="{{ google_client_id }}"
+                 data-login_uri="{{ url_for('google_auth_callback', _external=True) }}"
+                 data-auto_prompt="false">
+            </div>
+            <div class="g_id_signin"
+                 data-type="standard"
+                 data-size="medium"
+                 data-theme="filled_blue"
+                 data-text="sign_in_with"
+                 data-shape="rectangular"
+                 data-logo_alignment="left">
+            </div>
             {% endif %}
         </div>
     </div>
@@ -255,7 +268,14 @@
             <h2>Sync Your Life, Simplified.</h2>
             <p>CalendarSync seamlessly merges multiple iCal calendars into a single master calendar. Keep track of work,
                 personal, and shared events all in one place without the hassle.</p>
-            <a href="/login" class="btn btn-large">Get Started with Google</a>
+            <div class="g_id_signin"
+                 data-type="standard"
+                 data-size="large"
+                 data-theme="filled_blue"
+                 data-text="signup_with"
+                 data-shape="rectangular"
+                 data-logo_alignment="left">
+            </div>
             {% endif %}
         </div>
     </div>
