@@ -6,6 +6,7 @@ Handles Google OAuth2, session management, and Firestore integration.
 import os
 import logging
 import time
+import concurrent.futures
 from datetime import datetime, timezone
 import json
 import re
@@ -567,36 +568,62 @@ def _calculate_end_time(start_dt_prop, duration_prop):
     return {"date": end_dt_obj.isoformat()}
 
 
+def _fetch_single_source(source):
+    """
+    Helper to fetch a single source.
+    Returns (events_list, url, name) or ([], url, failed_name)
+    """
+    url = source["url"]
+    prefix = source.get("prefix", "")
+    events_items = []
+
+    try:
+        response = safe_requests_get(url, timeout=10)
+        response.raise_for_status()
+        cal = icalendar.Calendar.from_ical(response.content)
+
+        # Extract name
+        cal_name = cal.get("X-WR-CALNAME")
+        name = str(cal_name) if cal_name else url
+
+        for component in cal.walk():
+            if component.name == "VEVENT":
+                events_items.append({"component": component, "prefix": prefix})
+
+        return events_items, url, name
+
+    except (
+        requests.exceptions.RequestException,
+        ValueError,
+    ) as e:  # pylint: disable=broad-exception-caught
+        app.logger.error("Failed to fetch/parse %s: %s", url, e)
+        return [], url, f"{url} (Failed)"
+
+
 def _fetch_source_events(sources):
     """
-    Fetch and parse events from source iCal URLs.
+    Fetch and parse events from source iCal URLs in parallel.
     Returns a list of dicts: {'component': event, 'prefix': prefix}
     """
     all_events_items = []
     source_names = {}
 
-    for source in sources:
-        url = source["url"]
-        prefix = source.get("prefix", "")
+    # Use ThreadPoolExecutor for parallel fetching
+    # Limit max_workers to avoid hitting system limits or DOSing the network
+    with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+        # Submit all tasks
+        future_to_source = {
+            executor.submit(_fetch_single_source, source): source for source in sources
+        }
 
-        try:
-            response = safe_requests_get(url, timeout=10)
-            response.raise_for_status()
-            cal = icalendar.Calendar.from_ical(response.content)
-
-            # Extract name
-            cal_name = cal.get("X-WR-CALNAME")
-            source_names[url] = str(cal_name) if cal_name else url
-
-            for component in cal.walk():
-                if component.name == "VEVENT":
-                    all_events_items.append({"component": component, "prefix": prefix})
-        except (
-            requests.exceptions.RequestException,
-            ValueError,
-        ) as e:  # pylint: disable=broad-exception-caught
-            app.logger.error("Failed to fetch/parse %s: %s", url, e)
-            source_names[url] = f"{url} (Failed)"
+        # Process results as they complete
+        for future in concurrent.futures.as_completed(future_to_source):
+            try:
+                events, url, name = future.result()
+                all_events_items.extend(events)
+                source_names[url] = name
+            except Exception as exc: # pylint: disable=broad-exception-caught
+                app.logger.error("Unexpected error in fetch thread: %s", exc)
 
     return all_events_items, source_names
 
