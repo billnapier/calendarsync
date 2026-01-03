@@ -872,7 +872,7 @@ def verify_task_auth():
             raise ValueError(f"Unauthorized email: {email}")
 
     except Exception as e:
-        raise ValueError(f"Invalid token: {e}")
+        raise ValueError(f"Invalid token: {e}") from e
 
 
 @app.route("/tasks/sync_one", methods=["POST"])
