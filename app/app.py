@@ -355,6 +355,15 @@ def edit_sync(sync_id):
         else:
             calendars = session.get("calendars")
 
+        if "sources" not in sync_data:
+            # Backward compatibility: Construct sources if missing
+            sources = []
+            old_icals = sync_data.get("source_icals", [])
+            old_prefix = sync_data.get("event_prefix", "").strip()
+            for url in old_icals:
+                sources.append({"url": url, "prefix": old_prefix})
+            sync_data["sources"] = sources
+
         return render_template(
             "edit_sync.html", user=user, sync=sync_data, calendars=calendars
         )
@@ -384,17 +393,24 @@ def edit_sync(sync_id):
 
 
 def _get_sources_from_form(form):
-    """Helper to extract sources from form data."""
+    """Helper to extract sources from form data and sanitize them."""
     urls = form.getlist("source_urls")
     prefixes = form.getlist("source_prefixes")
     sources = []
+    
+    import re
+    
     for i, url in enumerate(urls):
         url = url.strip()
         if not url:
             continue
         prefix = ""
         if i < len(prefixes):
-            prefix = prefixes[i].strip()
+            raw_prefix = prefixes[i].strip()
+            # Allow alphanumerics, spaces, dashes, underscores, brackets
+            # Remove anything else to prevent HTML injection etc.
+            prefix = re.sub(r'[^a-zA-Z0-9 \-_\[\]\(\)]', '', raw_prefix)
+            
         sources.append({"url": url, "prefix": prefix})
     return sources
 

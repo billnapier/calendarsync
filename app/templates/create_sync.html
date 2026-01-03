@@ -81,7 +81,7 @@
         .btn-secondary:hover {
             background-color: #f1f1f1;
         }
-        
+
         .btn-danger {
             background-color: #dc3545;
             color: white;
@@ -91,7 +91,7 @@
             border-radius: 4px;
             cursor: pointer;
         }
-        
+
         .btn-danger:hover {
             background-color: #c82333;
         }
@@ -106,11 +106,11 @@
             margin-bottom: 0.5rem;
             align-items: center;
         }
-        
+
         .ical-entry input[name="source_urls"] {
             flex: 3;
         }
-        
+
         .ical-entry input[name="source_prefixes"] {
             flex: 1;
         }
@@ -158,7 +158,8 @@
                     <div class="ical-entry">
                         <input type="text" name="source_urls" placeholder="https://example.com/calendar.ics" required>
                         <input type="text" name="source_prefixes" placeholder="Prefix (e.g. Work)">
-                        <button type="button" class="btn btn-danger" onclick="removeEntry(this)" style="visibility: hidden;">Remove</button>
+                        <button type="button" class="btn btn-danger" onclick="removeEntry(this)"
+                            style="visibility: hidden;">Remove</button>
                     </div>
                 </div>
                 <button type="button" class="add-btn" onclick="addIcalInput()">+ Add another Source</button>
@@ -171,17 +172,20 @@
         </form>
     </div>
 
+    <template id="source-entry-template">
+        <div class="ical-entry">
+            <input type="text" name="source_urls" placeholder="https://example.com/calendar.ics" required>
+            <input type="text" name="source_prefixes" placeholder="Prefix (e.g. Gym)">
+            <button type="button" class="btn btn-danger" onclick="removeEntry(this)">Remove</button>
+        </div>
+    </template>
+
     <script>
         function addIcalInput() {
             const container = document.getElementById('ical-container');
-            const div = document.createElement('div');
-            div.className = 'ical-entry';
-            div.innerHTML = `
-                <input type="text" name="source_urls" placeholder="https://example.com/calendar.ics" required>
-                <input type="text" name="source_prefixes" placeholder="Prefix (e.g. Gym)">
-                <button type="button" class="btn btn-danger" onclick="removeEntry(this)">Remove</button>
-            `;
-            container.appendChild(div);
+            const template = document.getElementById('source-entry-template');
+            const clone = template.content.cloneNode(true);
+            container.appendChild(clone);
             updateRemoveButtons();
         }
 
@@ -190,7 +194,7 @@
             entry.remove();
             updateRemoveButtons();
         }
-        
+
         function updateRemoveButtons() {
             const entries = document.querySelectorAll('.ical-entry');
             entries.forEach((entry, index) => {
