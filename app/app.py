@@ -573,6 +573,63 @@ def sync_calendar_logic(sync_id):
     _batch_upsert_events(service, destination_id, all_events, event_prefix)
 
 
+def _handle_create_sync_post(user):
+    destination_id = request.form.get("destination_calendar_id")
+    ical_urls = request.form.getlist("ical_urls")
+    # Filter empty URLs
+    ical_urls = [url for url in ical_urls if url.strip()]
+
+    if not destination_id:
+        return "Destination Calendar ID is required", 400
+
+    event_prefix = request.form.get("event_prefix", "").strip()
+
+    # Lookup destination summary from cached calendars
+    destination_summary = destination_id
+    if "calendars" in session:
+        for cal in session["calendars"]:
+            if cal["id"] == destination_id:
+                destination_summary = cal["summary"]
+                break
+    else:
+        # Fallback: fetch again to try and resolve the friendly name
+        try:
+            calendars = fetch_user_calendars(user["uid"])
+            if calendars:
+                session["calendars"] = calendars
+                session["calendars_timestamp"] = time.time()
+                for cal in calendars:
+                    if cal["id"] == destination_id:
+                        destination_summary = cal["summary"]
+                        break
+        except Exception as e:  # pylint: disable=broad-exception-caught
+            app.logger.error("Failed to fetch calendars on POST fallback: %s", e)
+
+    db = firestore.client()
+    new_sync_ref = db.collection("syncs").document()
+    new_sync_ref.set(
+        {
+            "user_id": user["uid"],
+            "destination_calendar_id": destination_id,
+            "destination_calendar_summary": destination_summary,
+            "source_icals": ical_urls,
+            "event_prefix": event_prefix,
+            "created_at": firestore.SERVER_TIMESTAMP,  # pylint: disable=no-member
+        }
+    )
+
+    # Populate source names asynchronously (or just do it now for simplicity)
+    try:
+        source_names = {}
+        for url in ical_urls:
+            source_names[url] = get_calendar_name_from_ical(url)
+        new_sync_ref.update({"source_names": source_names})
+    except Exception as e:  # pylint: disable=broad-exception-caught
+        app.logger.warning("Failed to populate initial source names: %s", e)
+
+    return redirect(url_for("home"))
+
+
 @app.route("/create_sync", methods=["GET", "POST"])
 def create_sync():
     user = session.get("user")
@@ -596,65 +653,7 @@ def create_sync():
         return render_template("create_sync.html", user=user, calendars=calendars)
 
     if request.method == "POST":
-        destination_id = request.form.get("destination_calendar_id")
-        ical_urls = request.form.getlist("ical_urls")
-        # Filter empty URLs
-        ical_urls = [url for url in ical_urls if url.strip()]
-
-        if not destination_id:
-            return "Destination Calendar ID is required", 400
-
-        event_prefix = request.form.get("event_prefix", "").strip()
-
-        # Lookup destination summary from cached calendars
-        # Note: 'calendars' might not be in session if user came directly to POST?
-        # Ideally we should fetch again if not in session, or just store ID if fetch fails.
-        # For robustness, let's try to get it from session, else unknown.
-        # But wait, we just fetched or checked cache in GET, but this is POST.
-        # Let's check session.
-        destination_summary = destination_id
-        if "calendars" in session:
-            for cal in session["calendars"]:
-                if cal["id"] == destination_id:
-                    destination_summary = cal["summary"]
-                    break
-        else:
-            # Fallback: fetch again to try and resolve the friendly name
-            try:
-                calendars = fetch_user_calendars(user['uid'])
-                if calendars:
-                    session['calendars'] = calendars
-                    session['calendars_timestamp'] = time.time()
-                    for cal in calendars:
-                        if cal['id'] == destination_id:
-                            destination_summary = cal['summary']
-                            break
-            except Exception as e: # pylint: disable=broad-exception-caught
-                app.logger.error("Failed to fetch calendars on POST fallback: %s", e)
-
-        db = firestore.client()
-        new_sync_ref = db.collection("syncs").document()
-        new_sync_ref.set(
-            {
-                "user_id": user["uid"],
-                "destination_calendar_id": destination_id,
-                "destination_calendar_summary": destination_summary,
-                "source_icals": ical_urls,
-                "event_prefix": event_prefix,
-                "created_at": firestore.SERVER_TIMESTAMP,  # pylint: disable=no-member
-            }
-        )
-
-        # Populate source names asynchronously (or just do it now for simplicity)
-        try:
-            source_names = {}
-            for url in ical_urls:
-                source_names[url] = get_calendar_name_from_ical(url)
-            new_sync_ref.update({"source_names": source_names})
-        except Exception as e:  # pylint: disable=broad-exception-caught
-            app.logger.warning("Failed to populate initial source names: %s", e)
-
-        return redirect(url_for("home"))
+        return _handle_create_sync_post(user)
 
     return "Method not allowed", 405
 
