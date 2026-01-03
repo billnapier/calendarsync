@@ -22,7 +22,7 @@
             border-radius: 8px;
             box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
             width: 100%;
-            max-width: 600px;
+            max-width: 800px;
         }
 
         h1 {
@@ -81,6 +81,20 @@
         .btn-secondary:hover {
             background-color: #f1f1f1;
         }
+        
+        .btn-danger {
+            background-color: #dc3545;
+            color: white;
+            padding: 0.5rem 1rem;
+            font-size: 0.9rem;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        
+        .btn-danger:hover {
+            background-color: #c82333;
+        }
 
         .ical-list {
             margin-top: 0.5rem;
@@ -90,6 +104,15 @@
             display: flex;
             gap: 0.5rem;
             margin-bottom: 0.5rem;
+            align-items: center;
+        }
+        
+        .ical-entry input[name="source_urls"] {
+            flex: 3;
+        }
+        
+        .ical-entry input[name="source_prefixes"] {
+            flex: 1;
         }
 
         .add-btn {
@@ -127,19 +150,18 @@
             </div>
 
             <div class="form-group">
-                <label>Source iCal URLs</label>
+                <label>Source Calendars</label>
+                <div class="helper-text" style="margin-bottom: 0.5rem;">
+                    Enter the iCal URL and an optional prefix for events from this source.
+                </div>
                 <div id="ical-container">
                     <div class="ical-entry">
-                        <input type="text" name="ical_urls" placeholder="https://example.com/calendar.ics">
+                        <input type="text" name="source_urls" placeholder="https://example.com/calendar.ics" required>
+                        <input type="text" name="source_prefixes" placeholder="Prefix (e.g. Work)">
+                        <button type="button" class="btn btn-danger" onclick="removeEntry(this)" style="visibility: hidden;">Remove</button>
                     </div>
                 </div>
-                <button type="button" class="add-btn" onclick="addIcalInput()">+ Add another URL</button>
-            </div>
-
-            <div class="form-group">
-                <label for="event_prefix">Event Prefix (Optional)</label>
-                <input type="text" id="event_prefix" name="event_prefix" placeholder="e.g. School">
-                <div class="helper-text">This prefix will be added to the title of every synced event.</div>
+                <button type="button" class="add-btn" onclick="addIcalInput()">+ Add another Source</button>
             </div>
 
             <div class="buttons">
@@ -154,8 +176,31 @@
             const container = document.getElementById('ical-container');
             const div = document.createElement('div');
             div.className = 'ical-entry';
-            div.innerHTML = '<input type="text" name="ical_urls" placeholder="https://example.com/calendar.ics">';
+            div.innerHTML = `
+                <input type="text" name="source_urls" placeholder="https://example.com/calendar.ics" required>
+                <input type="text" name="source_prefixes" placeholder="Prefix (e.g. Gym)">
+                <button type="button" class="btn btn-danger" onclick="removeEntry(this)">Remove</button>
+            `;
             container.appendChild(div);
+            updateRemoveButtons();
+        }
+
+        function removeEntry(btn) {
+            const entry = btn.closest('.ical-entry');
+            entry.remove();
+            updateRemoveButtons();
+        }
+        
+        function updateRemoveButtons() {
+            const entries = document.querySelectorAll('.ical-entry');
+            entries.forEach((entry, index) => {
+                const btn = entry.querySelector('.btn-danger');
+                if (entries.length === 1) {
+                    btn.style.visibility = 'hidden';
+                } else {
+                    btn.style.visibility = 'visible';
+                }
+            });
         }
     </script>
 </body>
