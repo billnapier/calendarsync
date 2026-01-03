@@ -43,7 +43,18 @@ def mock_fetch_calendars():
         yield mock
 
 
-def test_edit_sync_post_refreshes_stale_cache(client, mock_fetch_calendars):
+@pytest.fixture
+def mock_firestore():
+    original_firestore = app_module.firestore
+    mock_fs = MagicMock(name="manual_fs")
+    app_module.firestore = mock_fs
+    yield mock_fs
+    app_module.firestore = original_firestore
+
+
+def test_edit_sync_post_refreshes_stale_cache(
+    client, mock_fetch_calendars, mock_firestore
+):
     """Test that POST to edit_sync refreshes cache if stale."""
     # Setup - mocked user and stale cache
     with client.session_transaction() as sess:
@@ -69,29 +80,24 @@ def test_edit_sync_post_refreshes_stale_cache(client, mock_fetch_calendars):
         "destination_calendar_id": "dest_id",
     }
 
-    # Manual patch
-    original_firestore = app_module.firestore
-    mock_fs = MagicMock(name="manual_fs")
-    mock_fs.client.return_value = mock_db
-    app_module.firestore = mock_fs
+    mock_firestore.client.return_value = mock_db
 
-    try:
-        resp = client.post(
-            "/edit_sync/sync123",
-            data={
-                "destination_calendar_id": "new_cal",
-                "ical_urls": ["http://example.com/cal.ics"],
-            },
-        )
-        assert resp.status_code == 302  # Redirects home
-    finally:
-        app_module.firestore = original_firestore
+    resp = client.post(
+        "/edit_sync/sync123",
+        data={
+            "destination_calendar_id": "new_cal",
+            "ical_urls": ["http://example.com/cal.ics"],
+        },
+    )
+    assert resp.status_code == 302  # Redirects home
 
     # Asserts
     mock_fetch_calendars.assert_called_once_with("test_uid")
 
 
-def test_create_sync_post_fetches_if_missing(client, mock_fetch_calendars):
+def test_create_sync_post_fetches_if_missing(
+    client, mock_fetch_calendars, mock_firestore
+):
     """Test that POST to create_sync fetches calendars if missing from session."""
     with client.session_transaction() as sess:
         sess["user"] = {"uid": "test_uid"}
@@ -108,23 +114,16 @@ def test_create_sync_post_fetches_if_missing(client, mock_fetch_calendars):
     mock_db.collection.return_value = mock_collection
     mock_collection.document.return_value = mock_new_doc
 
-    # Manual patch
-    original_firestore = app_module.firestore
-    mock_fs = MagicMock(name="manual_fs")
-    mock_fs.client.return_value = mock_db
-    app_module.firestore = mock_fs
+    mock_firestore.client.return_value = mock_db
 
-    try:
-        resp = client.post(
-            "/create_sync",
-            data={
-                "destination_calendar_id": "dest_cal",
-                "ical_urls": ["http://example.com/cal.ics"],
-            },
-        )
-        assert resp.status_code == 302
-    finally:
-        app_module.firestore = original_firestore
+    resp = client.post(
+        "/create_sync",
+        data={
+            "destination_calendar_id": "dest_cal",
+            "ical_urls": ["http://example.com/cal.ics"],
+        },
+    )
+    assert resp.status_code == 302
 
     mock_fetch_calendars.assert_called_once_with("test_uid")
 

@@ -371,7 +371,8 @@ def edit_sync(sync_id):
                 app.logger.error("Failed to fetch calendars on edit POST: %s", e)
                 calendars = session.get("calendars")
         else:
-            calendars = session.get("calendars")
+            # calendars = session.get("calendars") # Optimized out
+            pass
 
         return _handle_edit_sync_post(request, sync_ref, session.get("calendars"))
 
@@ -605,8 +606,10 @@ def _handle_create_sync_post(user):
     destination_summary = destination_id
     user_calendars = session.get("calendars")
 
-    # If calendars missing or potentially stale (though we care mostly about missing here)
-    if not user_calendars:
+    # If calendars are missing from the session.
+    # We check for the *absence* of the key to avoid re-fetching if the user
+    # legitimately has an empty list of calendars.
+    if "calendars" not in session:
         try:
             user_calendars = fetch_user_calendars(user["uid"])
             if user_calendars:
