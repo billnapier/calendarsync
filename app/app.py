@@ -138,7 +138,13 @@ def home():
         except Exception as e:  # pylint: disable=broad-exception-caught
             app.logger.error("Error fetching syncs: %s", e)
 
-    google_client_id = get_secret("google_client_id")
+    try:
+        client_config = get_client_config()
+        google_client_id = client_config["web"]["client_id"]
+    except Exception as e:  # pylint: disable=broad-exception-caught
+        app.logger.warning("Failed to load client config: %s", e)
+        google_client_id = None
+
     return render_template(
         "index.html", user=user, syncs=syncs, google_client_id=google_client_id
     )

@@ -174,9 +174,9 @@
 
     <template id="source-entry-template">
         <div class="ical-entry">
-            <input type="text" name="source_urls" placeholder="https://example.com/calendar.ics" required>
-            <input type="text" name="source_prefixes" placeholder="Prefix (e.g. Gym)">
-            <button type="button" class="btn btn-danger" onclick="removeEntry(this)">Remove</button>
+            <input type="text" name="source_urls" placeholder="https://example.com/calendar.ics" aria-label="Source Calendar URL" required>
+            <input type="text" name="source_prefixes" placeholder="Prefix (e.g. Gym)" aria-label="Source Event Prefix">
+            <button type="button" class="btn btn-danger" onclick="removeEntry(this)" aria-label="Remove source">Remove</button>
         </div>
     </template>
 
