@@ -52,7 +52,7 @@ def test_edit_sync_post_refreshes_stale_cache(client, mock_fetch_calendars):
         sess["calendars_timestamp"] = time.time() - 301  # Stale
 
     mock_fetch_calendars.return_value = [{"id": "new_cal", "summary": "New Cal"}]
-    
+
     # Mock return values
     mock_db = MagicMock(name="mock_db")
     mock_collection = MagicMock(name="mock_collection")
@@ -66,7 +66,7 @@ def test_edit_sync_post_refreshes_stale_cache(client, mock_fetch_calendars):
     mock_doc_snapshot.exists = True
     mock_doc_snapshot.to_dict.return_value = {
         "user_id": "test_uid",
-        "destination_calendar_id": "dest_id"
+        "destination_calendar_id": "dest_id",
     }
 
     # Manual patch
@@ -80,10 +80,10 @@ def test_edit_sync_post_refreshes_stale_cache(client, mock_fetch_calendars):
             "/edit_sync/sync123",
             data={
                 "destination_calendar_id": "new_cal",
-                "ical_urls": ["http://example.com/cal.ics"]
-            }
+                "ical_urls": ["http://example.com/cal.ics"],
+            },
         )
-        assert resp.status_code == 302 # Redirects home
+        assert resp.status_code == 302  # Redirects home
     finally:
         app_module.firestore = original_firestore
 
@@ -97,7 +97,9 @@ def test_create_sync_post_fetches_if_missing(client, mock_fetch_calendars):
         sess["user"] = {"uid": "test_uid"}
         # No 'calendars' in session
 
-    mock_fetch_calendars.return_value = [{"id": "dest_cal", "summary": "Destination Cal"}]
+    mock_fetch_calendars.return_value = [
+        {"id": "dest_cal", "summary": "Destination Cal"}
+    ]
 
     mock_db = MagicMock(name="mock_db")
     mock_collection = MagicMock(name="mock_collection")
@@ -117,15 +119,15 @@ def test_create_sync_post_fetches_if_missing(client, mock_fetch_calendars):
             "/create_sync",
             data={
                 "destination_calendar_id": "dest_cal",
-                "ical_urls": ["http://example.com/cal.ics"]
-            }
+                "ical_urls": ["http://example.com/cal.ics"],
+            },
         )
         assert resp.status_code == 302
     finally:
         app_module.firestore = original_firestore
 
     mock_fetch_calendars.assert_called_once_with("test_uid")
-    
+
     # Verify the summary was used in the set call
     assert mock_new_doc.set.called
     args, _ = mock_new_doc.set.call_args
