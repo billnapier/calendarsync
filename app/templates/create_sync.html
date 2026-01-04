@@ -28,6 +28,7 @@
         <div class="form-card">
             <h1>Create New Sync</h1>
             <form action="/create_sync" method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                 <div class="form-group">
                     <label for="destination_calendar_id">Destination Calendar</label>
                     {% if calendars %}
