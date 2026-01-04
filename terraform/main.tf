@@ -187,31 +187,28 @@ resource "google_cloud_run_service" "default" {
 
 # Domain Mapping
 # Firebase Hosting Custom Domain
+data "google_firebase_hosting_site" "default" {
+  provider = google-beta
+  project  = var.project_id
+  site_id  = var.project_id # Assuming default site is used
+}
+
 resource "google_firebase_hosting_custom_domain" "default" {
   provider      = google-beta
   project       = var.project_id
-  site_id       = var.project_id
+  site_id       = data.google_firebase_hosting_site.default.site_id
   custom_domain = var.domain_name
 
   depends_on = [google_firebase_web_app.default]
 }
 
 # Allow unauthenticated invocations (public access)
-data "google_iam_policy" "noauth" {
-  binding {
-    role = "roles/run.invoker"
-    members = [
-      "allUsers",
-    ]
-  }
-}
-
-resource "google_cloud_run_service_iam_policy" "noauth" {
+resource "google_cloud_run_service_iam_member" "public_access" {
   location = google_cloud_run_service.default.location
   project  = google_cloud_run_service.default.project
   service  = google_cloud_run_service.default.name
-
-  policy_data = data.google_iam_policy.noauth.policy_data
+  role     = "roles/run.invoker"
+  member   = "allUsers"
 }
 
 # Grant Cloud Build Service Account permissions to deploy to Cloud Run and access Artifact Registry
