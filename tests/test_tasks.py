@@ -100,8 +100,12 @@ def test_sync_one_user_worker_no_auth(client_with_mocks):
     """Test that the worker endpoint rejects unauthenticated requests."""
     # Note: We do NOT mock verify_task_auth here, so it runs the real code.
     # The real code checks headers, which are missing.
-    response = client_with_mocks.post("/tasks/sync_one", json={"sync_id": "sync_123"})
-    assert response.status_code == 403
+    # We must ensure FLASK_ENV is NOT development, otherwise auth is skipped.
+    with patch.dict(os.environ, {"FLASK_ENV": "production"}):
+        response = client_with_mocks.post(
+            "/tasks/sync_one", json={"sync_id": "sync_123"}
+        )
+        assert response.status_code == 403
     assert b"Unauthorized" in response.data
 
 
