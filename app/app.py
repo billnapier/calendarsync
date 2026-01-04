@@ -622,7 +622,7 @@ def _fetch_source_events(sources):
                 events, url, name = future.result()
                 all_events_items.extend(events)
                 source_names[url] = name
-            except Exception as exc: # pylint: disable=broad-exception-caught
+            except Exception as exc:  # pylint: disable=broad-exception-caught
                 app.logger.error("Unexpected error in fetch thread: %s", exc)
 
     return all_events_items, source_names
