@@ -321,5 +321,5 @@ output "firebase_config" {
 }
 
 output "dns_records" {
-  value = google_firebase_hosting_custom_domain.default.certs
+  value = google_firebase_hosting_custom_domain.default.required_dns_updates
 }
