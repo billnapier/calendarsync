@@ -51,7 +51,7 @@ jobs:
           echo "Service Account Email: ${{ secrets.GCP_WIF_SA_EMAIL }}"
 
       - name: Terraform Init
-        run: terraform init
+        run: terraform init -upgrade
 
       - name: Select Workspace
         run: terraform workspace select prod
