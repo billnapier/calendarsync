@@ -73,6 +73,29 @@ jobs:
           region: ${{ inputs.region }}
           image: ${{ inputs.region }}-docker.pkg.dev/${{ inputs.project_id }}/${{ inputs.service_name }}/${{ inputs.service_name }}:${{ github.sha }}
 
+      - name: Deploy to Firebase Hosting
+        # Only run if firebase.json exists
+        if: hashFiles('firebase.json') != ''
+        run: |
+          # 1. Install Firebase Tools
+          npm install -g firebase-tools
+
+          # 2. Prepare Public Directory
+          mkdir -p public/static
+          if [ -d "app/static" ]; then
+            cp -r app/static/* public/static/
+          fi
+
+          # 3. Configure firebase.json with correct service name
+          # Replace SERVICE_NAME with the actual input service name
+          sed -i 's/SERVICE_NAME/${{ inputs.service_name }}/g' firebase.json
+
+          # 4. Deploy to Firebase
+          # We use the project_id from inputs
+          firebase deploy --only hosting --project ${{ inputs.project_id }} --non-interactive
+        env:
+          GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.auth.outputs.credentials_file_path }}
+
       - name: Smoke Test
         run: |
           TARGET_URL="${{ inputs.custom_url }}"
