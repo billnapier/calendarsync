@@ -152,7 +152,7 @@ def home():
 
 
 @app.route("/auth/google/callback", methods=["POST"])
-def google_auth_callback():
+def google_auth_callback():  # pylint: disable=too-many-locals
     """Handle Google Identity Services (GIS) Sign-In Callback."""
     try:
         credential = request.form.get("credential")
@@ -837,9 +837,42 @@ def logout():
     return redirect(url_for("home"))
 
 
-# ... (rest of imports removed from here)
+def verify_task_auth():
+    """Verifies that the request is authorized by a service account."""
+    if os.environ.get("FLASK_ENV") == "development":
+        return
 
-# ... (existing code)
+    auth_header = request.headers.get("Authorization")
+    if not auth_header:
+        raise ValueError("Missing Authorization header")
+
+    parts = auth_header.split(" ")
+    if len(parts) != 2 or parts[0].lower() != "bearer":
+        raise ValueError("Invalid Authorization header format")
+
+    token = parts[1]
+
+    try:
+        request_obj = google.auth.transport.requests.Request()
+        # Verify the token.
+        # Note: We are not verifying audience here because it depends on the
+        # dynamic service URL which is not always known in this context.
+        # However, we rely on strict allow-listing of the invoker email.
+        id_info = id_token.verify_oauth2_token(token, request_obj)
+
+        email = id_info.get("email")
+        allowed_email = os.environ.get("SCHEDULER_INVOKER_EMAIL")
+
+        # Fail closed: If no allow-list email is configured, deny everything.
+        if not allowed_email:
+            app.logger.error("SCHEDULER_INVOKER_EMAIL not set. Denying task access.")
+            raise ValueError("Configuration error: SCHEDULER_INVOKER_EMAIL not set")
+
+        if email != allowed_email:
+            raise ValueError(f"Unauthorized email: {email}")
+
+    except Exception as e:
+        raise ValueError(f"Invalid token: {e}") from e
 
 
 @app.route("/tasks/sync_one", methods=["POST"])
@@ -848,6 +881,12 @@ def sync_one_user():
     Worker endpoint to sync a single user.
     Called by Cloud Tasks.
     """
+    try:
+        verify_task_auth()
+    except ValueError as e:
+        app.logger.warning("Auth failed: %s", e)
+        return "Unauthorized", 403
+
     sync_id = None
     try:
         payload = request.get_json()
@@ -873,6 +912,12 @@ def sync_all_users():
     Dispatcher endpoint.
     Triggered by Cloud Scheduler, enqueues tasks for all users.
     """
+    try:
+        verify_task_auth()
+    except ValueError as e:
+        app.logger.warning("Auth failed: %s", e)
+        return "Unauthorized", 403
+
     app.logger.info("Starting global sync dispatch...")
 
     db = firestore.client()
