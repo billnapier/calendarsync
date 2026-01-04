@@ -80,7 +80,7 @@ jobs:
         uses: hashicorp/setup-terraform@b9cd54a3c349d3f38e8881555d616ced269862dd # ratchet:hashicorp/setup-terraform@v3
 
       - name: Terraform Init
-        run: terraform init
+        run: terraform init -upgrade
 
       - name: Select Workspace
         run: terraform workspace select ${{ inputs.tf_workspace }}
