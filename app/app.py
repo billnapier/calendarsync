@@ -22,6 +22,7 @@ from google.oauth2 import id_token
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 
+import secrets
 import requests
 import icalendar
 
@@ -75,6 +76,21 @@ SCOPES = [
     "https://www.googleapis.com/auth/userinfo.profile",
     "https://www.googleapis.com/auth/calendar",
 ]
+
+
+def generate_csrf_token():
+    """Generate a CSRF token and store it in the session."""
+    if "csrf_token" not in session:
+        session["csrf_token"] = secrets.token_hex(16)
+    return session["csrf_token"]
+
+
+def verify_csrf_token(form_token):
+    """Verify the CSRF token from the form against the session."""
+    session_token = session.get("csrf_token")
+    if not session_token or not form_token or session_token != form_token:
+        return False
+    return True
 
 
 def get_secret(secret_name):
@@ -446,11 +462,19 @@ def edit_sync(sync_id):
                 sources.append({"url": url, "prefix": old_prefix})
             sync_data["sources"] = sources
 
+        csrf_token = generate_csrf_token()
         return render_template(
-            "edit_sync.html", user=user, sync=sync_data, calendars=calendars
+            "edit_sync.html",
+            user=user,
+            sync=sync_data,
+            calendars=calendars,
+            csrf_token=csrf_token,
         )
 
     if request.method == "POST":
+        if not verify_csrf_token(request.form.get("csrf_token")):
+            return "Invalid CSRF token", 403
+
         app.logger.info("DEBUG: Handling POST for edit_sync")
         # Refresh calendars cache if needed
         if (
@@ -823,9 +847,14 @@ def create_sync():
             app.logger.info("Using cached calendars")
             calendars = session.get("calendars")
 
-        return render_template("create_sync.html", user=user, calendars=calendars)
+        csrf_token = generate_csrf_token()
+        return render_template(
+            "create_sync.html", user=user, calendars=calendars, csrf_token=csrf_token
+        )
 
     if request.method == "POST":
+        if not verify_csrf_token(request.form.get("csrf_token")):
+            return "Invalid CSRF token", 403
         return _handle_create_sync_post(user)
 
     return "Method not allowed", 405
