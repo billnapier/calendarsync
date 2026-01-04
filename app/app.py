@@ -139,14 +139,89 @@ def home():
         except Exception as e:  # pylint: disable=broad-exception-caught
             app.logger.error("Error fetching syncs: %s", e)
 
-    return render_template("index.html", user=user, syncs=syncs)
+    try:
+        client_config = get_client_config()
+        google_client_id = client_config["web"]["client_id"]
+    except Exception as e:  # pylint: disable=broad-exception-caught
+        app.logger.warning("Failed to load client config: %s", e)
+        google_client_id = None
+
+    return render_template(
+        "index.html", user=user, syncs=syncs, google_client_id=google_client_id
+    )
+
+
+@app.route("/auth/google/callback", methods=["POST"])
+def google_auth_callback():
+    """Handle Google Identity Services (GIS) Sign-In Callback."""
+    try:
+        credential = request.form.get("credential")
+        if not credential:
+            return "Missing credential", 400
+
+        # Verify CSRF token (g_csrf_token)
+        # GIS sets a cookie 'g_csrf_token' and sends a body param 'g_csrf_token'
+        # They must match.
+        cookie_csrf = request.cookies.get("g_csrf_token")
+        body_csrf = request.form.get("g_csrf_token")
+
+        if not cookie_csrf or not body_csrf or cookie_csrf != body_csrf:
+            return "Invalid CSRF token", 400
+
+        client_config = get_client_config()
+        client_id = client_config["web"]["client_id"]
+
+        # Verify ID Token
+        id_info = id_token.verify_oauth2_token(
+            credential, google.auth.transport.requests.Request(), client_id
+        )
+
+        uid = id_info["sub"]
+        email = id_info.get("email")
+        name = id_info.get("name")
+        picture = id_info.get("picture")
+
+        # Store user in Firestore
+        db = firestore.client()
+        user_ref = db.collection("users").document(uid)
+
+        # Update basic info
+        user_data = {
+            "name": name,
+            "email": email,
+            "picture": picture,
+            "last_login": firestore.SERVER_TIMESTAMP,  # pylint: disable=no-member
+        }
+        # We do NOT set refresh_token here because ID Token flow doesn't give one.
+        # We merge so we don't overwrite existing refresh token if it exists.
+        user_ref.set(user_data, merge=True)
+
+        session["user"] = {"uid": uid, "name": name, "email": email, "picture": picture}
+
+        # Check if user needs to authorize Calendar access (i.e. missing refresh token)
+        # We fetch the document we just updated/merged to check existing fields
+        doc = user_ref.get()
+        current_data = doc.to_dict()
+
+        if "refresh_token" not in current_data:
+            # User is authenticated but not authorized for offline access (Calendar API)
+            # Redirect to the full OAuth flow to get permissions
+            # Pass login_hint to pre-fill email
+            return redirect(url_for("login", login_hint=email))
+
+        return redirect(url_for("home"))
+
+    except Exception as e:  # pylint: disable=broad-exception-caught
+        app.logger.error("GIS callback error: %s", e)
+        return f"Authentication failed: {e}", 400
 
 
 @app.route("/login")
 def login():
-    """Initiate Google OAuth2 Flow."""
+    """Initiate Google OAuth2 Flow for Calendar Authorization."""
     try:
         client_config = get_client_config()
+        login_hint = request.args.get("login_hint")
 
         # dynamic redirect_uri based on request (handles localhost vs prod)
         redirect_uri = url_for("oauth2callback", _external=True)
@@ -159,11 +234,16 @@ def login():
         )
         flow.redirect_uri = redirect_uri
 
-        authorization_url, state = flow.authorization_url(
-            access_type="offline",
-            include_granted_scopes="true",
-            prompt="consent",  # Enforce consent to ensure we get refresh token
-        )
+        kwargs = {
+            "access_type": "offline",
+            "include_granted_scopes": "true",
+            "prompt": "consent",  # Enforce consent to ensure we get refresh token
+        }
+
+        if login_hint:
+            kwargs["login_hint"] = login_hint
+
+        authorization_url, state = flow.authorization_url(**kwargs)
 
         session["state"] = state
         return redirect(authorization_url)
