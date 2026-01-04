@@ -54,7 +54,7 @@ def mock_firestore():
 
 def test_edit_sync_post_refreshes_stale_cache(
     client, mock_fetch_calendars, mock_firestore
-):
+):  # pylint: disable=redefined-outer-name
     """Test that POST to edit_sync refreshes cache if stale."""
     # Setup - mocked user and stale cache
     with client.session_transaction() as sess:
@@ -97,7 +97,7 @@ def test_edit_sync_post_refreshes_stale_cache(
 
 def test_create_sync_post_fetches_if_missing(
     client, mock_fetch_calendars, mock_firestore
-):
+):  # pylint: disable=redefined-outer-name
     """Test that POST to create_sync fetches calendars if missing from session."""
     with client.session_transaction() as sess:
         sess["user"] = {"uid": "test_uid"}
