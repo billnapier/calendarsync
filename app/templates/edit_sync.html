@@ -5,188 +5,98 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Edit Sync - CalendarSync</title>
-    <style>
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-            background-color: #f0f2f5;
-            color: #333;
-            display: flex;
-            justify-content: center;
-            padding: 2rem;
-            margin: 0;
-        }
-
-        .container {
-            background: white;
-            padding: 2rem;
-            border-radius: 8px;
-            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
-            width: 100%;
-            max-width: 800px;
-        }
-
-        h1 {
-            color: #1a73e8;
-            margin-top: 0;
-        }
-
-        .form-group {
-            margin-bottom: 1.5rem;
-        }
-
-        label {
-            display: block;
-            margin-bottom: 0.5rem;
-            font-weight: 500;
-        }
-
-        input[type="text"],
-        select {
-            width: 100%;
-            padding: 0.75rem;
-            border: 1px solid #ccc;
-            border-radius: 4px;
-            font-size: 1rem;
-            box-sizing: border-box;
-        }
-
-        .helper-text {
-            font-size: 0.85rem;
-            color: #5f6368;
-            margin-top: 0.25rem;
-        }
-
-        .btn {
-            background-color: #1a73e8;
-            color: white;
-            border: none;
-            padding: 0.75rem 1.5rem;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 1rem;
-            font-weight: 500;
-        }
-
-        .btn:hover {
-            background-color: #1557b0;
-        }
-
-        .btn-secondary {
-            background-color: transparent;
-            color: #5f6368;
-            border: 1px solid #ccc;
-            margin-right: 0.5rem;
-        }
-
-        .btn-secondary:hover {
-            background-color: #f1f1f1;
-        }
-
-        .btn-danger {
-            background-color: #dc3545;
-            color: white;
-            padding: 0.5rem 1rem;
-            font-size: 0.9rem;
-            border: none;
-            border-radius: 4px;
-            cursor: pointer;
-        }
-
-        .btn-danger:hover {
-            background-color: #c82333;
-        }
-
-        .ical-entry {
-            display: flex;
-            gap: 0.5rem;
-            margin-bottom: 0.5rem;
-            align-items: center;
-        }
-
-        .ical-entry input[name="source_urls"] {
-            flex: 3;
-        }
-
-        .ical-entry input[name="source_prefixes"] {
-            flex: 1;
-        }
-
-        .add-btn {
-            background: none;
-            border: none;
-            color: #1a73e8;
-            cursor: pointer;
-            padding: 0;
-            font-size: 0.9rem;
-        }
-    </style>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
 
 <body>
-    <div class="container">
-        <h1>Edit Sync</h1>
-        <form action="/edit_sync/{{ sync.id }}" method="POST">
-            <div class="form-group">
-                <label for="destination_calendar_id">Destination Calendar</label>
-                {% if calendars %}
-                <select id="destination_calendar_id" name="destination_calendar_id" required>
-                    <option value="" disabled>Select a calendar</option>
-                    {% for cal in calendars %}
-                    <option value="{{ cal.id }}" {% if cal.id==sync.destination_calendar_id %}selected{% endif %}>
-                        {{ cal.summary }}
-                    </option>
-                    {% endfor %}
-                </select>
-                {% else %}
-                <input type="text" id="destination_calendar_id" name="destination_calendar_id"
-                    value="{{ sync.destination_calendar_id }}" required>
-                {% endif %}
-                <div class="helper-text">Select the Google Calendar you want to sync events TO.</div>
-            </div>
+    <header class="header">
+        <a href="/" class="logo-container">
+            <img src="{{ url_for('static', filename='images/logo.png') }}" alt="CalendarSync Logo" class="logo-img">
+            <span class="logo-text">CalendarSync</span>
+        </a>
+        <div class="user-menu">
+            {% if user %}
+            <span>{{ user.name }}</span>
+            <img src="{{ user.picture }}" alt="Profile" style="width: 32px; height: 32px; border-radius: 50%;">
+            <a href="/logout" class="btn btn-outline">Sign Out</a>
+            {% endif %}
+        </div>
+    </header>
 
-            <div class="form-group">
-                <label>Source Calendars</label>
-                <div class="helper-text" style="margin-bottom: 0.5rem;">
-                    Enter the iCal URL and an optional prefix for events from this source.
-                </div>
-                <div id="ical-container">
-                    {% for source in sync.sources %}
-                    <div class="ical-entry">
-                        <input type="text" name="source_urls" value="{{ source.url }}"
-                            placeholder="https://example.com/calendar.ics" aria-label="Source Calendar URL" required>
-                        <input type="text" name="source_prefixes" value="{{ source.prefix or '' }}"
-                            placeholder="Prefix (e.g. Work)" aria-label="Source Event Prefix">
-                        <button type="button" class="btn btn-danger" onclick="removeEntry(this)"
-                            aria-label="Remove source">Remove</button>
-                    </div>
-                    {% endfor %}
-
-                    {% if not sources %}
-                    <div class="ical-entry">
-                        <input type="text" name="source_urls" placeholder="https://example.com/calendar.ics"
-                            aria-label="Source Calendar URL" required>
-                        <input type="text" name="source_prefixes" placeholder="Prefix (e.g. School)"
-                            aria-label="Source Event Prefix">
-                        <button type="button" class="btn btn-danger" onclick="removeEntry(this)"
-                            style="visibility: hidden;" aria-label="Remove source">Remove</button>
-                    </div>
+    <main class="dashboard-container">
+        <div class="form-card">
+            <h1>Edit Sync</h1>
+            <form action="/edit_sync/{{ sync.id }}" method="POST">
+                <div class="form-group">
+                    <label for="destination_calendar_id">Destination Calendar</label>
+                    {% if calendars %}
+                    <select id="destination_calendar_id" name="destination_calendar_id" required>
+                        <option value="" disabled>Select a calendar</option>
+                        {% for cal in calendars %}
+                        <option value="{{ cal.id }}" {% if cal.id==sync.destination_calendar_id %}selected{% endif %}>
+                            {{ cal.summary }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    {% else %}
+                    <input type="text" id="destination_calendar_id" name="destination_calendar_id"
+                        value="{{ sync.destination_calendar_id }}" required>
                     {% endif %}
+                    <div class="helper-text">Select the Google Calendar you want to sync events TO.</div>
                 </div>
-                <button type="button" class="add-btn" onclick="addIcalInput()">+ Add another Source</button>
-            </div>
 
-            <div class="buttons">
-                <a href="/" class="btn btn-secondary">Cancel</a>
-                <button type="submit" class="btn">Update Sync</button>
-            </div>
-        </form>
-    </div>
+                <div class="form-group">
+                    <label>Source Calendars</label>
+                    <div class="helper-text" style="margin-bottom: 0.5rem;">
+                        Enter the iCal URL and an optional prefix for events from this source.
+                    </div>
+                    <div id="ical-container">
+                        {% for source in sync.sources %}
+                        <div class="ical-entry">
+                            <input type="text" name="source_urls" value="{{ source.url }}"
+                                placeholder="https://example.com/calendar.ics" aria-label="Source Calendar URL"
+                                required>
+                            <input type="text" name="source_prefixes" value="{{ source.prefix or '' }}"
+                                placeholder="Prefix (e.g. Work)" aria-label="Source Event Prefix">
+                            <button type="button" class="btn btn-danger" onclick="removeEntry(this)"
+                                aria-label="Remove source">Remove</button>
+                        </div>
+                        {% endfor %}
+
+                        {% if not sources %}
+                        <div class="ical-entry">
+                            <input type="text" name="source_urls" placeholder="https://example.com/calendar.ics"
+                                aria-label="Source Calendar URL" required>
+                            <input type="text" name="source_prefixes" placeholder="Prefix (e.g. School)"
+                                aria-label="Source Event Prefix">
+                            <button type="button" class="btn btn-danger" onclick="removeEntry(this)"
+                                style="visibility: hidden;" aria-label="Remove source">Remove</button>
+                        </div>
+                        {% endif %}
+                    </div>
+                    <button type="button" class="add-btn" onclick="addIcalInput()">+ Add another Source</button>
+                </div>
+
+                <div class="buttons">
+                    <a href="/" class="btn btn-secondary">Cancel</a>
+                    <button type="submit" class="btn btn-primary">Update Sync</button>
+                </div>
+            </form>
+        </div>
+    </main>
+
+    <footer>
+        <p>&copy; 2024 CalendarSync. All rights reserved.</p>
+    </footer>
 
     <template id="source-entry-template">
         <div class="ical-entry">
-            <input type="text" name="source_urls" placeholder="https://example.com/calendar.ics" aria-label="Source Calendar URL" required>
+            <input type="text" name="source_urls" placeholder="https://example.com/calendar.ics"
+                aria-label="Source Calendar URL" required>
             <input type="text" name="source_prefixes" placeholder="Prefix (e.g. Gym)" aria-label="Source Event Prefix">
-            <button type="button" class="btn btn-danger" onclick="removeEntry(this)" aria-label="Remove source">Remove</button>
+            <button type="button" class="btn btn-danger" onclick="removeEntry(this)"
+                aria-label="Remove source">Remove</button>
         </div>
     </template>
 
