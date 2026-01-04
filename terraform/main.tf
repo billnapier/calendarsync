@@ -191,7 +191,7 @@ resource "google_firebase_hosting_custom_domain" "default" {
   provider = google-beta
   project  = var.project_id
   site_id  = var.project_id
-  domain_name = var.domain_name
+  custom_domain = var.domain_name
 
   depends_on = [google_firebase_web_app.default]
 }
