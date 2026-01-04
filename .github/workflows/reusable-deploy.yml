@@ -80,4 +80,4 @@ jobs:
             TARGET_URL="${{ steps.deploy.outputs.url }}"
           fi
           echo "Smoke testing URL: $TARGET_URL"
-          curl -f "$TARGET_URL"
+          curl -f "$TARGET_URL" | grep -q "g_id_signin"
