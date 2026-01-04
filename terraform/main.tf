@@ -190,11 +190,7 @@ resource "google_cloud_run_service" "default" {
 resource "google_firebase_hosting_custom_domain" "default" {
   provider = google-beta
   project  = var.project_id
-  site_id  = google_firebase_web_app.default.display_name # Assumes display_name maps to site_id or we need to use a data source if different. 
-  # Actually, commonly the site_id is project_id for the default site.
-  # Let's double check site_id usage.
-  # For default site, site_id is usually the project_id.
-  site_id     = var.project_id 
+  site_id  = var.project_id
   domain_name = var.domain_name
 
   depends_on = [google_firebase_web_app.default]
