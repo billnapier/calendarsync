@@ -152,7 +152,7 @@ def home():
 
 
 @app.route("/auth/google/callback", methods=["POST"])
-def google_auth_callback():
+def google_auth_callback():  # pylint: disable=too-many-locals
     """Handle Google Identity Services (GIS) Sign-In Callback."""
     try:
         credential = request.form.get("credential")

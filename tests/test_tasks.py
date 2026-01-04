@@ -122,7 +122,7 @@ def test_sync_one_user_worker_missing_config(client_with_mocks):
                 response = client_with_mocks.post(
                     "/tasks/sync_one",
                     json={"sync_id": "sync_123"},
-                    headers={"Authorization": "Bearer mock_token"}
+                    headers={"Authorization": "Bearer mock_token"},
                 )
 
                 # Should be 403 because it raises ValueError("Configuration error...")

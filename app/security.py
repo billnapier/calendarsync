@@ -71,5 +71,5 @@ def safe_requests_get(url, **kwargs):
     hooks["response"].append(check_redirect)
     kwargs["hooks"] = hooks
 
-    kwargs.setdefault("timeout", 10)
-    return requests.get(url, **kwargs)
+    timeout = kwargs.pop("timeout", 10)
+    return requests.get(url, timeout=timeout, **kwargs)
