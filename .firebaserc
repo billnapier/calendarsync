@@ -1,0 +1,7 @@
+{
+  "projects": {
+    "default": "calendarsync-napier-dev",
+    "dev": "calendarsync-napier-dev",
+    "prod": "calendarsync-napier"
+  }
+}
