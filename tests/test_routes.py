@@ -61,6 +61,7 @@ def test_edit_sync_post_refreshes_stale_cache(
         sess["user"] = {"uid": "test_uid"}
         sess["calendars"] = [{"id": "old_cal", "summary": "Old Cal"}]
         sess["calendars_timestamp"] = time.time() - 301  # Stale
+        sess["csrf_token"] = "valid_token"
 
     mock_fetch_calendars.return_value = [{"id": "new_cal", "summary": "New Cal"}]
 
@@ -87,6 +88,7 @@ def test_edit_sync_post_refreshes_stale_cache(
         data={
             "destination_calendar_id": "new_cal",
             "ical_urls": ["http://example.com/cal.ics"],
+            "csrf_token": "valid_token",
         },
     )
     assert resp.status_code == 302  # Redirects home
@@ -101,6 +103,7 @@ def test_create_sync_post_fetches_if_missing(
     """Test that POST to create_sync fetches calendars if missing from session."""
     with client.session_transaction() as sess:
         sess["user"] = {"uid": "test_uid"}
+        sess["csrf_token"] = "valid_token"
         # No 'calendars' in session
 
     mock_fetch_calendars.return_value = [
@@ -121,6 +124,7 @@ def test_create_sync_post_fetches_if_missing(
         data={
             "destination_calendar_id": "dest_cal",
             "ical_urls": ["http://example.com/cal.ics"],
+            "csrf_token": "valid_token",
         },
     )
     assert resp.status_code == 302
