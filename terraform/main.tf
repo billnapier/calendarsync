@@ -188,9 +188,9 @@ resource "google_cloud_run_service" "default" {
 # Domain Mapping
 # Firebase Hosting Custom Domain
 resource "google_firebase_hosting_custom_domain" "default" {
-  provider = google-beta
-  project  = var.project_id
-  site_id  = var.project_id
+  provider      = google-beta
+  project       = var.project_id
+  site_id       = var.project_id
   custom_domain = var.domain_name
 
   depends_on = [google_firebase_web_app.default]
