@@ -570,7 +570,17 @@ def _handle_edit_sync_post(req, sync_ref, calendars):
     try:
         for source in sources:
             url = source["url"]
-            source_names[url] = get_calendar_name_from_ical(url)
+            if source.get("type") == "google":
+                # Try to find name in calendars
+                found_name = source["id"]
+                if calendars:
+                    for cal in calendars:
+                        if cal["id"] == source["id"]:
+                            found_name = cal["summary"]
+                            break
+                source_names[url] = found_name
+            else:
+                source_names[url] = get_calendar_name_from_ical(url)
     except Exception as e:  # pylint: disable=broad-exception-caught
         app.logger.warning("Failed to refresh names on edit: %s", e)
 
@@ -926,11 +936,22 @@ def _handle_create_sync_post(user):
     )
 
     # Populate source names asynchronously (or just do it now for simplicity)
+    # Populate source names asynchronously (or just do it now for simplicity)
     try:
         source_names = {}
         for source in sources:
             url = source["url"]
-            source_names[url] = get_calendar_name_from_ical(url)
+            if source.get("type") == "google":
+                # Try to find name in user_calendars
+                found_name = source["id"]
+                if user_calendars:
+                    for cal in user_calendars:
+                        if cal["id"] == source["id"]:
+                            found_name = cal["summary"]
+                            break
+                source_names[url] = found_name
+            else:
+                source_names[url] = get_calendar_name_from_ical(url)
         new_sync_ref.update({"source_names": source_names})
     except Exception as e:  # pylint: disable=broad-exception-caught
         app.logger.warning("Failed to populate initial source names: %s", e)
