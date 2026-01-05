@@ -97,102 +97,76 @@
                 </div>
             </section>
         {% else %}
-            <!-- Dashboard View for Logged-in Users -->
             <div class="dashboard-container">
-                <div class="hero" style="text-align: center; margin-bottom: 3rem;">
-                    <h2 style="font-size: 2rem; margin-bottom: 1rem;">Your Syncs</h2>
-                    <p style="color: var(--text-light);">Manage your calendar synchronizations.</p>
-                    <div style="margin-top: 1.5rem;">
+                <div class="dashboard-header">
+                    <h2>Your Syncs</h2>
+                    <p>Manage your calendar synchronizations.</p>
+                    <div>
                         <a href="/create_sync"
                            class="btn btn-primary"
-                           style="font-size: 1.1rem;
-                                  padding: 0.8rem 1.5rem">Create
-                        New Sync</a>
+                           style="font-size: 1.05rem;
+                                  padding: 0.7rem 1.5rem">+ Create New Sync</a>
                     </div>
                 </div>
                 {% if syncs %}
-                    <div class="sync-list"
-                         style="display: grid;
-                                gap: 1rem;
-                                max-width: 800px;
-                                margin: 0 auto">
+                    <div class="sync-grid">
                         {% for sync in syncs %}
-                            <div class="sync-card"
-                                 style="background: white;
-                                        padding: 1.5rem;
-                                        border-radius: 12px;
-                                        box-shadow: var(--shadow-sm);
-                                        border: 1px solid #eee">
-                                <div style="display: flex;
-                                            justify-content: space-between;
-                                            align-items: flex-start">
-                                    <div>
-                                        <h3 style="margin: 0 0 0.5rem 0; color: var(--primary-color);">
-                                            To: {{ sync.destination_calendar_summary or sync.destination_calendar_id }}
-                                        </h3>
-                                        <div style="margin-bottom: 1rem;">
-                                            <p style="margin: 0 0 0.5rem 0; font-size: 0.9rem; font-weight: 600;">Sources:</p>
-                                            <ul style="margin: 0; padding-left: 1.2rem; color: var(--text-light);">
-                                                {% set sources = sync.sources %}
-                                                {% if not sources and sync.source_icals %}
-                                                    {% set sources = [] %}
-                                                    {% for url in sync.source_icals %}
-                                                        {% set _ = sources.append({'url': url, 'prefix': sync.event_prefix}) %}
-                                                    {% endfor %}
-                                                {% endif %}
-                                                {% for source in sources %}
-                                                    <li>
-                                                        {% if source.prefix %}
-                                                            <span style="background: #e8f0fe;
-                                                                         color: #1a73e8;
-                                                                         padding: 2px 6px;
-                                                                         border-radius: 4px;
-                                                                         font-size: 0.8rem;
-                                                                         font-weight: 500">[{{
-                                                            source.prefix }}]</span>
-                                                        {% endif %}
-                                                        {% if sync.source_names and sync.source_names[source.url] %}
-                                                            {{ sync.source_names[source.url] }}
-                                                        {% else %}
-                                                            <span style="font-size: 0.85rem;">{{ source.url }}</span>
-                                                        {% endif %}
-                                                    </li>
-                                                {% endfor %}
-                                            </ul>
-                                        </div>
-                                        {% if sync.last_synced_at %}
-                                            <p style="font-size: 0.85rem; color: #777; margin: 0;">
-                                                Last Synced: {{ sync.last_synced_at.strftime("%Y-%m-%d %H:%M") if
-                                                sync.last_synced_at.strftime else sync.last_synced_at }}
-                                            </p>
-                                        {% endif %}
-                                    </div>
-                                    <div style="display: flex; gap: 0.5rem; flex-direction: column;">
-                                        <a href="{{ url_for('edit_sync', sync_id=sync.id) }}"
-                                           class="btn btn-outline"
-                                           style="padding: 0.4rem 0.8rem;
-                                                  font-size: 0.9rem">Edit</a>
+                            <div class="sync-card">
+                                <div class="sync-card-header">
+                                    <h3 class="sync-destination">
+                                        To: {{ sync.destination_calendar_summary or
+                                        sync.destination_calendar_id }}
+                                    </h3>
+                                    <div class="sync-actions">
                                         <form action="{{ url_for('run_sync', sync_id=sync.id) }}"
                                               method="POST"
-                                              style="margin: 0">
-                                            <button type="submit"
-                                                    class="btn btn-primary"
-                                                    style="padding: 0.4rem 0.8rem;
-                                                           font-size: 0.9rem;
-                                                           width: 100%">Sync Now</button>
+                                              style="margin:0">
+                                            <button type="submit" class="btn btn-primary">Sync Now</button>
                                         </form>
+                                        <a href="{{ url_for('edit_sync', sync_id=sync.id) }}"
+                                           class="btn btn-outline">Edit</a>
                                     </div>
                                 </div>
+                                <div class="sync-body">
+                                    <p class="sync-source-label">Sources</p>
+                                    <ul class="sync-source-list">
+                                        {% set sources = sync.sources %}
+                                        {# Backward compatibility for old syncs #}
+                                        {% if not sources and sync.source_icals %}
+                                            {% set sources = [] %}
+                                            {% for url in sync.source_icals %}
+                                                {% set _ = sources.append({'url': url, 'prefix': sync.event_prefix}) %}
+                                            {% endfor %}
+                                        {% endif %}
+                                        {% for source in sources %}
+                                            <li class="sync-source-item {{ 'no-badge' if not source.prefix else '' }}">
+                                                {% if source.prefix %}<span class="source-badge">{{ source.prefix }}</span>{% endif %}
+                                                <span title="{{ sync.source_names[source.url] if sync.source_names and sync.source_names[source.url] else source.url }}">
+                                                    {% if sync.source_names and sync.source_names[source.url] %}
+                                                        {{ sync.source_names[source.url] }}
+                                                    {% else %}
+                                                        {{ source.url }}
+                                                    {% endif %}
+                                                </span>
+                                            </li>
+                                        {% endfor %}
+                                    </ul>
+                                </div>
+                                {% if sync.last_synced_at %}
+                                    <div class="sync-footer">
+                                        <span>Last Synced:</span>
+                                        <strong title="{{ sync.last_synced_at.strftime('%Y-%m-%d %H:%M') if sync.last_synced_at.strftime else sync.last_synced_at }}">
+                                            {{ sync.last_synced_at | time_ago }}
+                                        </strong>
+                                    </div>
+                                {% endif %}
                             </div>
                         {% endfor %}
                     </div>
                 {% else %}
-                    <div style="text-align: center;
-                                color: var(--text-light);
-                                padding: 3rem;
-                                background: var(--bg-light);
-                                border-radius: 12px">
-                        <p>You haven't created any syncs yet.</p>
+                    <div class="empty-state">
+                        <p style="font-size: 1.2rem; margin-bottom: 1rem;">You haven't created any syncs yet.</p>
+                        <a href="/create_sync" class="btn btn-outline">Get Started</a>
                     </div>
                 {% endif %}
             </div>
