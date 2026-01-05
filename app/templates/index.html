@@ -142,9 +142,9 @@
                 {% if sync.last_synced_at %}
                 <div class="sync-footer">
                     <span>Last Synced:</span>
-                    <strong>
-                        {{ sync.last_synced_at.strftime("%Y-%m-%d %H:%M") if sync.last_synced_at.strftime else
-                        sync.last_synced_at }}
+                    <strong
+                        title="{{ sync.last_synced_at.strftime('%Y-%m-%d %H:%M') if sync.last_synced_at.strftime else sync.last_synced_at }}">
+                        {{ sync.last_synced_at | time_ago }}
                     </strong>
                 </div>
                 {% endif %}

@@ -98,6 +98,37 @@ def verify_csrf_token(form_token):
     return True
 
 
+@app.template_filter('time_ago')
+def time_ago_filter(dt):
+    """Returns a relative time string (e.g., '2 hours ago')."""
+    if not dt:
+        return ""
+    if isinstance(dt, str):
+        try:
+            dt = datetime.fromisoformat(dt)
+        except ValueError:
+            return dt
+    
+    now = datetime.now(timezone.utc)
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=timezone.utc)
+        
+    diff = now - dt
+    seconds = diff.total_seconds()
+    
+    if seconds < 60:
+        return "Just now"
+    elif seconds < 3600:
+        minutes = int(seconds // 60)
+        return f"{minutes} minute{'s' if minutes != 1 else ''} ago"
+    elif seconds < 86400:
+        hours = int(seconds // 3600)
+        return f"{hours} hour{'s' if hours != 1 else ''} ago"
+    else:
+        days = int(seconds // 86400)
+        return f"{days} day{'s' if days != 1 else ''} ago"
+
+
 def get_secret(secret_name):
     """
     Retrieve secret from Environment Variable or Google Secret Manager.
