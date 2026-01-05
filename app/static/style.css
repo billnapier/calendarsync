@@ -296,7 +296,57 @@ select:focus {
     margin-top: 0.5rem;
 }
 
+/* Help Box (Collapsible) */
+details.help-box {
+    background-color: transparent;
+    margin-bottom: 1rem;
+    font-size: 0.9rem;
+    color: var(--text-light);
+    border: 1px solid transparent;
+    border-radius: 8px;
+    transition: all 0.2s;
+}
+
+details.help-box[open] {
+    background-color: #f8f9fa;
+    border-color: var(--border-color);
+    padding: 1rem;
+}
+
+summary.help-summary {
+    cursor: pointer;
+    font-weight: 500;
+    color: var(--primary-color);
+    list-style: none;
+    /* Hide default triangle */
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    user-select: none;
+}
+
+summary.help-summary::-webkit-details-marker {
+    display: none;
+}
+
+summary.help-summary::before {
+    content: '▶';
+    font-size: 0.7em;
+    transition: transform 0.2s;
+}
+
+details[open] summary.help-summary::before {
+    transform: rotate(90deg);
+}
+
+.help-content {
+    margin-top: 0.75rem;
+    color: var(--text-dark);
+    line-height: 1.5;
+}
+
 .info-box {
+    /* Keep for legacy or specialized uses if any, otherwise can eventually remove */
     background: #e8f0fe;
     padding: 1rem;
     border-radius: 8px;

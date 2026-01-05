@@ -57,13 +57,18 @@
                 <!-- Sources Section -->
                 <div class="form-group">
                     <label>Source Calendars</label>
-                    <div class="info-box">
-                        <div class="info-box-icon">💡</div>
-                        <div>
-                            <strong>Add sync sources:</strong> Use <strong>Google Calendar</strong> for your personal
-                            calendars or <strong>iCal URL</strong> for external feeds (Outlook, iCloud, TeamSnap).
+                    <details class="help-box">
+                        <summary class="help-summary">Need help adding sources?</summary>
+                        <div class="help-content">
+                            <p style="margin: 0 0 0.5rem 0;"><strong>Which type should I choose?</strong></p>
+                            <ul style="padding-left: 1.2rem; margin: 0;">
+                                <li><strong>Google Calendar:</strong> Best for syncing your personal calendars (e.g.,
+                                    specific sub-calendars from your own account).</li>
+                                <li><strong>iCal URL:</strong> Use this for external links like Outlook, iCloud,
+                                    Teamsnap, or public holiday calendars.</li>
+                            </ul>
                         </div>
-                    </div>
+                    </details>
 
                     <div id="ical-container" class="source-list">
                         <!-- Initial empty state or default row -->
