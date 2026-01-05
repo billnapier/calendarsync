@@ -98,14 +98,19 @@ def verify_csrf_token(form_token):
     return True
 
 
-@app.template_filter('time_ago')
+@app.template_filter("time_ago")
 def time_ago_filter(dt):
     """Returns a relative time string (e.g., '2 hours ago')."""
     if not dt:
         return ""
     if isinstance(dt, str):
         # Try parsing various formats
-        for fmt in ("%Y-%m-%dT%H:%M:%S.%f", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M"):
+        for fmt in (
+            "%Y-%m-%dT%H:%M:%S.%f",
+            "%Y-%m-%dT%H:%M:%S",
+            "%Y-%m-%d %H:%M:%S",
+            "%Y-%m-%d %H:%M",
+        ):
             try:
                 dt = datetime.strptime(dt, fmt)
                 break
@@ -114,14 +119,14 @@ def time_ago_filter(dt):
         else:
             # If all parses fail, return duplicate original string
             return dt
-    
+
     now = datetime.now(timezone.utc)
     if dt.tzinfo is None:
         dt = dt.replace(tzinfo=timezone.utc)
-        
+
     diff = now - dt
     seconds = diff.total_seconds()
-    
+
     if seconds < 60:
         return "Just now"
     elif seconds < 3600:

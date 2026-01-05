@@ -549,6 +549,7 @@ details[open] summary.help-summary::before {
     line-height: 1.3;
     overflow-wrap: break-word;
     flex-grow: 1;
+
     /* Allow it to take up space */
 }
 
@@ -558,11 +559,13 @@ details[open] summary.help-summary::before {
     gap: 0.5rem;
     flex-shrink: 0;
     width: 110px;
+
     /* Fixed width for consistency */
 }
 
 .sync-actions form {
     width: 100%;
+
     /* Ensure form fills the container */
     display: flex;
     margin: 0;
@@ -571,12 +574,14 @@ details[open] summary.help-summary::before {
 .sync-actions .btn {
     width: 100%;
     padding: 0.4rem 0.5rem;
+
     /* Reduced padding to fit text */
     font-size: 0.85rem;
     display: flex;
     justify-content: center;
     align-items: center;
     box-sizing: border-box;
+
     /* Critical for padding/width calc */
     text-align: center;
 }
@@ -590,6 +595,7 @@ details[open] summary.help-summary::before {
     font-size: 0.75rem;
     font-weight: 700;
     color: var(--text-light);
+
     /* Lighter label */
     text-transform: uppercase;
     letter-spacing: 0.05em;
@@ -602,6 +608,7 @@ details[open] summary.help-summary::before {
     display: flex;
     flex-direction: column;
     gap: 0.75rem;
+
     /* More breathing room */
 }
 
@@ -609,8 +616,10 @@ details[open] summary.help-summary::before {
     font-size: 0.95rem;
     color: var(--text-dark);
     display: grid;
+
     /* Use grid for strict alignment */
     grid-template-columns: 70px 1fr;
+
     /* Badge Col | Text Col */
     align-items: center;
     gap: 0.75rem;
@@ -635,6 +644,7 @@ details[open] summary.help-summary::before {
     text-overflow: ellipsis;
     display: inline-block;
     width: 100%;
+
     /* Fill the grid column */
     box-sizing: border-box;
 }
@@ -646,11 +656,7 @@ details[open] summary.help-summary::before {
     white-space: nowrap;
 }
 
-border-radius: 12px;
-font-size: 0.75rem;
-font-weight: 600;
-flex-shrink: 0;
-}
+
 
 .sync-footer {
     margin-top: 1.5rem;
