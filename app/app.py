@@ -502,20 +502,38 @@ def _get_sources_from_form(form):
     """Helper to extract sources from form data and sanitize them."""
     urls = form.getlist("source_urls")
     prefixes = form.getlist("source_prefixes")
+    types = form.getlist("source_types")
+    ids = form.getlist("source_ids")
+    
     sources = []
-
-    for i, url in enumerate(urls):
-        url = url.strip()
-        if not url:
-            continue
+    
+    # Handle legacy/mixed inputs. 
+    # We iterate based on the maximum length of the lists, but really they should be aligned in the UI.
+    # The UI will submit:
+    # source_types[], source_urls[] (for ical), source_ids[] (for google), source_prefixes[]
+    
+    count = max(len(urls), len(ids), len(types))
+    
+    for i in range(count):
+        # Default to ical if type is missing (legacy)
+        s_type = types[i] if i < len(types) else 'ical'
         prefix = ""
         if i < len(prefixes):
             raw_prefix = prefixes[i].strip()
-            # Allow alphanumerics, spaces, dashes, underscores, brackets
-            # Remove anything else to prevent HTML injection etc.
             prefix = re.sub(r"[^a-zA-Z0-9 \-_\[\]\(\)]", "", raw_prefix)
+            
+        if s_type == 'google':
+             if i < len(ids):
+                 cal_id = ids[i].strip()
+                 if cal_id:
+                     sources.append({"type": "google", "id": cal_id, "url": cal_id, "prefix": prefix})
+        else:
+            # iCal
+            if i < len(urls):
+                url = urls[i].strip()
+                if url:
+                     sources.append({"type": "ical", "url": url, "prefix": prefix})
 
-        sources.append({"url": url, "prefix": prefix})
     return sources
 
 
@@ -592,11 +610,77 @@ def _calculate_end_time(start_dt_prop, duration_prop):
     return {"date": end_dt_obj.isoformat()}
 
 
-def _fetch_single_source(source):
+def _fetch_google_source(source, user_id):
+    """
+    Fetch events from a Google Calendar and convert to iCal components.
+    """
+    url = source.get("url", source.get("id"))
+    prefix = source.get("prefix", "")
+    events_items = []
+    
+    try:
+        db = firestore.client()
+        service = _get_google_service(db, user_id)
+        calendar_id = source.get("id")
+        
+        # Fetch events
+        events_result = service.events().list(
+            calendarId=calendar_id,
+            singleEvents=True,
+            orderBy='startTime',
+            maxResults=2500 # Limit to reasonable number
+        ).execute()
+        
+        events = events_result.get('items', [])
+        name = events_result.get('summary', url)
+        
+        for gevent in events:
+            ievent = icalendar.Event()
+            
+            # Map fields
+            if 'summary' in gevent:
+                ievent.add('summary', gevent['summary'])
+            if 'description' in gevent:
+                ievent.add('description', gevent['description'])
+            if 'location' in gevent:
+                ievent.add('location', gevent['location'])
+            if 'id' in gevent:
+                ievent.add('uid', gevent['id'])
+                
+            # Handle Dates
+            start = gevent.get('start')
+            end = gevent.get('end')
+            
+            if start:
+                if 'dateTime' in start:
+                    dt = datetime.fromisoformat(start['dateTime'])
+                    ievent.add('dtstart', dt)
+                elif 'date' in start:
+                    ievent.add('dtstart', datetime.strptime(start['date'], "%Y-%m-%d").date())
+                    
+            if end:
+                if 'dateTime' in end:
+                    dt = datetime.fromisoformat(end['dateTime'])
+                    ievent.add('dtend', dt)
+                elif 'date' in end:
+                    ievent.add('dtend', datetime.strptime(end['date'], "%Y-%m-%d").date())
+
+            events_items.append({"component": ievent, "prefix": prefix})
+            
+        return events_items, url, name
+
+    except Exception as e:
+        app.logger.error("Failed to fetch Google Calendar %s: %s", url, e)
+        return [], url, f"{url} (Failed)"
+
+def _fetch_single_source(source, user_id):
     """
     Helper to fetch a single source.
     Returns (events_list, url, name) or ([], url, failed_name)
     """
+    if source.get("type") == "google":
+        return _fetch_google_source(source, user_id)
+
     url = source["url"]
     prefix = source.get("prefix", "")
     events_items = []
@@ -624,7 +708,7 @@ def _fetch_single_source(source):
         return [], url, f"{url} (Failed)"
 
 
-def _fetch_source_events(sources):
+def _fetch_source_events(sources, user_id):
     """
     Fetch and parse events from source iCal URLs in parallel.
     Returns a list of dicts: {'component': event, 'prefix': prefix}
@@ -637,7 +721,7 @@ def _fetch_source_events(sources):
     with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
         # Submit all tasks
         future_to_source = {
-            executor.submit(_fetch_single_source, source): source for source in sources
+            executor.submit(_fetch_single_source, source, user_id): source for source in sources
         }
 
         # Process results as they complete
@@ -759,7 +843,7 @@ def sync_calendar_logic(sync_id):
     service = _get_google_service(db, user_id)
 
     # 2. Fetch and Parse
-    all_events_items, source_names = _fetch_source_events(sources)
+    all_events_items, source_names = _fetch_source_events(sources, user_id)
 
     # Update source names and last sync time
     sync_ref.update(
