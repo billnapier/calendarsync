@@ -104,9 +104,15 @@ def time_ago_filter(dt):
     if not dt:
         return ""
     if isinstance(dt, str):
-        try:
-            dt = datetime.fromisoformat(dt)
-        except ValueError:
+        # Try parsing various formats
+        for fmt in ("%Y-%m-%dT%H:%M:%S.%f", "%Y-%m-%dT%H:%M:%S", "%Y-%m-%d %H:%M:%S", "%Y-%m-%d %H:%M"):
+            try:
+                dt = datetime.strptime(dt, fmt)
+                break
+            except ValueError:
+                continue
+        else:
+            # If all parses fail, return duplicate original string
             return dt
     
     now = datetime.now(timezone.utc)
