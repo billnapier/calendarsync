@@ -703,6 +703,9 @@ details[open] summary.help-summary::before {
 }
 
 
+.sync-actions form {
+    margin: 0;
+}
 
 @keyframes fade-in {
     from {
