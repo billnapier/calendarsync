@@ -16,11 +16,11 @@ Welcome! We appreciate your interest in contributing to the Calendar Sync projec
         pylint app tests
         ```
         *Target Score: >= 8.0*
-    *   **Code Formatting**: Run `black` on the `app` and `tests` directories.
+    *   **Code Formatting**: Run `black` to automatically fix formatting issues.
         ```bash
-        black --check app tests
+        black .
         ```
-        *Requirement: No formatting changes needed.*
+        *Requirement: You MUST run this before every push to prevent CI failures.*
     *   **Python Tests**: Run the full test suite.
         ```bash
         pytest

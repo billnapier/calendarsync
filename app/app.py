@@ -51,9 +51,9 @@ app = Flask(__name__)
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1)
 
 # Firebase Hosting requires the session cookie to be named '__session'
-app.config['SESSION_COOKIE_NAME'] = '__session'
-app.config['SESSION_COOKIE_SECURE'] = True
-app.config['SESSION_COOKIE_SAMESITE'] = 'Lax'
+app.config["SESSION_COOKIE_NAME"] = "__session"
+app.config["SESSION_COOKIE_SECURE"] = True
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 
 logging.basicConfig(level=logging.INFO)
 
@@ -509,35 +509,42 @@ def _get_sources_from_form(form):
     prefixes = form.getlist("source_prefixes")
     types = form.getlist("source_types")
     ids = form.getlist("source_ids")
-    
+
     sources = []
-    
-    # Handle legacy/mixed inputs. 
+
+    # Handle legacy/mixed inputs.
     # We iterate based on the maximum length of the lists, but really they should be aligned in the UI.
     # The UI will submit:
     # source_types[], source_urls[] (for ical), source_ids[] (for google), source_prefixes[]
-    
+
     count = max(len(urls), len(ids), len(types))
-    
+
     for i in range(count):
         # Default to ical if type is missing (legacy)
-        s_type = types[i] if i < len(types) else 'ical'
+        s_type = types[i] if i < len(types) else "ical"
         prefix = ""
         if i < len(prefixes):
             raw_prefix = prefixes[i].strip()
             prefix = re.sub(r"[^a-zA-Z0-9 \-_\[\]\(\)]", "", raw_prefix)
-            
-        if s_type == 'google':
-             if i < len(ids):
-                 cal_id = ids[i].strip()
-                 if cal_id:
-                     sources.append({"type": "google", "id": cal_id, "url": cal_id, "prefix": prefix})
+
+        if s_type == "google":
+            if i < len(ids):
+                cal_id = ids[i].strip()
+                if cal_id:
+                    sources.append(
+                        {
+                            "type": "google",
+                            "id": cal_id,
+                            "url": cal_id,
+                            "prefix": prefix,
+                        }
+                    )
         else:
             # iCal
             if i < len(urls):
                 url = urls[i].strip()
                 if url:
-                     sources.append({"type": "ical", "url": url, "prefix": prefix})
+                    sources.append({"type": "ical", "url": url, "prefix": prefix})
 
     return sources
 
@@ -622,61 +629,70 @@ def _fetch_google_source(source, user_id):
     url = source.get("url", source.get("id"))
     prefix = source.get("prefix", "")
     events_items = []
-    
+
     try:
         db = firestore.client()
         service = _get_google_service(db, user_id)
         calendar_id = source.get("id")
-        
+
         # Fetch events
-        events_result = service.events().list(
-            calendarId=calendar_id,
-            singleEvents=True,
-            orderBy='startTime',
-            maxResults=2500 # Limit to reasonable number
-        ).execute()
-        
-        events = events_result.get('items', [])
-        name = events_result.get('summary', url)
-        
+        events_result = (
+            service.events()
+            .list(
+                calendarId=calendar_id,
+                singleEvents=True,
+                orderBy="startTime",
+                maxResults=2500,  # Limit to reasonable number
+            )
+            .execute()
+        )
+
+        events = events_result.get("items", [])
+        name = events_result.get("summary", url)
+
         for gevent in events:
             ievent = icalendar.Event()
-            
+
             # Map fields
-            if 'summary' in gevent:
-                ievent.add('summary', gevent['summary'])
-            if 'description' in gevent:
-                ievent.add('description', gevent['description'])
-            if 'location' in gevent:
-                ievent.add('location', gevent['location'])
-            if 'id' in gevent:
-                ievent.add('uid', gevent['id'])
-                
+            if "summary" in gevent:
+                ievent.add("summary", gevent["summary"])
+            if "description" in gevent:
+                ievent.add("description", gevent["description"])
+            if "location" in gevent:
+                ievent.add("location", gevent["location"])
+            if "id" in gevent:
+                ievent.add("uid", gevent["id"])
+
             # Handle Dates
-            start = gevent.get('start')
-            end = gevent.get('end')
-            
+            start = gevent.get("start")
+            end = gevent.get("end")
+
             if start:
-                if 'dateTime' in start:
-                    dt = datetime.fromisoformat(start['dateTime'])
-                    ievent.add('dtstart', dt)
-                elif 'date' in start:
-                    ievent.add('dtstart', datetime.strptime(start['date'], "%Y-%m-%d").date())
-                    
+                if "dateTime" in start:
+                    dt = datetime.fromisoformat(start["dateTime"])
+                    ievent.add("dtstart", dt)
+                elif "date" in start:
+                    ievent.add(
+                        "dtstart", datetime.strptime(start["date"], "%Y-%m-%d").date()
+                    )
+
             if end:
-                if 'dateTime' in end:
-                    dt = datetime.fromisoformat(end['dateTime'])
-                    ievent.add('dtend', dt)
-                elif 'date' in end:
-                    ievent.add('dtend', datetime.strptime(end['date'], "%Y-%m-%d").date())
+                if "dateTime" in end:
+                    dt = datetime.fromisoformat(end["dateTime"])
+                    ievent.add("dtend", dt)
+                elif "date" in end:
+                    ievent.add(
+                        "dtend", datetime.strptime(end["date"], "%Y-%m-%d").date()
+                    )
 
             events_items.append({"component": ievent, "prefix": prefix})
-            
+
         return events_items, url, name
 
     except Exception as e:
         app.logger.error("Failed to fetch Google Calendar %s: %s", url, e)
         return [], url, f"{url} (Failed)"
+
 
 def _fetch_single_source(source, user_id):
     """
@@ -726,7 +742,8 @@ def _fetch_source_events(sources, user_id):
     with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
         # Submit all tasks
         future_to_source = {
-            executor.submit(_fetch_single_source, source, user_id): source for source in sources
+            executor.submit(_fetch_single_source, source, user_id): source
+            for source in sources
         }
 
         # Process results as they complete
