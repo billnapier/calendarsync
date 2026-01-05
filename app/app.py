@@ -549,7 +549,6 @@ def _get_sources_from_form(form):
     return sources
 
 
-
 def _resolve_source_names(sources, calendars):
     """
     Efficiently resolve friendly names for sources.
@@ -557,7 +556,7 @@ def _resolve_source_names(sources, calendars):
     - calendars: list of Google Calendar dicts (id, summary)
     """
     source_names = {}
-    
+
     # Create a lookup map for calendar names for efficiency
     cal_map = {cal["id"]: cal["summary"] for cal in calendars} if calendars else {}
 
@@ -571,12 +570,11 @@ def _resolve_source_names(sources, calendars):
                 source_names[url] = get_calendar_name_from_ical(url)
     except Exception as e:  # pylint: disable=broad-exception-caught
         app.logger.warning("Failed to resolve source names: %s", e)
-        
+
     return source_names
 
 
 def _handle_edit_sync_post(req, sync_ref, calendars):
-
     """Handle POST request for edit_sync."""
     destination_id = req.form.get("destination_calendar_id")
     sources = _get_sources_from_form(req.form)
@@ -679,19 +677,17 @@ def _fetch_google_source(source, user_id):
                 )
                 .execute()
             )
-            
+
             items = events_result.get("items", [])
             events.extend(items)
 
             if page_token is None:
-                 # The summary is the same for all pages, so we can get it from the first response.
+                # The summary is the same for all pages, so we can get it from the first response.
                 name = events_result.get("summary", url)
 
             page_token = events_result.get("nextPageToken")
             if not page_token:
                 break
-
-
 
         for gevent in events:
             ievent = icalendar.Event()
