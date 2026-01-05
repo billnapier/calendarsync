@@ -423,8 +423,8 @@ details[open] summary.help-summary::before {
     display: flex;
     align-items: center;
     height: 100%;
-    padding-top: 1.25rem;
-    /* Align with inputs */
+    /* Align with inputs handled by hidden label in HTML */
+    padding-top: 0;
 }
 
 /* Add Button */
