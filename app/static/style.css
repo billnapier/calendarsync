@@ -659,8 +659,8 @@ details[open] summary.help-summary::before {
 
 
 .sync-footer {
-    margin-top: 1.5rem;
-    padding-top: 1rem;
+    margin-top: 2rem;
+    padding-top: 1.5rem;
     border-top: 1px solid var(--border-color);
     font-size: 0.8rem;
     color: var(--text-light);
