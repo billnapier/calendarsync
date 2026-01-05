@@ -702,9 +702,7 @@ details[open] summary.help-summary::before {
     padding: 0.7rem 1.5rem;
 }
 
-.sync-actions form {
-    margin: 0;
-}
+
 
 @keyframes fade-in {
     from {
