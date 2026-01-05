@@ -545,6 +545,36 @@ def edit_sync(sync_id):
     return "Method not allowed", 405
 
 
+@app.route("/delete_sync/<sync_id>", methods=["POST"])
+def delete_sync(sync_id):
+    """
+    Delete a specific sync configuration.
+    """
+    user = session.get("user")
+    if not user:
+        return redirect(url_for("login"))
+
+    db = firestore.client()
+    sync_ref = db.collection("syncs").document(sync_id)
+    sync_doc = sync_ref.get()
+
+    if not sync_doc.exists:
+        return "Sync not found", 404
+
+    sync_data = sync_doc.to_dict()
+    if sync_data["user_id"] != user["uid"]:
+        return "Unauthorized", 403
+
+    try:
+        # We only remove the configuration, as requested ("remove a sync and all of it's sources").
+        sync_ref.delete()
+        app.logger.info("Deleted sync %s for user %s", sync_id, user["uid"])
+        return redirect(url_for("home"))
+    except Exception as e:  # pylint: disable=broad-exception-caught
+        app.logger.error("Error deleting sync %s: %s", sync_id, e)
+        return f"Error deleting sync: {e}", 500
+
+
 def _get_sources_from_form(form):
     """Helper to extract sources from form data and sanitize them."""
     urls = form.getlist("source_urls")
