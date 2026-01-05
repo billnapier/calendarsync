@@ -31,6 +31,18 @@ Welcome! We appreciate your interest in contributing to the Calendar Sync projec
         terraform fmt -recursive -check
         terraform validate
         ```
+    *   **HTML Linting**: Run `djlint` to check and format Jinja2 templates.
+        ```bash
+        djlint app/templates/*.html --check
+        # To auto-fix:
+        djlint app/templates/*.html --reformat
+        ```
+    *   **CSS Linting**: Run `stylelint` to check CSS files.
+        ```bash
+        npx stylelint "**/*.css"
+        # To auto-fix:
+        npx stylelint "**/*.css" --fix
+        ```
 
 ## 2. Python Development Guidelines
 
