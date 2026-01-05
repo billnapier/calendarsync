@@ -580,9 +580,14 @@ def _handle_edit_sync_post(req, sync_ref, calendars):
             "destination_calendar_summary": destination_summary,
             "sources": sources,
             "source_names": source_names,
-            "updated_at": firestore.SERVER_TIMESTAMP,  # pylint: disable=no-member
         }
     )
+
+    # Auto-sync immediately after edit
+    try:
+        sync_calendar_logic(sync_ref.id)
+    except Exception as e:  # pylint: disable=broad-exception-caught
+        app.logger.warning("Auto-sync on edit failed: %s", e)
 
     return redirect(url_for("home"))
 
@@ -929,6 +934,12 @@ def _handle_create_sync_post(user):
         new_sync_ref.update({"source_names": source_names})
     except Exception as e:  # pylint: disable=broad-exception-caught
         app.logger.warning("Failed to populate initial source names: %s", e)
+
+    # Auto-sync immediately after creation
+    try:
+        sync_calendar_logic(new_sync_ref.id)
+    except Exception as e:  # pylint: disable=broad-exception-caught
+        app.logger.warning("Auto-sync on create failed: %s", e)
 
     return redirect(url_for("home"))
 
