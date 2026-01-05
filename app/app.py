@@ -50,6 +50,11 @@ app = Flask(__name__)
 # Fix for Cloud Run (HTTPS behind proxy)
 app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_port=1)
 
+# Firebase Hosting requires the session cookie to be named '__session'
+app.config["SESSION_COOKIE_NAME"] = "__session"
+app.config["SESSION_COOKIE_SECURE"] = True
+app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+
 logging.basicConfig(level=logging.INFO)
 
 # Configuration
@@ -502,21 +507,71 @@ def _get_sources_from_form(form):
     """Helper to extract sources from form data and sanitize them."""
     urls = form.getlist("source_urls")
     prefixes = form.getlist("source_prefixes")
+    types = form.getlist("source_types")
+    ids = form.getlist("source_ids")
+
     sources = []
 
-    for i, url in enumerate(urls):
-        url = url.strip()
-        if not url:
-            continue
+    # Handle legacy/mixed inputs.
+    # We iterate based on the maximum length of the lists, but really they should be aligned in the UI.
+    # The UI will submit:
+    # source_types[], source_urls[] (for ical), source_ids[] (for google), source_prefixes[]
+
+    count = max(len(urls), len(ids), len(types))
+
+    for i in range(count):
+        # Default to ical if type is missing (legacy)
+        s_type = types[i] if i < len(types) else "ical"
         prefix = ""
         if i < len(prefixes):
             raw_prefix = prefixes[i].strip()
-            # Allow alphanumerics, spaces, dashes, underscores, brackets
-            # Remove anything else to prevent HTML injection etc.
             prefix = re.sub(r"[^a-zA-Z0-9 \-_\[\]\(\)]", "", raw_prefix)
 
-        sources.append({"url": url, "prefix": prefix})
+        if s_type == "google":
+            if i < len(ids):
+                cal_id = ids[i].strip()
+                if cal_id:
+                    sources.append(
+                        {
+                            "type": "google",
+                            "id": cal_id,
+                            "url": cal_id,
+                            "prefix": prefix,
+                        }
+                    )
+        else:
+            # iCal
+            if i < len(urls):
+                url = urls[i].strip()
+                if url:
+                    sources.append({"type": "ical", "url": url, "prefix": prefix})
+
     return sources
+
+
+def _resolve_source_names(sources, calendars):
+    """
+    Efficiently resolve friendly names for sources.
+    - sources: list of source dicts
+    - calendars: list of Google Calendar dicts (id, summary)
+    """
+    source_names = {}
+
+    # Create a lookup map for calendar names for efficiency
+    cal_map = {cal["id"]: cal["summary"] for cal in calendars} if calendars else {}
+
+    try:
+        for source in sources:
+            url = source["url"]
+            if source.get("type") == "google":
+                # Use map for O(1) lookup
+                source_names[url] = cal_map.get(source["id"], source["id"])
+            else:
+                source_names[url] = get_calendar_name_from_ical(url)
+    except Exception as e:  # pylint: disable=broad-exception-caught
+        app.logger.warning("Failed to resolve source names: %s", e)
+
+    return source_names
 
 
 def _handle_edit_sync_post(req, sync_ref, calendars):
@@ -536,13 +591,7 @@ def _handle_edit_sync_post(req, sync_ref, calendars):
                 break
 
     # Re-fetch source names
-    source_names = {}
-    try:
-        for source in sources:
-            url = source["url"]
-            source_names[url] = get_calendar_name_from_ical(url)
-    except Exception as e:  # pylint: disable=broad-exception-caught
-        app.logger.warning("Failed to refresh names on edit: %s", e)
+    source_names = _resolve_source_names(sources, calendars)
 
     sync_ref.update(
         {
@@ -550,9 +599,14 @@ def _handle_edit_sync_post(req, sync_ref, calendars):
             "destination_calendar_summary": destination_summary,
             "sources": sources,
             "source_names": source_names,
-            "updated_at": firestore.SERVER_TIMESTAMP,  # pylint: disable=no-member
         }
     )
+
+    # Auto-sync immediately after edit
+    try:
+        sync_calendar_logic(sync_ref.id)
+    except Exception as e:  # pylint: disable=broad-exception-caught
+        app.logger.warning("Auto-sync on edit failed: %s", e)
 
     return redirect(url_for("home"))
 
@@ -592,11 +646,101 @@ def _calculate_end_time(start_dt_prop, duration_prop):
     return {"date": end_dt_obj.isoformat()}
 
 
-def _fetch_single_source(source):
+def _fetch_google_source(source, user_id):
+    """
+    Fetch events from a Google Calendar and convert to iCal components.
+    """
+    url = source.get("url", source.get("id"))
+    prefix = source.get("prefix", "")
+    events_items = []
+
+    try:
+        db = firestore.client()
+        service = _get_google_service(db, user_id)
+        calendar_id = source.get("id")
+
+        # Fetch events
+        # Fetch events with pagination
+        events = []
+        page_token = None
+        name = url  # Default name
+
+        while True:
+            events_result = (
+                service.events()
+                .list(
+                    calendarId=calendar_id,
+                    singleEvents=True,
+                    orderBy="startTime",
+                    maxResults=2500,  # Max allowed per page
+                    pageToken=page_token,
+                )
+                .execute()
+            )
+
+            items = events_result.get("items", [])
+            events.extend(items)
+
+            if page_token is None:
+                # The summary is the same for all pages, so we can get it from the first response.
+                name = events_result.get("summary", url)
+
+            page_token = events_result.get("nextPageToken")
+            if not page_token:
+                break
+
+        for gevent in events:
+            ievent = icalendar.Event()
+
+            # Map fields
+            if "summary" in gevent:
+                ievent.add("summary", gevent["summary"])
+            if "description" in gevent:
+                ievent.add("description", gevent["description"])
+            if "location" in gevent:
+                ievent.add("location", gevent["location"])
+            if "id" in gevent:
+                ievent.add("uid", gevent["id"])
+
+            # Handle Dates
+            start = gevent.get("start")
+            end = gevent.get("end")
+
+            if start:
+                if "dateTime" in start:
+                    dt = datetime.fromisoformat(start["dateTime"])
+                    ievent.add("dtstart", dt)
+                elif "date" in start:
+                    ievent.add(
+                        "dtstart", datetime.strptime(start["date"], "%Y-%m-%d").date()
+                    )
+
+            if end:
+                if "dateTime" in end:
+                    dt = datetime.fromisoformat(end["dateTime"])
+                    ievent.add("dtend", dt)
+                elif "date" in end:
+                    ievent.add(
+                        "dtend", datetime.strptime(end["date"], "%Y-%m-%d").date()
+                    )
+
+            events_items.append({"component": ievent, "prefix": prefix})
+
+        return events_items, url, name
+
+    except Exception as e:
+        app.logger.error("Failed to fetch Google Calendar %s: %s", url, e)
+        return [], url, f"{url} (Failed)"
+
+
+def _fetch_single_source(source, user_id):
     """
     Helper to fetch a single source.
     Returns (events_list, url, name) or ([], url, failed_name)
     """
+    if source.get("type") == "google":
+        return _fetch_google_source(source, user_id)
+
     url = source["url"]
     prefix = source.get("prefix", "")
     events_items = []
@@ -624,7 +768,7 @@ def _fetch_single_source(source):
         return [], url, f"{url} (Failed)"
 
 
-def _fetch_source_events(sources):
+def _fetch_source_events(sources, user_id):
     """
     Fetch and parse events from source iCal URLs in parallel.
     Returns a list of dicts: {'component': event, 'prefix': prefix}
@@ -637,7 +781,8 @@ def _fetch_source_events(sources):
     with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
         # Submit all tasks
         future_to_source = {
-            executor.submit(_fetch_single_source, source): source for source in sources
+            executor.submit(_fetch_single_source, source, user_id): source
+            for source in sources
         }
 
         # Process results as they complete
@@ -759,7 +904,7 @@ def sync_calendar_logic(sync_id):
     service = _get_google_service(db, user_id)
 
     # 2. Fetch and Parse
-    all_events_items, source_names = _fetch_source_events(sources)
+    all_events_items, source_names = _fetch_source_events(sources, user_id)
 
     # Update source names and last sync time
     sync_ref.update(
@@ -815,14 +960,15 @@ def _handle_create_sync_post(user):
     )
 
     # Populate source names asynchronously (or just do it now for simplicity)
+    # Populate source names asynchronously (or just do it now for simplicity)
+    source_names = _resolve_source_names(sources, user_calendars)
+    new_sync_ref.update({"source_names": source_names})
+
+    # Auto-sync immediately after creation
     try:
-        source_names = {}
-        for source in sources:
-            url = source["url"]
-            source_names[url] = get_calendar_name_from_ical(url)
-        new_sync_ref.update({"source_names": source_names})
+        sync_calendar_logic(new_sync_ref.id)
     except Exception as e:  # pylint: disable=broad-exception-caught
-        app.logger.warning("Failed to populate initial source names: %s", e)
+        app.logger.warning("Auto-sync on create failed: %s", e)
 
     return redirect(url_for("home"))
 
