@@ -149,40 +149,13 @@
                 {% endif %}
             </div>
             {% endfor %}
-            {% endif %}
-            {% for source in sources %}
-            <li class="sync-source-item {{ 'no-badge' if not source.prefix else '' }}">
-                {% if source.prefix %}<span class="source-badge">{{ source.prefix }}</span>{% endif %}
-                <span
-                    title="{{ sync.source_names[source.url] if sync.source_names and sync.source_names[source.url] else source.url }}">
-                    {% if sync.source_names and sync.source_names[source.url] %}
-                    {{ sync.source_names[source.url] }}
-                    {% else %}
-                    {{ source.url }}
-                    {% endif %}
-                </span>
-            </li>
-            {% endfor %}
-            </ul>
         </div>
-        {% if sync.last_synced_at %}
-        <div class="sync-footer">
-            <span>Last Synced:</span>
-            <strong
-                title="{{ sync.last_synced_at.strftime('%Y-%m-%d %H:%M') if sync.last_synced_at.strftime else sync.last_synced_at }}">
-                {{ sync.last_synced_at | time_ago }}
-            </strong>
+        {% else %}
+        <div class="empty-state">
+            <p style="font-size: 1.2rem; margin-bottom: 1rem;">You haven't created any syncs yet.</p>
+            <a href="/create_sync" class="btn btn-outline">Get Started</a>
         </div>
         {% endif %}
-    </div>
-    {% endfor %}
-    </div>
-    {% else %}
-    <div class="empty-state">
-        <p style="font-size: 1.2rem; margin-bottom: 1rem;">You haven't created any syncs yet.</p>
-        <a href="/create_sync" class="btn btn-outline">Get Started</a>
-    </div>
-    {% endif %}
     </div>
     {% endif %}
     <footer>
