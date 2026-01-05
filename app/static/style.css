@@ -492,7 +492,7 @@ details[open] summary.help-summary::before {
 .dashboard-header {
     text-align: center;
     margin-bottom: 3rem;
-    animation: fadeIn 0.5s ease-out;
+    animation: fade-in 0.5s ease-out;
 }
 
 .dashboard-header h2 {
@@ -624,7 +624,7 @@ details[open] summary.help-summary::before {
     border: 2px dashed var(--border-color);
 }
 
-@keyframes fadeIn {
+@keyframes fade-in {
     from {
         opacity: 0;
         transform: translateY(10px);
