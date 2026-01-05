@@ -549,7 +549,34 @@ def _get_sources_from_form(form):
     return sources
 
 
+
+def _resolve_source_names(sources, calendars):
+    """
+    Efficiently resolve friendly names for sources.
+    - sources: list of source dicts
+    - calendars: list of Google Calendar dicts (id, summary)
+    """
+    source_names = {}
+    
+    # Create a lookup map for calendar names for efficiency
+    cal_map = {cal["id"]: cal["summary"] for cal in calendars} if calendars else {}
+
+    try:
+        for source in sources:
+            url = source["url"]
+            if source.get("type") == "google":
+                # Use map for O(1) lookup
+                source_names[url] = cal_map.get(source["id"], source["id"])
+            else:
+                source_names[url] = get_calendar_name_from_ical(url)
+    except Exception as e:  # pylint: disable=broad-exception-caught
+        app.logger.warning("Failed to resolve source names: %s", e)
+        
+    return source_names
+
+
 def _handle_edit_sync_post(req, sync_ref, calendars):
+
     """Handle POST request for edit_sync."""
     destination_id = req.form.get("destination_calendar_id")
     sources = _get_sources_from_form(req.form)
@@ -566,23 +593,7 @@ def _handle_edit_sync_post(req, sync_ref, calendars):
                 break
 
     # Re-fetch source names
-    source_names = {}
-    try:
-        for source in sources:
-            url = source["url"]
-            if source.get("type") == "google":
-                # Try to find name in calendars
-                found_name = source["id"]
-                if calendars:
-                    for cal in calendars:
-                        if cal["id"] == source["id"]:
-                            found_name = cal["summary"]
-                            break
-                source_names[url] = found_name
-            else:
-                source_names[url] = get_calendar_name_from_ical(url)
-    except Exception as e:  # pylint: disable=broad-exception-caught
-        app.logger.warning("Failed to refresh names on edit: %s", e)
+    source_names = _resolve_source_names(sources, calendars)
 
     sync_ref.update(
         {
@@ -651,19 +662,36 @@ def _fetch_google_source(source, user_id):
         calendar_id = source.get("id")
 
         # Fetch events
-        events_result = (
-            service.events()
-            .list(
-                calendarId=calendar_id,
-                singleEvents=True,
-                orderBy="startTime",
-                maxResults=2500,  # Limit to reasonable number
-            )
-            .execute()
-        )
+        # Fetch events with pagination
+        events = []
+        page_token = None
+        name = url  # Default name
 
-        events = events_result.get("items", [])
-        name = events_result.get("summary", url)
+        while True:
+            events_result = (
+                service.events()
+                .list(
+                    calendarId=calendar_id,
+                    singleEvents=True,
+                    orderBy="startTime",
+                    maxResults=2500,  # Max allowed per page
+                    pageToken=page_token,
+                )
+                .execute()
+            )
+            
+            items = events_result.get("items", [])
+            events.extend(items)
+
+            if page_token is None:
+                 # The summary is the same for all pages, so we can get it from the first response.
+                name = events_result.get("summary", url)
+
+            page_token = events_result.get("nextPageToken")
+            if not page_token:
+                break
+
+
 
         for gevent in events:
             ievent = icalendar.Event()
@@ -937,24 +965,8 @@ def _handle_create_sync_post(user):
 
     # Populate source names asynchronously (or just do it now for simplicity)
     # Populate source names asynchronously (or just do it now for simplicity)
-    try:
-        source_names = {}
-        for source in sources:
-            url = source["url"]
-            if source.get("type") == "google":
-                # Try to find name in user_calendars
-                found_name = source["id"]
-                if user_calendars:
-                    for cal in user_calendars:
-                        if cal["id"] == source["id"]:
-                            found_name = cal["summary"]
-                            break
-                source_names[url] = found_name
-            else:
-                source_names[url] = get_calendar_name_from_ical(url)
-        new_sync_ref.update({"source_names": source_names})
-    except Exception as e:  # pylint: disable=broad-exception-caught
-        app.logger.warning("Failed to populate initial source names: %s", e)
+    source_names = _resolve_source_names(sources, user_calendars)
+    new_sync_ref.update({"source_names": source_names})
 
     # Auto-sync immediately after creation
     try:
