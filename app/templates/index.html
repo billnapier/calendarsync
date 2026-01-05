@@ -1,162 +1,204 @@
 <!DOCTYPE html>
 <html lang="en">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CalendarSync - Sync Your Life</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <!-- Google Fonts: Inter -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-    <script src="https://accounts.google.com/gsi/client" async></script>
-</head>
-
-<body>
-    <header class="header">
-        <a href="/" class="logo-container">
-            <img src="{{ url_for('static', filename='images/logo.png') }}" alt="CalendarSync Logo" class="logo-img">
-            <span class="logo-text">CalendarSync</span>
-        </a>
-        <div class="user-menu">
-            {% if user %}
-            <span>Hello, <strong>{{ user.name }}</strong></span>
-            <a href="/logout" class="btn btn-outline">Logout</a>
-            {% else %}
-            <!-- Google Sign In Button (hidden placeholder) -->
-            {% endif %}
-        </div>
-    </header>
-
-    {% if not user %}
-    <section class="hero-section">
-        <div class="hero-content">
-            <h1 class="hero-headline">Sync Your Life, <br>Simplified.</h1>
-            <p class="hero-subheadline">
-                Seamlessly merge multiple iCal calendars into a single master calendar.
-                Keep track of work, personal, and shared events all in one place.
-            </p>
-
-            <div class="auth-wrapper">
-                <div id="g_id_onload" data-client_id="{{ google_client_id }}"
-                    data-login_uri="{{ url_for('google_auth_callback', _external=True) }}" data-auto_prompt="false">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>CalendarSync - Sync Your Life</title>
+        <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+        <!-- Google Fonts: Inter -->
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+              rel="stylesheet">
+        <script src="https://accounts.google.com/gsi/client" async></script>
+    </head>
+    <body>
+        <header class="header">
+            <a href="/" class="logo-container">
+                <img src="{{ url_for('static', filename='images/logo.png') }}"
+                     alt="CalendarSync Logo"
+                     class="logo-img">
+                <span class="logo-text">CalendarSync</span>
+            </a>
+            <div class="user-menu">
+                {% if user %}
+                    <span>Hello, <strong>{{ user.name }}</strong></span>
+                    <a href="/logout" class="btn btn-outline">Logout</a>
+                {% else %}
+                    <!-- Google Sign In Button (hidden placeholder) -->
+                {% endif %}
+            </div>
+        </header>
+        {% if not user %}
+            <section class="hero-section">
+                <div class="hero-content">
+                    <h1 class="hero-headline">
+                        Sync Your Life,
+                        <br>
+                        Simplified.
+                    </h1>
+                    <p class="hero-subheadline">
+                        Seamlessly merge multiple iCal calendars into a single master calendar.
+                        Keep track of work, personal, and shared events all in one place.
+                    </p>
+                    <div class="auth-wrapper">
+                        <div id="g_id_onload"
+                             data-client_id="{{ google_client_id }}"
+                             data-login_uri="{{ url_for('google_auth_callback', _external=True) }}"
+                             data-auto_prompt="false"></div>
+                        <div class="g_id_signin"
+                             data-type="standard"
+                             data-size="large"
+                             data-theme="filled_blue"
+                             data-text="sign_in_with"
+                             data-shape="pill"
+                             data-logo_alignment="left"
+                             data-width="300"></div>
+                    </div>
                 </div>
-                <div class="g_id_signin" data-type="standard" data-size="large" data-theme="filled_blue"
-                    data-text="sign_in_with" data-shape="pill" data-logo_alignment="left" data-width="300">
+                <div class="hero-image-container">
+                    <img src="{{ url_for('static', filename='images/hero.png') }}"
+                         alt="Calendar Synchronization Visual"
+                         class="hero-image">
                 </div>
-            </div>
-        </div>
-        <div class="hero-image-container">
-            <img src="{{ url_for('static', filename='images/hero.png') }}" alt="Calendar Synchronization Visual"
-                class="hero-image">
-        </div>
-    </section>
-
-    <section class="features-section">
-        <div class="features-grid">
-            <div class="feature-card">
-                <div class="feature-icon"><span role="img" aria-label="Universal Sync"></span>🔄</span></div>
-                <h3 class="feature-title">Universal Sync</h3>
-                <p class="feature-description">Works perfectly with any calendar that supports iCal format. Google,
-                    Outlook, iCloud, and more.</p>
-            </div>
-            <div class="feature-card">
-                <div class="feature-icon"><span role="img" aria-label="Real-time Updates">⚡</span></div>
-                <h3 class="feature-title">Real-time Updates</h3>
-                <p class="feature-description">Changes in your source calendars are automatically reflected in your
-                    destination calendar.</p>
-            </div>
-            <div class="feature-card">
-                <div class="feature-icon"><span role="img" aria-label="Privacy First">🛡️</span></div>
-                <h3 class="feature-title">Privacy First</h3>
-                <p class="feature-description">Your data belongs to you. We just help you move it where you need it
-                    securely.</p>
-            </div>
-        </div>
-    </section>
-
-    {% else %}
-    <!-- Dashboard View for Logged-in Users -->
-    <div class="dashboard-container">
-        <div class="hero" style="text-align: center; margin-bottom: 3rem;">
-            <h2 style="font-size: 2rem; margin-bottom: 1rem;">Your Syncs</h2>
-            <p style="color: var(--text-light);">Manage your calendar synchronizations.</p>
-            <div style="margin-top: 1.5rem;">
-                <a href="/create_sync" class="btn btn-primary" style="font-size: 1.1rem; padding: 0.8rem 1.5rem;">Create
-                    New Sync</a>
-            </div>
-        </div>
-
-        {% if syncs %}
-        <div class="sync-list" style="display: grid; gap: 1rem; max-width: 800px; margin: 0 auto;">
-            {% for sync in syncs %}
-            <div class="sync-card"
-                style="background: white; padding: 1.5rem; border-radius: 12px; box-shadow: var(--shadow-sm); border: 1px solid #eee;">
-                <div style="display: flex; justify-content: space-between; align-items: flex-start;">
-                    <div>
-                        <h3 style="margin: 0 0 0.5rem 0; color: var(--primary-color);">
-                            To: {{ sync.destination_calendar_summary or sync.destination_calendar_id }}
-                        </h3>
-                        <div style="margin-bottom: 1rem;">
-                            <p style="margin: 0 0 0.5rem 0; font-size: 0.9rem; font-weight: 600;">Sources:</p>
-                            <ul style="margin: 0; padding-left: 1.2rem; color: var(--text-light);">
-                                {% set sources = sync.sources %}
-                                {% if not sources and sync.source_icals %}
-                                {% set sources = [] %}
-                                {% for url in sync.source_icals %}
-                                {% set _ = sources.append({'url': url, 'prefix': sync.event_prefix}) %}
-                                {% endfor %}
-                                {% endif %}
-
-                                {% for source in sources %}
-                                <li>
-                                    {% if source.prefix %}
-                                    <span
-                                        style="background: #e8f0fe; color: #1a73e8; padding: 2px 6px; border-radius: 4px; font-size: 0.8rem; font-weight: 500;">[{{
-                                        source.prefix }}]</span>
-                                    {% endif %}
-
-                                    {% if sync.source_names and sync.source_names[source.url] %}
-                                    {{ sync.source_names[source.url] }}
-                                    {% else %}
-                                    <span style="font-size: 0.85rem;">{{ source.url }}</span>
-                                    {% endif %}
-                                </li>
-                                {% endfor %}
-                            </ul>
+            </section>
+            <section class="features-section">
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <span role="img" aria-label="Universal Sync">🔄</span>
                         </div>
-                        {% if sync.last_synced_at %}
-                        <p style="font-size: 0.85rem; color: #777; margin: 0;">
-                            Last Synced: {{ sync.last_synced_at.strftime('%Y-%m-%d %H:%M') if
-                            sync.last_synced_at.strftime else sync.last_synced_at }}
+                        <h3 class="feature-title">Universal Sync</h3>
+                        <p class="feature-description">
+                            Works perfectly with any calendar that supports iCal format. Google,
+                            Outlook, iCloud, and more.
                         </p>
-                        {% endif %}
                     </div>
-                    <div style="display: flex; gap: 0.5rem; flex-direction: column;">
-                        <a href="{{ url_for('edit_sync', sync_id=sync.id) }}" class="btn btn-outline"
-                            style="padding: 0.4rem 0.8rem; font-size: 0.9rem;">Edit</a>
-                        <form action="{{ url_for('run_sync', sync_id=sync.id) }}" method="POST" style="margin: 0;">
-                            <button type="submit" class="btn btn-primary"
-                                style="padding: 0.4rem 0.8rem; font-size: 0.9rem; width: 100%;">Sync Now</button>
-                        </form>
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <span role="img" aria-label="Real-time Updates">⚡</span>
+                        </div>
+                        <h3 class="feature-title">Real-time Updates</h3>
+                        <p class="feature-description">
+                            Changes in your source calendars are automatically reflected in your
+                            destination calendar.
+                        </p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <span role="img" aria-label="Privacy First">🛡️</span>
+                        </div>
+                        <h3 class="feature-title">Privacy First</h3>
+                        <p class="feature-description">
+                            Your data belongs to you. We just help you move it where you need it
+                            securely.
+                        </p>
                     </div>
                 </div>
-            </div>
-            {% endfor %}
-        </div>
+            </section>
         {% else %}
-        <div
-            style="text-align: center; color: var(--text-light); padding: 3rem; background: var(--bg-light); border-radius: 12px;">
-            <p>You haven't created any syncs yet.</p>
-        </div>
+            <!-- Dashboard View for Logged-in Users -->
+            <div class="dashboard-container">
+                <div class="hero" style="text-align: center; margin-bottom: 3rem;">
+                    <h2 style="font-size: 2rem; margin-bottom: 1rem;">Your Syncs</h2>
+                    <p style="color: var(--text-light);">Manage your calendar synchronizations.</p>
+                    <div style="margin-top: 1.5rem;">
+                        <a href="/create_sync"
+                           class="btn btn-primary"
+                           style="font-size: 1.1rem;
+                                  padding: 0.8rem 1.5rem">Create
+                        New Sync</a>
+                    </div>
+                </div>
+                {% if syncs %}
+                    <div class="sync-list"
+                         style="display: grid;
+                                gap: 1rem;
+                                max-width: 800px;
+                                margin: 0 auto">
+                        {% for sync in syncs %}
+                            <div class="sync-card"
+                                 style="background: white;
+                                        padding: 1.5rem;
+                                        border-radius: 12px;
+                                        box-shadow: var(--shadow-sm);
+                                        border: 1px solid #eee">
+                                <div style="display: flex;
+                                            justify-content: space-between;
+                                            align-items: flex-start">
+                                    <div>
+                                        <h3 style="margin: 0 0 0.5rem 0; color: var(--primary-color);">
+                                            To: {{ sync.destination_calendar_summary or sync.destination_calendar_id }}
+                                        </h3>
+                                        <div style="margin-bottom: 1rem;">
+                                            <p style="margin: 0 0 0.5rem 0; font-size: 0.9rem; font-weight: 600;">Sources:</p>
+                                            <ul style="margin: 0; padding-left: 1.2rem; color: var(--text-light);">
+                                                {% set sources = sync.sources %}
+                                                {% if not sources and sync.source_icals %}
+                                                    {% set sources = [] %}
+                                                    {% for url in sync.source_icals %}
+                                                        {% set _ = sources.append({'url': url, 'prefix': sync.event_prefix}) %}
+                                                    {% endfor %}
+                                                {% endif %}
+                                                {% for source in sources %}
+                                                    <li>
+                                                        {% if source.prefix %}
+                                                            <span style="background: #e8f0fe;
+                                                                         color: #1a73e8;
+                                                                         padding: 2px 6px;
+                                                                         border-radius: 4px;
+                                                                         font-size: 0.8rem;
+                                                                         font-weight: 500">[{{
+                                                            source.prefix }}]</span>
+                                                        {% endif %}
+                                                        {% if sync.source_names and sync.source_names[source.url] %}
+                                                            {{ sync.source_names[source.url] }}
+                                                        {% else %}
+                                                            <span style="font-size: 0.85rem;">{{ source.url }}</span>
+                                                        {% endif %}
+                                                    </li>
+                                                {% endfor %}
+                                            </ul>
+                                        </div>
+                                        {% if sync.last_synced_at %}
+                                            <p style="font-size: 0.85rem; color: #777; margin: 0;">
+                                                Last Synced: {{ sync.last_synced_at.strftime("%Y-%m-%d %H:%M") if
+                                                sync.last_synced_at.strftime else sync.last_synced_at }}
+                                            </p>
+                                        {% endif %}
+                                    </div>
+                                    <div style="display: flex; gap: 0.5rem; flex-direction: column;">
+                                        <a href="{{ url_for('edit_sync', sync_id=sync.id) }}"
+                                           class="btn btn-outline"
+                                           style="padding: 0.4rem 0.8rem;
+                                                  font-size: 0.9rem">Edit</a>
+                                        <form action="{{ url_for('run_sync', sync_id=sync.id) }}"
+                                              method="POST"
+                                              style="margin: 0">
+                                            <button type="submit"
+                                                    class="btn btn-primary"
+                                                    style="padding: 0.4rem 0.8rem;
+                                                           font-size: 0.9rem;
+                                                           width: 100%">Sync Now</button>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div style="text-align: center;
+                                color: var(--text-light);
+                                padding: 3rem;
+                                background: var(--bg-light);
+                                border-radius: 12px">
+                        <p>You haven't created any syncs yet.</p>
+                    </div>
+                {% endif %}
+            </div>
         {% endif %}
-    </div>
-    {% endif %}
-
-    <footer>
-        Powered by antigravity and Google Deepmind
-    </footer>
-</body>
-
+        <footer>
+            Powered by antigravity and Google Deepmind
+        </footer>
+    </body>
 </html>
