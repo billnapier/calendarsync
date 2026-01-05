@@ -102,10 +102,7 @@
                     <h2>Your Syncs</h2>
                     <p>Manage your calendar synchronizations.</p>
                     <div>
-                        <a href="/create_sync"
-                           class="btn btn-primary"
-                           style="font-size: 1.05rem;
-                                  padding: 0.7rem 1.5rem">+ Create New Sync</a>
+                        <a href="/create_sync" class="btn btn-primary dashboard-cta">+ Create New Sync</a>
                     </div>
                 </div>
                 {% if syncs %}
@@ -118,9 +115,7 @@
                                         sync.destination_calendar_id }}
                                     </h3>
                                     <div class="sync-actions">
-                                        <form action="{{ url_for('run_sync', sync_id=sync.id) }}"
-                                              method="POST"
-                                              style="margin:0">
+                                        <form action="{{ url_for('run_sync', sync_id=sync.id) }}" method="POST">
                                             <button type="submit" class="btn btn-primary">Sync Now</button>
                                         </form>
                                         <a href="{{ url_for('edit_sync', sync_id=sync.id) }}"

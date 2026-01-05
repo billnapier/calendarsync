@@ -11,6 +11,21 @@
     --shadow-sm: 0 1px 2px 0 rgb(60 64 67 / 30%), 0 1px 3px 1px rgb(60 64 67 / 15%);
     --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 10%), 0 2px 4px -1px rgb(0 0 0 / 6%);
     --font-stack: 'Inter', -apple-system, blinkmacsystemfont, "Segoe UI", roboto, helvetica, arial, sans-serif;
+
+    /* Spacing Scale */
+    --spacing-1: 0.25rem;
+    --spacing-2: 0.5rem;
+    --spacing-3: 0.75rem;
+    --spacing-4: 1rem;
+    --spacing-5: 1.25rem;
+    --spacing-6: 1.5rem;
+    --spacing-8: 2rem;
+    --spacing-10: 2.5rem;
+    --spacing-12: 3rem;
+
+    /* Extended Colors */
+    --badge-bg: #e8f0fe;
+    --badge-text: #1967d2;
 }
 
 body {
@@ -632,8 +647,8 @@ details[open] summary.help-summary::before {
 }
 
 .source-badge {
-    background: #e8f0fe;
-    color: #1967d2;
+    background: var(--badge-bg);
+    color: var(--badge-text);
     padding: 4px 8px;
     border-radius: 12px;
     font-size: 0.75rem;
@@ -657,10 +672,9 @@ details[open] summary.help-summary::before {
 }
 
 
-
 .sync-footer {
-    margin-top: 1.5rem;
-    padding-top: 1rem;
+    margin-top: var(--spacing-8);
+    padding-top: var(--spacing-4);
     border-top: 1px solid var(--border-color);
     font-size: 0.8rem;
     color: var(--text-light);
@@ -677,6 +691,18 @@ details[open] summary.help-summary::before {
     border-radius: 12px;
     border: 2px dashed var(--border-color);
 }
+
+.empty-state-text {
+    font-size: 1.2rem;
+    margin-bottom: var(--spacing-4);
+}
+
+.dashboard-cta {
+    font-size: 1.05rem;
+    padding: 0.7rem 1.5rem;
+}
+
+
 
 @keyframes fade-in {
     from {
