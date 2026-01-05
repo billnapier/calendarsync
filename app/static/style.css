@@ -251,6 +251,17 @@ footer {
     border-color: #f5c6cb;
 }
 
+.btn-outline-danger {
+    background-color: transparent;
+    color: var(--danger-color);
+    border-color: var(--danger-color);
+}
+
+.btn-outline-danger:hover {
+    background-color: #fce8e6;
+    border-color: var(--danger-color);
+}
+
 /* Form & Card Styles */
 .form-card {
     background: var(--white);
