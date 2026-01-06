@@ -102,6 +102,11 @@ SCOPES = [
     "https://www.googleapis.com/auth/calendar",
 ]
 
+CALENDAR_LIST_FIELDS = "items(id,summary)"
+EVENT_LIST_FIELDS = (
+    "summary,nextPageToken,items(id,summary,description,location,start,end)"
+)
+
 
 def generate_csrf_token():
     """Generate a CSRF token and store it in the session."""
@@ -429,8 +434,9 @@ def fetch_user_calendars(user_uid):
 
                 service = build("calendar", "v3", credentials=creds)
                 # pylint: disable=no-member
+                # Optimization: Request only necessary fields to reduce payload size
                 calendar_list = (
-                    service.calendarList().list(fields="items(id,summary)").execute()
+                    service.calendarList().list(fields=CALENDAR_LIST_FIELDS).execute()
                 )
 
                 for cal in calendar_list.get("items", []):
@@ -786,7 +792,7 @@ def _fetch_all_google_events(service, calendar_id, url):
                 orderBy="startTime",
                 maxResults=2500,  # Max allowed per page
                 pageToken=page_token,
-                fields="nextPageToken,summary,items(id,summary,description,location,start,end)",
+                fields=EVENT_LIST_FIELDS,
             )
             .execute()
         )
