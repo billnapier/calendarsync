@@ -50,6 +50,20 @@ app.config["SESSION_COOKIE_NAME"] = "__session"
 app.config["SESSION_COOKIE_SECURE"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 
+
+@app.after_request
+def add_security_headers(response):
+    """Add security headers to all responses."""
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "SAMEORIGIN"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    # Strict-Transport-Security is often handled by the load balancer, but good to have.
+    response.headers["Strict-Transport-Security"] = (
+        "max-age=31536000; includeSubDomains"
+    )
+    return response
+
+
 logging.basicConfig(level=logging.INFO)
 
 # Configuration
@@ -271,7 +285,7 @@ def google_auth_callback():  # pylint: disable=too-many-locals
 
     except Exception as e:  # pylint: disable=broad-exception-caught
         app.logger.error("GIS callback error: %s", e)
-        return f"Authentication failed: {e}", 400
+        return "Authentication failed. Please try again.", 400
 
 
 @app.route("/login")
@@ -307,7 +321,7 @@ def login():
         return redirect(authorization_url)
     except Exception as e:  # pylint: disable=broad-exception-caught
         app.logger.error("Login init error: %s", e)
-        return f"Error initializing login: {e}", 500
+        return "Error initializing login. Please try again.", 500
 
 
 @app.route("/oauth2callback")
@@ -376,7 +390,7 @@ def oauth2callback():
 
     except Exception as e:  # pylint: disable=broad-exception-caught
         app.logger.error("OAuth callback error: %s", e)
-        return f"Authentication failed: {e}", 400
+        return "Authentication failed. Please try again.", 400
 
 
 def fetch_user_calendars(user_uid):
@@ -464,7 +478,7 @@ def run_sync(sync_id):
         return redirect(url_for("home"))
     except Exception as e:  # pylint: disable=broad-exception-caught
         app.logger.error("Sync failed: %s", e)
-        return f"Sync failed: {e}", 500
+        return "Sync failed. Please check logs for details.", 500
 
 
 @app.route("/edit_sync/<sync_id>", methods=["GET", "POST"])
@@ -1222,7 +1236,7 @@ def sync_one_user():
     except Exception as e:  # pylint: disable=broad-exception-caught
         app.logger.error("Worker failed for sync_id %s: %s", sync_id, e)
         # Return 500 to trigger Cloud Tasks retry
-        return f"Worker failed: {e}", 500
+        return "Worker failed. Please check logs for details.", 500
 
 
 @app.route("/tasks/sync_all", methods=["POST"])
@@ -1289,7 +1303,7 @@ def sync_all_users():
 
     except Exception as e:  # pylint: disable=broad-exception-caught
         app.logger.error("Critical error in dispatcher: %s", e)
-        return f"Internal failure: {e}", 500
+        return "Internal failure. Please check logs for details.", 500
 
 
 if __name__ == "__main__":
