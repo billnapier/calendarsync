@@ -163,6 +163,7 @@ def test_delete_sync_success(client, mock_firestore):
     mock_collection.document.assert_called_with("sync123")
     mock_doc_ref.delete.assert_called_once()
 
+
 def test_delete_sync_not_found(client, mock_firestore):
     """Test delete_sync returns 404 if sync does not exist."""
     with client.session_transaction() as sess:
