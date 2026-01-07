@@ -129,6 +129,12 @@ def generate_csrf_token():
     return session["csrf_token"]
 
 
+@app.context_processor
+def inject_csrf_token():
+    """Inject CSRF token into all templates."""
+    return dict(csrf_token=generate_csrf_token())
+
+
 def verify_csrf_token(form_token):
     """Verify the CSRF token from the form against the session."""
     session_token = session.get("csrf_token")
@@ -1251,8 +1257,13 @@ def create_sync():
     return "Method not allowed", 405
 
 
-@app.route("/logout")
+@app.route("/logout", methods=["POST"])
 def logout():
+    """Secure logout endpoint (POST only, CSRF protected)."""
+    if not verify_csrf_token(request.form.get("csrf_token")):
+        app.logger.warning("Logout failed: Invalid CSRF token")
+        return "Invalid CSRF token", 400
+
     session.clear()
     return redirect(url_for("index"))
 
