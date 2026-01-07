@@ -9,51 +9,42 @@ document.addEventListener('DOMContentLoaded', () => {
     const forms = document.querySelectorAll('form');
 
     forms.forEach(form => {
-        const action = form.getAttribute('action');
-        if (!action) return;
+        form.addEventListener('submit', (e) => {
+            // Find the submitter (button or input that triggered the submit)
+            // Note: e.submitter is supported in modern browsers
+            const submitter = e.submitter || form.querySelector('button[type="submit"], input[type="submit"]');
 
-        let loadingText = null;
+            if (submitter && !submitter.disabled) {
+                const loadingText = submitter.getAttribute('data-loading-text');
 
-        // Determine loading text based on action
-        if (action.includes('/run_sync')) {
-            loadingText = 'Syncing...';
-        } else if (action === '/create_sync') {
-            loadingText = 'Creating...';
-        } else if (action.includes('/edit_sync')) {
-            loadingText = 'Saving...';
-        }
-
-        if (loadingText) {
-            form.addEventListener('submit', (e) => {
-                // Find the submit button
-                const btn = form.querySelector('button[type="submit"]');
-
-                // Only proceed if button exists and isn't already disabled
-                if (btn && !btn.disabled) {
-                    // Store original text to restore if needed (e.g. bfcache)
-                    btn.dataset.originalText = btn.textContent;
+                if (loadingText) {
+                    // Store original text/value to restore if needed (e.g. bfcache)
+                    if (submitter.tagName === 'INPUT') {
+                        submitter.dataset.originalValue = submitter.value;
+                        submitter.value = loadingText;
+                    } else {
+                        submitter.dataset.originalText = submitter.textContent;
+                        submitter.textContent = loadingText;
+                    }
 
                     // Update UI state
-                    btn.disabled = true;
-                    btn.textContent = loadingText;
-                    btn.style.cursor = 'wait';
-
-                    // Note: We do not prevent default here, allowing the form to submit.
+                    submitter.disabled = true;
+                    submitter.style.cursor = 'wait';
                 }
-            });
-        }
+            }
+        });
     });
 
     // Handle Back/Forward Cache (bfcache)
     // If user navigates back to the page, ensure buttons are re-enabled.
     window.addEventListener('pageshow', (event) => {
-        // event.persisted is true if the page was restored from bfcache
-        // However, some browsers might not reset the DOM even if persisted is false
-        // if it's a simple history navigation. We check all buttons just in case.
-
-        const buttons = document.querySelectorAll('button[type="submit"][disabled]');
+        const buttons = document.querySelectorAll('button[type="submit"][disabled], input[type="submit"][disabled]');
         buttons.forEach(btn => {
-            if (btn.dataset.originalText) {
+            if (btn.tagName === 'INPUT' && btn.dataset.originalValue) {
+                btn.disabled = false;
+                btn.value = btn.dataset.originalValue;
+                btn.style.cursor = '';
+            } else if (btn.dataset.originalText) {
                 btn.disabled = false;
                 btn.textContent = btn.dataset.originalText;
                 btn.style.cursor = '';
