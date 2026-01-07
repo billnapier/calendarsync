@@ -57,9 +57,14 @@ def add_security_headers(response):
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "SAMEORIGIN"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    # A basic CSP to enhance security. This should be tailored to your app's needs.
+    response.headers["Content-Security-Policy"] = "default-src 'self'; script-src 'self' https://accounts.google.com/gsi/client; style-src 'self' 'unsafe-inline'; object-src 'none'; frame-ancestors 'self';"
+    # Disable features that are not needed.
+    response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
     # Strict-Transport-Security is often handled by the load balancer, but good to have.
+    # The 'preload' directive can be added for enhanced security, but requires commitment to HTTPS.
     response.headers["Strict-Transport-Security"] = (
-        "max-age=31536000; includeSubDomains"
+        "max-age=31536000; includeSubDomains; preload"
     )
     return response
 
