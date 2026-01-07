@@ -3,7 +3,7 @@ import os
 import logging
 import time
 import concurrent.futures
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import json
 import re
 import secrets
@@ -765,7 +765,14 @@ def _fetch_google_source(source, user_id):
         service = _get_google_service(db, user_id)
         calendar_id = source.get("id")
 
-        events, name = _fetch_all_google_events(service, calendar_id, url)
+        # Define sync window: 30 days past -> 365 days future
+        now = datetime.now(timezone.utc)
+        time_min = (now - timedelta(days=30)).isoformat()
+        time_max = (now + timedelta(days=365)).isoformat()
+
+        events, name = _fetch_all_google_events(
+            service, calendar_id, url, time_min=time_min, time_max=time_max
+        )
 
         for gevent in events:
             ievent = _map_google_event_to_ical(gevent)
@@ -778,23 +785,32 @@ def _fetch_google_source(source, user_id):
         return [], url, f"{url} (Failed)"
 
 
-def _fetch_all_google_events(service, calendar_id, url):
+def _fetch_all_google_events(
+    service, calendar_id, url, time_min=None, time_max=None
+):  # pylint: disable=too-many-arguments
     """Fetch all events from Google Calendar with pagination."""
     events = []
     page_token = None
     name = url  # Default name
 
+    # Build kwargs for list()
+    list_kwargs = {
+        "calendarId": calendar_id,
+        "singleEvents": True,
+        "orderBy": "startTime",
+        "maxResults": 2500,
+        "fields": EVENT_LIST_FIELDS,
+    }
+    if time_min:
+        list_kwargs["timeMin"] = time_min
+    if time_max:
+        list_kwargs["timeMax"] = time_max
+
     while True:
+        list_kwargs["pageToken"] = page_token
         events_result = (
             service.events()  # pylint: disable=no-member
-            .list(
-                calendarId=calendar_id,
-                singleEvents=True,
-                orderBy="startTime",
-                maxResults=2500,  # Max allowed per page
-                pageToken=page_token,
-                fields=EVENT_LIST_FIELDS,
-            )
+            .list(**list_kwargs)
             .execute()
         )
 
@@ -915,23 +931,31 @@ def _fetch_source_events(sources, user_id):
     return all_events_items, source_names
 
 
-def _get_existing_events_map(service, destination_id):
+def _get_existing_events_map(service, destination_id, time_min=None, time_max=None):
     """
     Fetch all existing events from the destination calendar to support updates.
     Returns a dict mapping iCalUID -> eventId.
     """
     existing_map = {}
     page_token = None
+
+    # Build kwargs
+    list_kwargs = {
+        "calendarId": destination_id,
+        "singleEvents": False,  # We want the master recurring events, not instances
+        "fields": "nextPageToken,items(id,iCalUID)",
+    }
+    if time_min:
+        list_kwargs["timeMin"] = time_min
+    if time_max:
+        list_kwargs["timeMax"] = time_max
+
     try:
         while True:
+            list_kwargs["pageToken"] = page_token
             events_result = (
                 service.events()
-                .list(
-                    calendarId=destination_id,
-                    pageToken=page_token,
-                    singleEvents=False,  # We want the master recurring events, not instances
-                    fields="nextPageToken,items(id,iCalUID)",
-                )
+                .list(**list_kwargs)
                 .execute()
             )
             for event in events_result.get("items", []):
@@ -1096,8 +1120,19 @@ def sync_calendar_logic(sync_id):
     )
 
     # 3. Process Events
+    # Define sync window: 30 days past -> 365 days future
+    # Note: If sources are iCal, we have already fetched everything, but we can still
+    # optimize the destination fetch.
+    # Ideally we should also filter the parsed iCal events here if we want to be strict,
+    # but the biggest win is avoiding fetching thousands of existing events from Google.
+    now = datetime.now(timezone.utc)
+    time_min = (now - timedelta(days=30)).isoformat()
+    time_max = (now + timedelta(days=365)).isoformat()
+
     # Fetch existing events map for reliable updates
-    existing_map = _get_existing_events_map(service, destination_id)
+    existing_map = _get_existing_events_map(
+        service, destination_id, time_min=time_min, time_max=time_max
+    )
     _batch_upsert_events(service, destination_id, all_events_items, existing_map)
 
 
