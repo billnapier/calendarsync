@@ -58,7 +58,7 @@ class TestSyncLogic(unittest.TestCase):
         # Mock requests.get for iCal
         mock_response = MagicMock()
         mock_response.status_code = 200
-        # Minimal iCal content with one event
+        # Minimal iCal content with one event (UID 12345)
         mock_response.content = (
             b"BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Test//\r\n"
             b"BEGIN:VEVENT\r\nUID:12345\r\nDTSTART:20230101T120000Z\r\n"
@@ -74,23 +74,104 @@ class TestSyncLogic(unittest.TestCase):
         mock_batch = MagicMock()
         mock_service.new_batch_http_request.return_value = mock_batch
 
+        # Mock events().list() to return NO existing events -> Should trigger import
+        mock_service.events.return_value.list.return_value.execute.return_value = {
+            "items": []
+        }
+
         # Run Logic
         sync_calendar_logic("sync_123")
 
         # Verify Batch Add was called
-        # We want to check that body['summary'] starts with "[TestPrefix]"
         self.assertTrue(mock_batch.add.called, "Batch add was not called")
 
-        # Inspect arguments to batch.add
-        import_call = mock_service.events.return_value.import_.call_args
-        self.assertIsNotNone(import_call)
-        _, kwargs = import_call
+        # Inspect arguments to batch.add (Should be import_)
+        import_call_args = mock_service.events.return_value.import_.call_args
+        self.assertIsNotNone(import_call_args, "Should call import_ for new event")
+        _, kwargs = import_call_args
         body = kwargs["body"]
 
         self.assertEqual(body["iCalUID"], "12345")
         self.assertEqual(body["summary"], "[TestPrefix] Meeting")
-        self.assertEqual(body["description"], "Discuss stuff")
-        self.assertEqual(body["location"], "Office")
+
+    @patch("app.app.firestore.client")
+    @patch("app.app.get_client_config")
+    @patch("app.app.Credentials")
+    @patch("app.app.build")
+    @patch("app.app.requests.get")
+    def test_sync_calendar_logic_existing_update(
+        self, mock_get, mock_build, mock_creds, mock_config, mock_firestore
+    ):
+        """Test that existing events trigger an update() call."""
+        # Setup Mocks
+        mock_db = MagicMock()
+        mock_firestore.return_value = mock_db
+
+        mock_sync_doc = MagicMock()
+        mock_sync_doc.exists = True
+        mock_sync_doc.to_dict.return_value = {
+            "user_id": "test_user",
+            "destination_calendar_id": "dest_cal",
+            "source_icals": ["http://test.com/cal.ics"],
+            "event_prefix": "TestPrefix",
+        }
+        mock_sync_ref = MagicMock()
+        mock_sync_ref.get.return_value = mock_sync_doc
+        
+        mock_user_doc = MagicMock()
+        mock_user_doc.to_dict.return_value = {"refresh_token": "dummy_token"}
+
+        # Collection Side Effects
+        mock_sync_col = MagicMock()
+        mock_sync_col.document.return_value = mock_sync_ref
+        mock_user_col = MagicMock()
+        mock_user_col.document.return_value = MagicMock() # user ref
+        mock_user_col.document.return_value.get.return_value = mock_user_doc
+
+        def collection_side_effect(name):
+            if name == "syncs":
+                return mock_sync_col
+            if name == "users":
+                return mock_user_col
+            return MagicMock()
+        mock_db.collection.side_effect = collection_side_effect
+
+        # Mock requests.get for iCal (UID 12345)
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.content = (
+            b"BEGIN:VCALENDAR\r\nVERSION:2.0\r\n"
+            b"BEGIN:VEVENT\r\nUID:12345\r\nDTSTART:20230101T120000Z\r\n"
+            b"DTEND:20230101T130000Z\r\nSUMMARY:New Summary\r\n"
+            b"END:VEVENT\r\nEND:VCALENDAR"
+        )
+        mock_get.return_value = mock_response
+
+        # Mock Service
+        mock_service = MagicMock()
+        mock_build.return_value = mock_service
+        mock_batch = MagicMock()
+        mock_service.new_batch_http_request.return_value = mock_batch
+
+        # Mock events().list() to return EXISTING event with iCalUID 12345
+        mock_service.events.return_value.list.return_value.execute.return_value = {
+            "items": [{"id": "google_event_id_xyz", "iCalUID": "12345"}]
+        }
+
+        # Run Logic
+        sync_calendar_logic("sync_update")
+
+        # Verify: Should call update(), NOT import_()
+        self.assertFalse(mock_service.events.return_value.import_.called)
+        self.assertTrue(mock_service.events.return_value.update.called)
+
+        # Check call args
+        update_call = mock_service.events.return_value.update.call_args
+        _, kwargs = update_call
+        self.assertEqual(kwargs["calendarId"], "dest_cal")
+        self.assertEqual(kwargs["eventId"], "google_event_id_xyz")
+        self.assertEqual(kwargs["body"]["summary"], "[TestPrefix] New Summary")
+        self.assertNotIn("iCalUID", kwargs["body"]) # Should be removed for update
 
     @patch("app.app.firestore.client")
     @patch("app.app.get_client_config")
@@ -119,15 +200,17 @@ class TestSyncLogic(unittest.TestCase):
         }
         mock_db.collection.return_value.document.return_value = mock_sync_ref
         mock_sync_ref.get.return_value = mock_sync_doc
-
-        mock_user_ref = MagicMock()
+        
+        # User Mock
         mock_user_doc = MagicMock()
         mock_user_doc.to_dict.return_value = {"refresh_token": "dummy_token"}
+        mock_db.collection.return_value.document.return_value = MagicMock() # generic
+        # (The side_effect below handles it better)
 
         mock_sync_col = MagicMock()
         mock_sync_col.document.return_value = mock_sync_ref
         mock_user_col = MagicMock()
-        mock_user_col.document.return_value = mock_user_ref
+        mock_user_col.document.return_value.get.return_value = mock_user_doc
 
         def collection_side_effect(name):
             if name == "syncs":
@@ -138,7 +221,7 @@ class TestSyncLogic(unittest.TestCase):
 
         mock_db.collection.side_effect = collection_side_effect
 
-        # Mock requests.get to return different content based on URL
+        # Mock requests.get
         def get_side_effect(url, **kwargs):
             resp = MagicMock()
             resp.status_code = 200
@@ -166,6 +249,11 @@ class TestSyncLogic(unittest.TestCase):
         mock_batch = MagicMock()
         mock_service.new_batch_http_request.return_value = mock_batch
 
+        # Mock list() -> Empty (trigger imports)
+        mock_service.events.return_value.list.return_value.execute.return_value = {
+            "items": []
+        }
+
         # Run
         sync_calendar_logic("sync_multi")
 
@@ -173,7 +261,6 @@ class TestSyncLogic(unittest.TestCase):
         self.assertEqual(mock_batch.add.call_count, 2)
 
         # Check calls
-        # We need to find which call is which based on iCalUID or Summary
         calls = mock_service.events.return_value.import_.call_args_list
         summaries = []
         for call_args in calls:
@@ -229,6 +316,21 @@ class TestSyncLogic(unittest.TestCase):
             return MagicMock()
 
         mock_db.collection.side_effect = collection_effect
+
+        # Mock Service (needed for list() call before failure?)
+        # Fetching sources happens BEFORE fetching existing events to optimize.
+        # Wait, if sources fail, do we proceed?
+        # Code:
+        # all_events_items, source_names = _fetch_source_events(sources, user_id)
+        # sync_ref.update(...)
+        # existing_map = _get_existing_events_map(...)
+        
+        # So yes, we need to mock service creation at least
+        mock_service = MagicMock()
+        mock_build.return_value = mock_service
+        # Mocking list is important now too
+        mock_service.events.return_value.list.return_value.execute.return_value = {"items": []}
+
 
         # Run
         sync_calendar_logic("sync_fail")

@@ -851,7 +851,9 @@ def _fetch_single_source(source, user_id):
 def _fetch_source_events(sources, user_id):
     """
     Fetch and parse events from source iCal URLs in parallel.
-    Returns a list of dicts: {'component': event, 'prefix': prefix}
+    Returns:
+        events_items: list of dicts: {'component': event, 'prefix': prefix}
+        source_names: dict of {url: friendly_name}
     """
     all_events_items = []
     source_names = {}
@@ -877,17 +879,55 @@ def _fetch_source_events(sources, user_id):
     return all_events_items, source_names
 
 
-def _batch_upsert_events(service, destination_id, events_items):
+def _get_existing_events_map(service, destination_id):
+    """
+    Fetch all existing events from the destination calendar to support updates.
+    Returns a dict mapping iCalUID -> eventId.
+    """
+    existing_map = {}
+    page_token = None
+    try:
+        while True:
+            events_result = (
+                service.events()
+                .list(
+                    calendarId=destination_id,
+                    pageToken=page_token,
+                    singleEvents=False,  # We want the master recurring events, not instances
+                    fields="nextPageToken,items(id,iCalUID)",
+                )
+                .execute()
+            )
+            for event in events_result.get("items", []):
+                ical_uid = event.get("iCalUID")
+                event_id = event.get("id")
+                if ical_uid and event_id:
+                    existing_map[ical_uid] = event_id
+            page_token = events_result.get("nextPageToken")
+            if not page_token:
+                break
+    except Exception as e:  # pylint: disable=broad-exception-caught
+        app.logger.error("Failed to list existing events: %s", e)
+    return existing_map
+
+
+def _batch_upsert_events(
+    service, destination_id, events_items, existing_map=None
+):
     """
     Batch upsert events to Google Calendar.
     events_items: list of {'component': event_obj, 'prefix': str}
+    existing_map: dict of {iCalUID: eventId} for existing events
     """
+    if existing_map is None:
+        existing_map = {}
+
     # pylint: disable=no-member
     batch = service.new_batch_http_request()
 
     def batch_callback(request_id, _response, exception):
         if exception:
-            app.logger.error("Failed to import event %s: %s", request_id, exception)
+            app.logger.error("Failed to upsert event %s: %s", request_id, exception)
 
     for item in events_items:
         event = item["component"]
@@ -923,11 +963,34 @@ def _batch_upsert_events(service, destination_id, events_items):
         # Clean None values
         body = {k: v for k, v in body.items() if v is not None}
 
-        batch.add(
-            service.events().import_(calendarId=destination_id, body=body, fields="id"),
-            request_id=uid,
-            callback=batch_callback,
-        )
+        # Check if event exists to decide between update or import
+        existing_event_id = existing_map.get(uid)
+
+        if existing_event_id:
+            # Update existing event
+            # Note: import_ method supports providing iCalUID, but update requires eventId.
+            # We remove iCalUID from body for update as it's immutable or redundant path param
+            body_for_update = body.copy()
+            del body_for_update["iCalUID"]
+            batch.add(
+                service.events().update(
+                    calendarId=destination_id,
+                    eventId=existing_event_id,
+                    body=body_for_update,
+                    fields="id",
+                ),
+                request_id=uid,
+                callback=batch_callback,
+            )
+        else:
+            # Import new event
+            batch.add(
+                service.events().import_(
+                    calendarId=destination_id, body=body, fields="id"
+                ),
+                request_id=uid,
+                callback=batch_callback,
+            )
 
     try:
         batch.execute()
@@ -995,7 +1058,9 @@ def sync_calendar_logic(sync_id):
     )
 
     # 3. Process Events
-    _batch_upsert_events(service, destination_id, all_events_items)
+    # Fetch existing events map for reliable updates
+    existing_map = _get_existing_events_map(service, destination_id)
+    _batch_upsert_events(service, destination_id, all_events_items, existing_map)
 
 
 def _handle_create_sync_post(user):
