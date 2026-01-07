@@ -411,7 +411,9 @@ def fetch_user_calendars(user_uid):
 
                 service = build("calendar", "v3", credentials=creds)
                 # pylint: disable=no-member
-                calendar_list = service.calendarList().list().execute()
+                calendar_list = (
+                    service.calendarList().list(fields="items(id,summary)").execute()
+                )
 
                 for cal in calendar_list.get("items", []):
                     calendars.append(
@@ -751,6 +753,7 @@ def _fetch_google_source(source, user_id):
                     orderBy="startTime",
                     maxResults=2500,  # Max allowed per page
                     pageToken=page_token,
+                    fields="nextPageToken,summary,items(id,summary,description,location,start,end)",
                 )
                 .execute()
             )
@@ -921,7 +924,7 @@ def _batch_upsert_events(service, destination_id, events_items):
         body = {k: v for k, v in body.items() if v is not None}
 
         batch.add(
-            service.events().import_(calendarId=destination_id, body=body),
+            service.events().import_(calendarId=destination_id, body=body, fields="id"),
             request_id=uid,
             callback=batch_callback,
         )
