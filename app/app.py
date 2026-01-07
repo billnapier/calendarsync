@@ -1,8 +1,3 @@
-"""
-CalendarSync Flask Application.
-Handles Google OAuth2, session management, and Firestore integration.
-"""
-
 import os
 import logging
 import time
@@ -10,24 +5,22 @@ import concurrent.futures
 from datetime import datetime, timezone
 import json
 import re
+import secrets
 
+import requests
+import icalendar
 from flask import Flask, render_template, request, session, redirect, url_for
 from werkzeug.middleware.proxy_fix import ProxyFix
 import firebase_admin
 from firebase_admin import firestore
+import google_auth_oauthlib.flow
 from google.cloud import tasks_v2
 from google.cloud import secretmanager
 import google.api_core.exceptions
-import google_auth_oauthlib.flow
 import google.auth.transport.requests
 from google.oauth2 import id_token
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
-
-import secrets
-import requests
-import icalendar
-
 
 try:
     from app.security import safe_requests_get
@@ -746,7 +739,7 @@ def _fetch_google_source(source, user_id):
 
         while True:
             events_result = (
-                service.events()
+                service.events()  # pylint: disable=no-member
                 .list(
                     calendarId=calendar_id,
                     singleEvents=True,
@@ -770,47 +763,51 @@ def _fetch_google_source(source, user_id):
                 break
 
         for gevent in events:
-            ievent = icalendar.Event()
-
-            # Map fields
-            if "summary" in gevent:
-                ievent.add("summary", gevent["summary"])
-            if "description" in gevent:
-                ievent.add("description", gevent["description"])
-            if "location" in gevent:
-                ievent.add("location", gevent["location"])
-            if "id" in gevent:
-                ievent.add("uid", gevent["id"])
-
-            # Handle Dates
-            start = gevent.get("start")
-            end = gevent.get("end")
-
-            if start:
-                if "dateTime" in start:
-                    dt = datetime.fromisoformat(start["dateTime"])
-                    ievent.add("dtstart", dt)
-                elif "date" in start:
-                    ievent.add(
-                        "dtstart", datetime.strptime(start["date"], "%Y-%m-%d").date()
-                    )
-
-            if end:
-                if "dateTime" in end:
-                    dt = datetime.fromisoformat(end["dateTime"])
-                    ievent.add("dtend", dt)
-                elif "date" in end:
-                    ievent.add(
-                        "dtend", datetime.strptime(end["date"], "%Y-%m-%d").date()
-                    )
-
+            ievent = _map_google_event_to_ical(gevent)
             events_items.append({"component": ievent, "prefix": prefix})
 
         return events_items, url, name
 
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-exception-caught
         app.logger.error("Failed to fetch Google Calendar %s: %s", url, e)
         return [], url, f"{url} (Failed)"
+
+
+def _map_google_event_to_ical(gevent):
+    """
+    Helper to map a single Google API event resource to an icalendar Event.
+    """
+    ievent = icalendar.Event()
+
+    # Map fields
+    if "summary" in gevent:
+        ievent.add("summary", gevent["summary"])
+    if "description" in gevent:
+        ievent.add("description", gevent["description"])
+    if "location" in gevent:
+        ievent.add("location", gevent["location"])
+    if "id" in gevent:
+        ievent.add("uid", gevent["id"])
+
+    # Handle Dates
+    start = gevent.get("start")
+    end = gevent.get("end")
+
+    if start:
+        if "dateTime" in start:
+            dt = datetime.fromisoformat(start["dateTime"])
+            ievent.add("dtstart", dt)
+        elif "date" in start:
+            ievent.add("dtstart", datetime.strptime(start["date"], "%Y-%m-%d").date())
+
+    if end:
+        if "dateTime" in end:
+            dt = datetime.fromisoformat(end["dateTime"])
+            ievent.add("dtend", dt)
+        elif "date" in end:
+            ievent.add("dtend", datetime.strptime(end["date"], "%Y-%m-%d").date())
+
+    return ievent
 
 
 def _fetch_single_source(source, user_id):
@@ -851,7 +848,9 @@ def _fetch_single_source(source, user_id):
 def _fetch_source_events(sources, user_id):
     """
     Fetch and parse events from source iCal URLs in parallel.
-    Returns a list of dicts: {'component': event, 'prefix': prefix}
+    Returns:
+        events_items: list of dicts: {'component': event, 'prefix': prefix}
+        source_names: dict of {url: friendly_name}
     """
     all_events_items = []
     source_names = {}
@@ -877,57 +876,120 @@ def _fetch_source_events(sources, user_id):
     return all_events_items, source_names
 
 
-def _batch_upsert_events(service, destination_id, events_items):
+def _get_existing_events_map(service, destination_id):
+    """
+    Fetch all existing events from the destination calendar to support updates.
+    Returns a dict mapping iCalUID -> eventId.
+    """
+    existing_map = {}
+    page_token = None
+    try:
+        while True:
+            events_result = (
+                service.events()
+                .list(
+                    calendarId=destination_id,
+                    pageToken=page_token,
+                    singleEvents=False,  # We want the master recurring events, not instances
+                    fields="nextPageToken,items(id,iCalUID)",
+                )
+                .execute()
+            )
+            for event in events_result.get("items", []):
+                ical_uid = event.get("iCalUID")
+                event_id = event.get("id")
+                if ical_uid and event_id:
+                    existing_map[ical_uid] = event_id
+            page_token = events_result.get("nextPageToken")
+            if not page_token:
+                break
+    except google.api_core.exceptions.GoogleAPICallError as e:
+        app.logger.error("Failed to list existing events: %s", e)
+    return existing_map
+
+
+def _build_event_body(event, prefix):
+    """
+    Helper to construct Google Calendar event body.
+    """
+    uid = event.get("UID")
+    if not uid:
+        return None, None
+
+    uid = str(uid)
+    start = _parse_event_dt(event.get("DTSTART"))
+    end = _parse_event_dt(event.get("DTEND"))
+
+    if not end and start:
+        end = _calculate_end_time(event.get("DTSTART"), event.get("DURATION"))
+
+    if not start:
+        return None, None
+
+    summary = str(event.get("SUMMARY", ""))
+    if prefix:
+        summary = f"[{prefix}] {summary}"
+
+    body = {
+        "summary": summary,
+        "description": str(event.get("DESCRIPTION", "")),
+        "location": str(event.get("LOCATION", "")),
+        "start": start,
+        "end": end,
+        "iCalUID": uid,
+    }
+
+    # Clean None values
+    body = {k: v for k, v in body.items() if v is not None}
+    return body, uid
+
+
+def _batch_upsert_events(service, destination_id, events_items, existing_map=None):
     """
     Batch upsert events to Google Calendar.
     events_items: list of {'component': event_obj, 'prefix': str}
+    existing_map: dict of {iCalUID: eventId} for existing events
     """
+    if existing_map is None:
+        existing_map = {}
+
     # pylint: disable=no-member
     batch = service.new_batch_http_request()
 
     def batch_callback(request_id, _response, exception):
         if exception:
-            app.logger.error("Failed to import event %s: %s", request_id, exception)
+            app.logger.error("Failed to upsert event %s: %s", request_id, exception)
 
     for item in events_items:
-        event = item["component"]
-        prefix = item["prefix"]
-
-        uid = event.get("UID")
-        if not uid:
-            continue
-        uid = str(uid)
-
-        start = _parse_event_dt(event.get("DTSTART"))
-        end = _parse_event_dt(event.get("DTEND"))
-
-        if not end and start:
-            end = _calculate_end_time(event.get("DTSTART"), event.get("DURATION"))
-
-        if not start:
+        body, uid = _build_event_body(item["component"], item["prefix"])
+        if not body:
             continue
 
-        summary = str(event.get("SUMMARY", ""))
-        if prefix:
-            summary = f"[{prefix}] {summary}"
+        existing_event_id = existing_map.get(uid)
 
-        body = {
-            "summary": summary,
-            "description": str(event.get("DESCRIPTION", "")),
-            "location": str(event.get("LOCATION", "")),
-            "start": start,
-            "end": end,
-            "iCalUID": uid,
-        }
-
-        # Clean None values
-        body = {k: v for k, v in body.items() if v is not None}
-
-        batch.add(
-            service.events().import_(calendarId=destination_id, body=body, fields="id"),
-            request_id=uid,
-            callback=batch_callback,
-        )
+        if existing_event_id:
+            # Update existing event
+            body_for_update = body.copy()
+            del body_for_update["iCalUID"]
+            batch.add(
+                service.events().update(
+                    calendarId=destination_id,
+                    eventId=existing_event_id,
+                    body=body_for_update,
+                    fields="id",
+                ),
+                request_id=uid,
+                callback=batch_callback,
+            )
+        else:
+            # Import new event
+            batch.add(
+                service.events().import_(
+                    calendarId=destination_id, body=body, fields="id"
+                ),
+                request_id=uid,
+                callback=batch_callback,
+            )
 
     try:
         batch.execute()
@@ -995,7 +1057,9 @@ def sync_calendar_logic(sync_id):
     )
 
     # 3. Process Events
-    _batch_upsert_events(service, destination_id, all_events_items)
+    # Fetch existing events map for reliable updates
+    existing_map = _get_existing_events_map(service, destination_id)
+    _batch_upsert_events(service, destination_id, all_events_items, existing_map)
 
 
 def _handle_create_sync_post(user):
