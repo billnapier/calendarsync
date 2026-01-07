@@ -1,67 +1,64 @@
 /**
- * Palette UX Enhancements
- * Handles loading states for form submissions to improve perceived performance
- * and prevent double-submissions.
+ * UI Enhancement Script
+ * Handles button loading states and other global UX interactions.
  */
 
-document.addEventListener('DOMContentLoaded', () => {
-    // Select all forms that might need a loading state
-    const forms = document.querySelectorAll('form');
+(function () {
+    'use strict';
 
-    forms.forEach(form => {
-        form.addEventListener('submit', (e) => {
-            // Find the submitter (button or input that triggered the submit)
-            // Note: e.submitter is supported in modern browsers
-            const submitter = e.submitter || form.querySelector('button[type="submit"], input[type="submit"]');
+    function initSubmitButtons() {
+        const forms = document.querySelectorAll('form');
 
-            if (submitter && !submitter.disabled) {
-                const loadingText = submitter.getAttribute('data-loading-text');
-
-                if (loadingText) {
-                    // Store original text/value to restore if needed (e.g. bfcache)
-                    if (submitter.tagName === 'INPUT') {
-                        submitter.dataset.originalValue = submitter.value;
-                        submitter.value = loadingText;
-                    } else {
-                        // Check if there is a child span for text (common in buttons with icons)
-                        const textSpan = submitter.querySelector('.btn-text');
-                        if (textSpan) {
-                            submitter.dataset.originalText = textSpan.textContent;
-                            textSpan.textContent = loadingText;
-                        } else {
-                            submitter.dataset.originalText = submitter.textContent;
-                            submitter.textContent = loadingText;
-                        }
-                    }
-
-                    // Update UI state
-                    submitter.classList.add('btn-loading');
-                    submitter.disabled = true;
-                    submitter.style.cursor = 'wait';
+        forms.forEach(form => {
+            form.addEventListener('submit', function (e) {
+                // Prevent double submission if already submitting
+                if (form.dataset.submitting === "true") {
+                    e.preventDefault();
+                    return;
                 }
+
+                const submitBtn = form.querySelector('button[type="submit"]');
+                if (!submitBtn) return;
+
+                // Check for validation before disabling
+                if (!form.checkValidity()) return;
+
+                // Mark form as submitting
+                form.dataset.submitting = "true";
+
+                // Save original text and width to prevent layout jump
+                const originalText = submitBtn.innerText;
+                const width = submitBtn.offsetWidth;
+
+                submitBtn.dataset.originalText = originalText;
+                submitBtn.style.width = `${width}px`;
+
+                // Set loading state
+                const loadingText = submitBtn.dataset.loadingText || 'Loading...';
+                submitBtn.innerText = loadingText;
+                submitBtn.disabled = true;
+                submitBtn.classList.add('btn-loading');
+
+                // If it's a delete action (using onsubmit confirm), the confirm happens BEFORE this event
+                // because inline handlers run first. So if we are here, the user said YES.
+            });
+        });
+    }
+
+    // Restore buttons when navigating back (bfcache)
+    window.addEventListener('pageshow', function (event) {
+        const forms = document.querySelectorAll('form');
+        forms.forEach(form => {
+            delete form.dataset.submitting;
+            const submitBtn = form.querySelector('button[type="submit"]');
+            if (submitBtn && submitBtn.disabled && submitBtn.dataset.originalText) {
+                submitBtn.innerText = submitBtn.dataset.originalText;
+                submitBtn.disabled = false;
+                submitBtn.style.width = '';
+                submitBtn.classList.remove('btn-loading');
             }
         });
     });
 
-    // Handle Back/Forward Cache (bfcache)
-    // If user navigates back to the page, ensure buttons are re-enabled.
-    window.addEventListener('pageshow', (event) => {
-        const buttons = document.querySelectorAll('button[type="submit"][disabled], input[type="submit"][disabled]');
-        buttons.forEach(btn => {
-            btn.disabled = false;
-            btn.classList.remove('btn-loading');
-            btn.style.cursor = '';
-
-            if (btn.tagName === 'INPUT' && btn.dataset.originalValue) {
-                btn.value = btn.dataset.originalValue;
-            } else if (btn.dataset.originalText) {
-                const textSpan = btn.querySelector('.btn-text');
-                if (textSpan) {
-                    textSpan.textContent = btn.dataset.originalText;
-                } else {
-                    btn.textContent = btn.dataset.originalText;
-                }
-            }
-        });
-    });
-});
+    document.addEventListener('DOMContentLoaded', initSubmitButtons);
+})();

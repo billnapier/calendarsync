@@ -7,6 +7,7 @@
         <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
               rel="stylesheet">
+        <script src="{{ url_for('static', filename='ui.js') }}" defer></script>
     </head>
     <body>
         <header class="header">
@@ -137,10 +138,7 @@
                     </div>
                     <div class="form-actions">
                         <a href="/" class="btn btn-secondary">Cancel</a>
-                        <button type="submit" class="btn btn-primary">
-                            <span class="spinner" aria-hidden="true"></span>
-                            <span class="btn-text">Create Sync</span>
-                        </button>
+                        <button type="submit" class="btn btn-primary" data-loading-text="Creating...">Create Sync</button>
                     </div>
                 </form>
             </div>
