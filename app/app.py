@@ -16,6 +16,7 @@ import firebase_admin
 from firebase_admin import firestore
 from google.cloud import tasks_v2
 from google.cloud import secretmanager
+import google.api_core.exceptions
 import google_auth_oauthlib.flow
 import google.auth.transport.requests
 from google.oauth2 import id_token
@@ -570,6 +571,9 @@ def delete_sync(sync_id):
         sync_ref.delete()
         app.logger.info("Deleted sync %s for user %s", sync_id, user["uid"])
         return redirect(url_for("home"))
+    except google.api_core.exceptions.GoogleAPICallError as e:
+        app.logger.error("Firestore API error deleting sync %s: %s", sync_id, e)
+        return f"Firestore error: {e}", 503
     except Exception as e:  # pylint: disable=broad-exception-caught
         app.logger.error("Error deleting sync %s: %s", sync_id, e)
         return f"Error deleting sync: {e}", 500
