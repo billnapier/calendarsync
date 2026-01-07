@@ -93,6 +93,8 @@ class TestSyncLogic(unittest.TestCase):
 
         self.assertEqual(body["iCalUID"], "12345")
         self.assertEqual(body["summary"], "[TestPrefix] Meeting")
+        self.assertEqual(body["description"], "Discuss stuff")
+        self.assertEqual(body["location"], "Office")
 
     @patch("app.app.firestore.client")
     @patch("app.app.get_client_config")
@@ -117,7 +119,7 @@ class TestSyncLogic(unittest.TestCase):
         }
         mock_sync_ref = MagicMock()
         mock_sync_ref.get.return_value = mock_sync_doc
-        
+
         mock_user_doc = MagicMock()
         mock_user_doc.to_dict.return_value = {"refresh_token": "dummy_token"}
 
@@ -125,7 +127,7 @@ class TestSyncLogic(unittest.TestCase):
         mock_sync_col = MagicMock()
         mock_sync_col.document.return_value = mock_sync_ref
         mock_user_col = MagicMock()
-        mock_user_col.document.return_value = MagicMock() # user ref
+        mock_user_col.document.return_value = MagicMock()  # user ref
         mock_user_col.document.return_value.get.return_value = mock_user_doc
 
         def collection_side_effect(name):
@@ -134,6 +136,7 @@ class TestSyncLogic(unittest.TestCase):
             if name == "users":
                 return mock_user_col
             return MagicMock()
+
         mock_db.collection.side_effect = collection_side_effect
 
         # Mock requests.get for iCal (UID 12345)
@@ -171,7 +174,7 @@ class TestSyncLogic(unittest.TestCase):
         self.assertEqual(kwargs["calendarId"], "dest_cal")
         self.assertEqual(kwargs["eventId"], "google_event_id_xyz")
         self.assertEqual(kwargs["body"]["summary"], "[TestPrefix] New Summary")
-        self.assertNotIn("iCalUID", kwargs["body"]) # Should be removed for update
+        self.assertNotIn("iCalUID", kwargs["body"])  # Should be removed for update
 
     @patch("app.app.firestore.client")
     @patch("app.app.get_client_config")
@@ -200,16 +203,17 @@ class TestSyncLogic(unittest.TestCase):
         }
         mock_db.collection.return_value.document.return_value = mock_sync_ref
         mock_sync_ref.get.return_value = mock_sync_doc
-        
+
         # User Mock
         mock_user_doc = MagicMock()
         mock_user_doc.to_dict.return_value = {"refresh_token": "dummy_token"}
-        mock_db.collection.return_value.document.return_value = MagicMock() # generic
-        # (The side_effect below handles it better)
+
 
         mock_sync_col = MagicMock()
         mock_sync_col.document.return_value = mock_sync_ref
+        
         mock_user_col = MagicMock()
+        # Mock the chain: db.collection("users").document(...).get()
         mock_user_col.document.return_value.get.return_value = mock_user_doc
 
         def collection_side_effect(name):
@@ -324,13 +328,14 @@ class TestSyncLogic(unittest.TestCase):
         # all_events_items, source_names = _fetch_source_events(sources, user_id)
         # sync_ref.update(...)
         # existing_map = _get_existing_events_map(...)
-        
+
         # So yes, we need to mock service creation at least
         mock_service = MagicMock()
         mock_build.return_value = mock_service
         # Mocking list is important now too
-        mock_service.events.return_value.list.return_value.execute.return_value = {"items": []}
-
+        mock_service.events.return_value.list.return_value.execute.return_value = {
+            "items": []
+        }
 
         # Run
         sync_calendar_logic("sync_fail")

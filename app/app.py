@@ -899,7 +899,7 @@ def _get_existing_events_map(service, destination_id):
             page_token = events_result.get("nextPageToken")
             if not page_token:
                 break
-    except Exception as e:  # pylint: disable=broad-exception-caught
+    except google.api_core.exceptions.GoogleAPICallError as e:
         app.logger.error("Failed to list existing events: %s", e)
     return existing_map
 
