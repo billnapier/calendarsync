@@ -58,7 +58,13 @@ def add_security_headers(response):
     response.headers["X-Frame-Options"] = "SAMEORIGIN"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
     # A basic CSP to enhance security. This should be tailored to your app's needs.
-    response.headers["Content-Security-Policy"] = "default-src 'self'; script-src 'self' https://accounts.google.com/gsi/client; style-src 'self' 'unsafe-inline'; object-src 'none'; frame-ancestors 'self';"
+    response.headers["Content-Security-Policy"] = (
+        "default-src 'self'; "
+        "script-src 'self' https://accounts.google.com/gsi/client; "
+        "style-src 'self' 'unsafe-inline'; "
+        "object-src 'none'; "
+        "frame-ancestors 'self';"
+    )
     # Disable features that are not needed.
     response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
     # Strict-Transport-Security is often handled by the load balancer, but good to have.
@@ -143,15 +149,15 @@ def time_ago_filter(dt):
 
     if seconds < 60:
         return "Just now"
-    elif seconds < 3600:
+    if seconds < 3600:
         minutes = int(seconds // 60)
         return f"{minutes} minute{'s' if minutes != 1 else ''} ago"
-    elif seconds < 86400:
+    if seconds < 86400:
         hours = int(seconds // 3600)
         return f"{hours} hour{'s' if hours != 1 else ''} ago"
-    else:
-        days = int(seconds // 86400)
-        return f"{days} day{'s' if days != 1 else ''} ago"
+
+    days = int(seconds // 86400)
+    return f"{days} day{'s' if days != 1 else ''} ago"
 
 
 def get_secret(secret_name):
@@ -504,36 +510,6 @@ def edit_sync(sync_id):
     if sync_data["user_id"] != user["uid"]:
         return "Unauthorized", 403
 
-    if request.method == "GET":
-        # Refresh calendars cache if needed
-        if (
-            "calendars" not in session
-            or time.time() - session.get("calendars_timestamp", 0) > 300
-        ):
-            calendars = fetch_user_calendars(user["uid"])
-            session["calendars"] = calendars
-            session["calendars_timestamp"] = time.time()
-        else:
-            calendars = session.get("calendars")
-
-        if "sources" not in sync_data:
-            # Backward compatibility: Construct sources if missing
-            sources = []
-            old_icals = sync_data.get("source_icals", [])
-            old_prefix = sync_data.get("event_prefix", "").strip()
-            for url in old_icals:
-                sources.append({"url": url, "prefix": old_prefix})
-            sync_data["sources"] = sources
-
-        csrf_token = generate_csrf_token()
-        return render_template(
-            "edit_sync.html",
-            user=user,
-            sync=sync_data,
-            calendars=calendars,
-            csrf_token=csrf_token,
-        )
-
     if request.method == "POST":
         if not verify_csrf_token(request.form.get("csrf_token")):
             return "Invalid CSRF token", 403
@@ -558,7 +534,39 @@ def edit_sync(sync_id):
 
         return _handle_edit_sync_post(request, sync_ref, session.get("calendars"))
 
-    return "Method not allowed", 405
+    return _handle_edit_sync_get(user, sync_data)
+
+
+def _handle_edit_sync_get(user, sync_data):
+    """Handle GET request for edit_sync."""
+    # Refresh calendars cache if needed
+    if (
+        "calendars" not in session
+        or time.time() - session.get("calendars_timestamp", 0) > 300
+    ):
+        calendars = fetch_user_calendars(user["uid"])
+        session["calendars"] = calendars
+        session["calendars_timestamp"] = time.time()
+    else:
+        calendars = session.get("calendars")
+
+    if "sources" not in sync_data:
+        # Backward compatibility: Construct sources if missing
+        sources = []
+        old_icals = sync_data.get("source_icals", [])
+        old_prefix = sync_data.get("event_prefix", "").strip()
+        for url in old_icals:
+            sources.append({"url": url, "prefix": old_prefix})
+        sync_data["sources"] = sources
+
+    csrf_token = generate_csrf_token()
+    return render_template(
+        "edit_sync.html",
+        user=user,
+        sync=sync_data,
+        calendars=calendars,
+        csrf_token=csrf_token,
+    )
 
 
 @app.route("/delete_sync/<sync_id>", methods=["POST"])
@@ -750,36 +758,7 @@ def _fetch_google_source(source, user_id):
         service = _get_google_service(db, user_id)
         calendar_id = source.get("id")
 
-        # Fetch events
-        # Fetch events with pagination
-        events = []
-        page_token = None
-        name = url  # Default name
-
-        while True:
-            events_result = (
-                service.events()  # pylint: disable=no-member
-                .list(
-                    calendarId=calendar_id,
-                    singleEvents=True,
-                    orderBy="startTime",
-                    maxResults=2500,  # Max allowed per page
-                    pageToken=page_token,
-                    fields="nextPageToken,summary,items(id,summary,description,location,start,end)",
-                )
-                .execute()
-            )
-
-            items = events_result.get("items", [])
-            events.extend(items)
-
-            if page_token is None:
-                # The summary is the same for all pages, so we can get it from the first response.
-                name = events_result.get("summary", url)
-
-            page_token = events_result.get("nextPageToken")
-            if not page_token:
-                break
+        events, name = _fetch_all_google_events(service, calendar_id, url)
 
         for gevent in events:
             ievent = _map_google_event_to_ical(gevent)
@@ -790,6 +769,40 @@ def _fetch_google_source(source, user_id):
     except Exception as e:  # pylint: disable=broad-exception-caught
         app.logger.error("Failed to fetch Google Calendar %s: %s", url, e)
         return [], url, f"{url} (Failed)"
+
+
+def _fetch_all_google_events(service, calendar_id, url):
+    """Fetch all events from Google Calendar with pagination."""
+    events = []
+    page_token = None
+    name = url  # Default name
+
+    while True:
+        events_result = (
+            service.events()  # pylint: disable=no-member
+            .list(
+                calendarId=calendar_id,
+                singleEvents=True,
+                orderBy="startTime",
+                maxResults=2500,  # Max allowed per page
+                pageToken=page_token,
+                fields="nextPageToken,summary,items(id,summary,description,location,start,end)",
+            )
+            .execute()
+        )
+
+        items = events_result.get("items", [])
+        events.extend(items)
+
+        if page_token is None:
+            # The summary is the same for all pages, so we can get it from the first response.
+            name = events_result.get("summary", url)
+
+        page_token = events_result.get("nextPageToken")
+        if not page_token:
+            break
+
+    return events, name
 
 
 def _map_google_event_to_ical(gevent):
