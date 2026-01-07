@@ -739,7 +739,7 @@ def _fetch_google_source(source, user_id):
 
         while True:
             events_result = (
-                service.events()
+                service.events()  # pylint: disable=no-member
                 .list(
                     calendarId=calendar_id,
                     singleEvents=True,
@@ -763,47 +763,51 @@ def _fetch_google_source(source, user_id):
                 break
 
         for gevent in events:
-            ievent = icalendar.Event()
-
-            # Map fields
-            if "summary" in gevent:
-                ievent.add("summary", gevent["summary"])
-            if "description" in gevent:
-                ievent.add("description", gevent["description"])
-            if "location" in gevent:
-                ievent.add("location", gevent["location"])
-            if "id" in gevent:
-                ievent.add("uid", gevent["id"])
-
-            # Handle Dates
-            start = gevent.get("start")
-            end = gevent.get("end")
-
-            if start:
-                if "dateTime" in start:
-                    dt = datetime.fromisoformat(start["dateTime"])
-                    ievent.add("dtstart", dt)
-                elif "date" in start:
-                    ievent.add(
-                        "dtstart", datetime.strptime(start["date"], "%Y-%m-%d").date()
-                    )
-
-            if end:
-                if "dateTime" in end:
-                    dt = datetime.fromisoformat(end["dateTime"])
-                    ievent.add("dtend", dt)
-                elif "date" in end:
-                    ievent.add(
-                        "dtend", datetime.strptime(end["date"], "%Y-%m-%d").date()
-                    )
-
+            ievent = _map_google_event_to_ical(gevent)
             events_items.append({"component": ievent, "prefix": prefix})
 
         return events_items, url, name
 
-    except Exception as e:
+    except Exception as e:  # pylint: disable=broad-exception-caught
         app.logger.error("Failed to fetch Google Calendar %s: %s", url, e)
         return [], url, f"{url} (Failed)"
+
+
+def _map_google_event_to_ical(gevent):
+    """
+    Helper to map a single Google API event resource to an icalendar Event.
+    """
+    ievent = icalendar.Event()
+
+    # Map fields
+    if "summary" in gevent:
+        ievent.add("summary", gevent["summary"])
+    if "description" in gevent:
+        ievent.add("description", gevent["description"])
+    if "location" in gevent:
+        ievent.add("location", gevent["location"])
+    if "id" in gevent:
+        ievent.add("uid", gevent["id"])
+
+    # Handle Dates
+    start = gevent.get("start")
+    end = gevent.get("end")
+
+    if start:
+        if "dateTime" in start:
+            dt = datetime.fromisoformat(start["dateTime"])
+            ievent.add("dtstart", dt)
+        elif "date" in start:
+            ievent.add("dtstart", datetime.strptime(start["date"], "%Y-%m-%d").date())
+
+    if end:
+        if "dateTime" in end:
+            dt = datetime.fromisoformat(end["dateTime"])
+            ievent.add("dtend", dt)
+        elif "date" in end:
+            ievent.add("dtend", datetime.strptime(end["date"], "%Y-%m-%d").date())
+
+    return ievent
 
 
 def _fetch_single_source(source, user_id):
