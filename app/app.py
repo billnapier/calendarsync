@@ -904,7 +904,6 @@ def _get_existing_events_map(service, destination_id):
     return existing_map
 
 
-
 def _build_event_body(event, prefix):
     """
     Helper to construct Google Calendar event body.

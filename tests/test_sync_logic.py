@@ -208,10 +208,9 @@ class TestSyncLogic(unittest.TestCase):
         mock_user_doc = MagicMock()
         mock_user_doc.to_dict.return_value = {"refresh_token": "dummy_token"}
 
-
         mock_sync_col = MagicMock()
         mock_sync_col.document.return_value = mock_sync_ref
-        
+
         mock_user_col = MagicMock()
         # Mock the chain: db.collection("users").document(...).get()
         mock_user_col.document.return_value.get.return_value = mock_user_doc
