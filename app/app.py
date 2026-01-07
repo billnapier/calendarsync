@@ -10,12 +10,14 @@ import concurrent.futures
 from datetime import datetime, timezone
 import json
 import re
+
 from flask import Flask, render_template, request, session, redirect, url_for
 from werkzeug.middleware.proxy_fix import ProxyFix
 import firebase_admin
 from firebase_admin import firestore
 from google.cloud import tasks_v2
 from google.cloud import secretmanager
+import google.api_core.exceptions
 import google_auth_oauthlib.flow
 import google.auth.transport.requests
 from google.oauth2 import id_token
@@ -543,6 +545,39 @@ def edit_sync(sync_id):
         return _handle_edit_sync_post(request, sync_ref, session.get("calendars"))
 
     return "Method not allowed", 405
+
+
+@app.route("/delete_sync/<sync_id>", methods=["POST"])
+def delete_sync(sync_id):
+    """
+    Delete a specific sync configuration.
+    """
+    user = session.get("user")
+    if not user:
+        return redirect(url_for("login"))
+
+    db = firestore.client()
+    sync_ref = db.collection("syncs").document(sync_id)
+    sync_doc = sync_ref.get()
+
+    if not sync_doc.exists:
+        return "Sync not found", 404
+
+    sync_data = sync_doc.to_dict()
+    if sync_data["user_id"] != user["uid"]:
+        return "Unauthorized", 403
+
+    try:
+        # We only remove the configuration, as requested ("remove a sync and all of it's sources").
+        sync_ref.delete()
+        app.logger.info("Deleted sync %s for user %s", sync_id, user["uid"])
+        return redirect(url_for("home"))
+    except google.api_core.exceptions.GoogleAPICallError as e:
+        app.logger.error("Firestore API error deleting sync %s: %s", sync_id, e)
+        return f"Firestore error: {e}", 503
+    except Exception as e:  # pylint: disable=broad-exception-caught
+        app.logger.error("Error deleting sync %s: %s", sync_id, e)
+        return f"Error deleting sync: {e}", 500
 
 
 def _get_sources_from_form(form):

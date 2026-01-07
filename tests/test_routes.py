@@ -135,3 +135,84 @@ def test_create_sync_post_fetches_if_missing(
     assert mock_new_doc.set.called
     args, _ = mock_new_doc.set.call_args
     assert args[0]["destination_calendar_summary"] == "Destination Cal"
+
+
+def test_delete_sync_success(client, mock_firestore):
+    """Test that POST to delete_sync deletes the document."""
+    with client.session_transaction() as sess:
+        sess["user"] = {"uid": "test_uid"}
+
+    mock_db = MagicMock(name="mock_db")
+    mock_collection = MagicMock(name="mock_collection")
+    mock_doc_ref = MagicMock(name="mock_doc_ref")
+    mock_doc_snapshot = MagicMock(name="mock_doc_snapshot")
+
+    mock_db.collection.return_value = mock_collection
+    mock_collection.document.return_value = mock_doc_ref
+    mock_doc_ref.get.return_value = mock_doc_snapshot
+
+    # Simulate existing sync owned by user
+    mock_doc_snapshot.exists = True
+    mock_doc_snapshot.to_dict.return_value = {"user_id": "test_uid"}
+
+    mock_firestore.client.return_value = mock_db
+
+    resp = client.post("/delete_sync/sync123")
+
+    assert resp.status_code == 302  # redirect home
+    mock_collection.document.assert_called_with("sync123")
+    mock_doc_ref.delete.assert_called_once()
+
+
+def test_delete_sync_not_found(client, mock_firestore):
+    """Test delete_sync returns 404 if sync does not exist."""
+    with client.session_transaction() as sess:
+        sess["user"] = {"uid": "test_uid"}
+
+    mock_db = MagicMock(name="mock_db")
+    mock_collection = MagicMock(name="mock_collection")
+    mock_doc_ref = MagicMock(name="mock_doc_ref")
+    mock_doc_snapshot = MagicMock(name="mock_doc_snapshot")
+
+    mock_db.collection.return_value = mock_collection
+    mock_collection.document.return_value = mock_doc_ref
+    mock_doc_ref.get.return_value = mock_doc_snapshot
+
+    mock_doc_snapshot.exists = False  # Does not exist
+
+    mock_firestore.client.return_value = mock_db
+
+    resp = client.post("/delete_sync/missing_sync")
+    assert resp.status_code == 404
+    assert b"Sync not found" in resp.data
+
+
+def test_delete_sync_unauthorized(client, mock_firestore):
+    """Test delete_sync returns 403 if user does not own sync."""
+    with client.session_transaction() as sess:
+        sess["user"] = {"uid": "test_uid"}
+
+    mock_db = MagicMock(name="mock_db")
+    mock_collection = MagicMock(name="mock_collection")
+    mock_doc_ref = MagicMock(name="mock_doc_ref")
+    mock_doc_snapshot = MagicMock(name="mock_doc_snapshot")
+
+    mock_db.collection.return_value = mock_collection
+    mock_collection.document.return_value = mock_doc_ref
+    mock_doc_ref.get.return_value = mock_doc_snapshot
+
+    mock_doc_snapshot.exists = True
+    mock_doc_snapshot.to_dict.return_value = {"user_id": "other_user"}  # Different user
+
+    mock_firestore.client.return_value = mock_db
+
+    resp = client.post("/delete_sync/sync123")
+    assert resp.status_code == 403
+    assert b"Unauthorized" in resp.data
+
+
+def test_delete_sync_not_logged_in(client):
+    """Test delete_sync redirects to login if not logged in."""
+    resp = client.post("/delete_sync/sync123")
+    assert resp.status_code == 302
+    assert "/login" in resp.headers["Location"]
