@@ -207,7 +207,7 @@ def get_client_config():
 
 
 @app.route("/")
-def home():
+def index():
     user = session.get("user")
     syncs = []
     if user:
@@ -292,7 +292,7 @@ def google_auth_callback():  # pylint: disable=too-many-locals
             # Pass login_hint to pre-fill email
             return redirect(url_for("login", login_hint=email))
 
-        return redirect(url_for("home"))
+        return redirect(url_for("index"))
 
     except Exception as e:  # pylint: disable=broad-exception-caught
         app.logger.error("GIS callback error: %s", e)
@@ -340,7 +340,7 @@ def oauth2callback():
     """Handle OAuth2 callback."""
     state = session.get("state")
     if not state:
-        return redirect(url_for("home"))
+        return redirect(url_for("index"))
 
     try:
         client_config = get_client_config()
@@ -397,7 +397,7 @@ def oauth2callback():
         # Store credentials in session for short-term use if needed
         # session['credentials'] = credentials_to_dict(credentials)
 
-        return redirect(url_for("home"))
+        return redirect(url_for("index"))
 
     except Exception as e:  # pylint: disable=broad-exception-caught
         app.logger.error("OAuth callback error: %s", e)
@@ -486,7 +486,7 @@ def run_sync(sync_id):
 
     try:
         sync_calendar_logic(sync_id)
-        return redirect(url_for("home"))
+        return redirect(url_for("index"))
     except Exception as e:  # pylint: disable=broad-exception-caught
         app.logger.error("Sync failed: %s", e)
         return "Sync failed. Please check logs for details.", 500
@@ -593,7 +593,7 @@ def delete_sync(sync_id):
         # We only remove the configuration, as requested ("remove a sync and all of it's sources").
         sync_ref.delete()
         app.logger.info("Deleted sync %s for user %s", sync_id, user["uid"])
-        return redirect(url_for("home"))
+        return redirect(url_for("index"))
     except google.api_core.exceptions.GoogleAPICallError as e:
         app.logger.error("Firestore API error deleting sync %s: %s", sync_id, e)
         return f"Firestore error: {e}", 503
@@ -707,7 +707,7 @@ def _handle_edit_sync_post(req, sync_ref, calendars):
     except Exception as e:  # pylint: disable=broad-exception-caught
         app.logger.warning("Auto-sync on edit failed: %s", e)
 
-    return redirect(url_for("home"))
+    return redirect(url_for("index"))
 
 
 def _parse_event_dt(dt_prop):
@@ -1146,7 +1146,7 @@ def _handle_create_sync_post(user):
     except Exception as e:  # pylint: disable=broad-exception-caught
         app.logger.warning("Auto-sync on create failed: %s", e)
 
-    return redirect(url_for("home"))
+    return redirect(url_for("index"))
 
 
 @app.route("/create_sync", methods=["GET", "POST"])
@@ -1185,7 +1185,7 @@ def create_sync():
 @app.route("/logout")
 def logout():
     session.clear()
-    return redirect(url_for("home"))
+    return redirect(url_for("index"))
 
 
 def verify_task_auth():
