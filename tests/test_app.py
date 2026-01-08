@@ -82,8 +82,11 @@ def test_logout(client):  # pylint: disable=redefined-outer-name
             "email": "test@example.com",
             "picture": "http://example.com/pic.jpg",
         }
+        sess["csrf_token"] = "valid_token"
 
-    response = client.get("/logout", follow_redirects=True)
+    response = client.post(
+        "/logout", data={"csrf_token": "valid_token"}, follow_redirects=True
+    )
     assert response.status_code == 200
 
     with client.session_transaction() as sess:

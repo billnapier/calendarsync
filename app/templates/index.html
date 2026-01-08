@@ -3,6 +3,10 @@
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="description"
+              content="Sync your Google, Outlook, and iCloud calendars into a single master calendar.">
+        <meta name="keywords"
+              content="calendar sync, iCal, Google Calendar, Outlook, iCloud, productivity">
         <title>CalendarSync - Sync Your Life</title>
         <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
         <!-- Google Fonts: Inter -->
@@ -15,16 +19,21 @@
     </head>
     <body>
         <header class="header">
-            <a href="/" class="logo-container">
+            <a href="{{ url_for('index') }}" class="logo-container">
                 <img src="{{ url_for('static', filename='images/logo.png') }}"
                      alt="CalendarSync Logo"
-                     class="logo-img">
+                     class="logo-img"
+                     width="32"
+                     height="32">
                 <span class="logo-text">CalendarSync</span>
             </a>
             <div class="user-menu">
                 {% if user %}
                     <span>Hello, <strong>{{ user.name }}</strong></span>
-                    <a href="/logout" class="btn btn-outline">Logout</a>
+                    <form action="{{ url_for('logout') }}" method="post" class="logout-form">
+                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                        <button type="submit" class="btn btn-outline">Logout</button>
+                    </form>
                 {% else %}
                     <!-- Google Sign In Button (hidden placeholder) -->
                 {% endif %}
@@ -43,10 +52,12 @@
                         Keep track of work, personal, and shared events all in one place.
                     </p>
                     <div class="auth-wrapper">
+                        <!-- djlint:off H037 -->
                         <div id="g_id_onload"
                              data-client_id="{{ google_client_id }}"
                              data-login_uri="{{ url_for('google_auth_callback', _external=True) }}"
                              data-auto_prompt="false"></div>
+                        <!-- djlint:on -->
                         <div class="g_id_signin"
                              data-type="standard"
                              data-size="large"
@@ -60,7 +71,9 @@
                 <div class="hero-image-container">
                     <img src="{{ url_for('static', filename='images/hero.png') }}"
                          alt="Calendar Synchronization Visual"
-                         class="hero-image">
+                         class="hero-image"
+                         width="600"
+                         height="400">
                 </div>
             </section>
             <section class="features-section">
@@ -103,7 +116,8 @@
                     <h2>Your Syncs</h2>
                     <p>Manage your calendar synchronizations.</p>
                     <div>
-                        <a href="/create_sync" class="btn btn-primary dashboard-cta">+ Create New Sync</a>
+                        <a href="{{ url_for('create_sync') }}"
+                           class="btn btn-primary dashboard-cta">+ Create New Sync</a>
                     </div>
                 </div>
                 {% if syncs %}
@@ -116,8 +130,11 @@
                                         sync.destination_calendar_id }}
                                     </h3>
                                     <div class="sync-actions">
-                                        <form action="{{ url_for('run_sync', sync_id=sync.id) }}" method="POST">
-                                            <button type="submit" class="btn btn-primary" data-loading-text="Syncing...">Sync Now</button>
+                                        <form action="{{ url_for('run_sync', sync_id=sync.id) }}" method="post">
+                                            <button type="submit" class="btn btn-primary" data-loading-text="Syncing...">
+                                                Sync
+                                                Now
+                                            </button>
                                         </form>
                                         <a href="{{ url_for('edit_sync', sync_id=sync.id) }}"
                                            class="btn btn-outline">Edit</a>
@@ -161,8 +178,8 @@
                     </div>
                 {% else %}
                     <div class="empty-state">
-                        <p style="font-size: 1.2rem; margin-bottom: 1rem;">You haven't created any syncs yet.</p>
-                        <a href="/create_sync" class="btn btn-outline">Get Started</a>
+                        <p class="empty-state-text">You haven't created any syncs yet.</p>
+                        <a href="{{ url_for('create_sync') }}" class="btn btn-outline">Get Started</a>
                     </div>
                 {% endif %}
             </div>

@@ -1,0 +1,49 @@
+import sys
+import os
+from unittest.mock import MagicMock, patch
+import pytest
+
+# Adjust path to import app
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../")))
+
+# Patch sys.modules to prevent real init on import
+from app.app import app
+
+
+@pytest.fixture
+def _client():
+    app.config["TESTING"] = True
+    app.secret_key = "test_key"
+    with app.test_client() as _client:
+        yield _client
+
+
+def test_logout_secure_success(_client):
+    """Test that POST /logout with valid CSRF token works."""
+    with _client.session_transaction() as sess:
+        sess["user"] = {"uid": "user123"}
+        sess["csrf_token"] = "valid_token"
+
+    resp = _client.post("/logout", data={"csrf_token": "valid_token"})
+    assert resp.status_code == 302
+    assert resp.location == "/"
+
+    with _client.session_transaction() as sess:
+        assert "user" not in sess
+
+
+def test_logout_get_method_not_allowed(_client):
+    """Test that GET /logout is not allowed."""
+    resp = _client.get("/logout")
+    assert resp.status_code == 405
+
+
+def test_logout_invalid_csrf(_client):
+    """Test that POST /logout with invalid CSRF token fails."""
+    with _client.session_transaction() as sess:
+        sess["user"] = {"uid": "user123"}
+        sess["csrf_token"] = "valid_token"
+
+    resp = _client.post("/logout", data={"csrf_token": "invalid_token"})
+    assert resp.status_code == 400
+    assert b"Invalid CSRF token" in resp.data

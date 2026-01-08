@@ -25,7 +25,7 @@ class TestSyncLogic(unittest.TestCase):
         if rrule:
             content += f"RRULE:{rrule}\r\n"
 
-        content += f"DESCRIPTION:Desc\r\nLOCATION:Loc\r\nEND:VEVENT\r\nEND:VCALENDAR"
+        content += "DESCRIPTION:Desc\r\nLOCATION:Loc\r\nEND:VEVENT\r\nEND:VCALENDAR"
         return content.encode("utf-8")
 
     def _setup_common_mocks(self, mock_firestore, sync_data, user_data=None):
