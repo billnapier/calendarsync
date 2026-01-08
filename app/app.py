@@ -110,6 +110,17 @@ EVENT_LIST_FIELDS = (
     "summary,nextPageToken,items(id,summary,description,location,start,end)"
 )
 
+SYNC_WINDOW_PAST_DAYS = 30
+SYNC_WINDOW_FUTURE_DAYS = 365
+
+
+def _get_sync_window_dates():
+    """Returns the start and end datetimes for the sync window."""
+    now = datetime.now(timezone.utc)
+    start = now - timedelta(days=SYNC_WINDOW_PAST_DAYS)
+    end = now + timedelta(days=SYNC_WINDOW_FUTURE_DAYS)
+    return start, end
+
 
 def generate_csrf_token():
     """Generate a CSRF token and store it in the session."""
@@ -768,9 +779,9 @@ def _fetch_google_source(source, user_id):  # pylint: disable=too-many-locals
         calendar_id = source.get("id")
 
         # Define sync window: 30 days past -> 365 days future
-        now = datetime.now(timezone.utc)
-        time_min = (now - timedelta(days=30)).isoformat()
-        time_max = (now + timedelta(days=365)).isoformat()
+        start, end = _get_sync_window_dates()
+        time_min = start.isoformat()
+        time_max = end.isoformat()
 
         events, name = _fetch_all_google_events(
             service, calendar_id, url, time_min=time_min, time_max=time_max
@@ -811,9 +822,7 @@ def _fetch_all_google_events(
     while True:
         list_kwargs["pageToken"] = page_token
         events_result = (
-            service.events()  # pylint: disable=no-member
-            .list(**list_kwargs)
-            .execute()
+            service.events().list(**list_kwargs).execute()  # pylint: disable=no-member
         )
 
         items = events_result.get("items", [])
@@ -1115,9 +1124,7 @@ def sync_calendar_logic(sync_id):  # pylint: disable=too-many-locals
 
     # 3. Process Events
     # Define sync window: 30 days past -> 365 days future
-    now = datetime.now(timezone.utc)
-    window_start = now - timedelta(days=30)
-    window_end = now + timedelta(days=365)
+    window_start, window_end = _get_sync_window_dates()
 
     # Filter source events to ensure we only sync within the window
     # This handles iCal sources that returned everything, and serves as a safety check

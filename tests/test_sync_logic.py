@@ -56,8 +56,10 @@ class TestSyncLogic(unittest.TestCase):
         mock_user_doc_ref.get.return_value = mock_user_snap
 
         def side_effect(name):
-            if name == "syncs": return mock_sync_col
-            if name == "users": return mock_user_col
+            if name == "syncs":
+                return mock_sync_col
+            if name == "users":
+                return mock_user_col
             return MagicMock()
 
         mock_db.collection.side_effect = side_effect
@@ -73,8 +75,10 @@ class TestSyncLogic(unittest.TestCase):
         self, mock_get, mock_build, mock_creds, mock_config, mock_firestore
     ):
         sync_data = {
-            "user_id": "test_user", "destination_calendar_id": "dest_cal",
-            "source_icals": ["http://test.com/cal.ics"], "event_prefix": "TestPrefix",
+            "user_id": "test_user",
+            "destination_calendar_id": "dest_cal",
+            "source_icals": ["http://test.com/cal.ics"],
+            "event_prefix": "TestPrefix",
         }
         self._setup_common_mocks(mock_firestore, sync_data)
 
@@ -87,7 +91,9 @@ class TestSyncLogic(unittest.TestCase):
         mock_build.return_value = mock_service
         mock_batch = MagicMock()
         mock_service.new_batch_http_request.return_value = mock_batch
-        mock_service.events.return_value.list.return_value.execute.return_value = {"items": []}
+        mock_service.events.return_value.list.return_value.execute.return_value = {
+            "items": []
+        }
 
         sync_calendar_logic("sync_123")
 
@@ -104,8 +110,10 @@ class TestSyncLogic(unittest.TestCase):
         self, mock_get, mock_build, mock_creds, mock_config, mock_firestore
     ):
         sync_data = {
-            "user_id": "test_user", "destination_calendar_id": "dest_cal",
-            "source_icals": ["http://test.com/cal.ics"], "event_prefix": "TestPrefix",
+            "user_id": "test_user",
+            "destination_calendar_id": "dest_cal",
+            "source_icals": ["http://test.com/cal.ics"],
+            "event_prefix": "TestPrefix",
         }
         self._setup_common_mocks(mock_firestore, sync_data)
 
@@ -137,24 +145,33 @@ class TestSyncLogic(unittest.TestCase):
         self, mock_get, mock_build, mock_creds, mock_config, mock_firestore
     ):
         sync_data = {
-            "user_id": "test_user_2", "destination_calendar_id": "dest_cal_2",
-            "sources": [{"url": "http://site1.com", "prefix": "P1"}, {"url": "http://site2.com", "prefix": "P2"}],
+            "user_id": "test_user_2",
+            "destination_calendar_id": "dest_cal_2",
+            "sources": [
+                {"url": "http://site1.com", "prefix": "P1"},
+                {"url": "http://site2.com", "prefix": "P2"},
+            ],
         }
         self._setup_common_mocks(mock_firestore, sync_data)
 
         def get_side_effect(url, **kwargs):
             resp = MagicMock()
             resp.status_code = 200
-            if "site1" in url: resp.content = self._get_ical_content("one", "Event One")
-            else: resp.content = self._get_ical_content("two", "Event Two")
+            if "site1" in url:
+                resp.content = self._get_ical_content("one", "Event One")
+            else:
+                resp.content = self._get_ical_content("two", "Event Two")
             return resp
+
         mock_get.side_effect = get_side_effect
 
         mock_service = MagicMock()
         mock_build.return_value = mock_service
         mock_batch = MagicMock()
         mock_service.new_batch_http_request.return_value = mock_batch
-        mock_service.events.return_value.list.return_value.execute.return_value = {"items": []}
+        mock_service.events.return_value.list.return_value.execute.return_value = {
+            "items": []
+        }
 
         sync_calendar_logic("sync_multi")
         self.assertEqual(mock_batch.add.call_count, 2)
@@ -168,7 +185,8 @@ class TestSyncLogic(unittest.TestCase):
         self, mock_get, mock_build, mock_creds, mock_config, mock_firestore
     ):
         sync_data = {
-            "user_id": "test_user", "destination_calendar_id": "dest_cal",
+            "user_id": "test_user",
+            "destination_calendar_id": "dest_cal",
             "source_icals": ["http://fail.com/cal.ics"],
         }
         mock_sync_ref = self._setup_common_mocks(mock_firestore, sync_data)
@@ -177,13 +195,17 @@ class TestSyncLogic(unittest.TestCase):
 
         mock_service = MagicMock()
         mock_build.return_value = mock_service
-        mock_service.events.return_value.list.return_value.execute.return_value = {"items": []}
+        mock_service.events.return_value.list.return_value.execute.return_value = {
+            "items": []
+        }
 
         sync_calendar_logic("sync_fail")
 
         args, _ = mock_sync_ref.update.call_args
         update_data = args[0]
-        self.assertIn("http://fail.com/cal.ics (Failed)", update_data["source_names"].values())
+        self.assertIn(
+            "http://fail.com/cal.ics (Failed)", update_data["source_names"].values()
+        )
 
     @patch("app.app.firestore.client")
     @patch("app.app.get_client_config")
@@ -195,7 +217,8 @@ class TestSyncLogic(unittest.TestCase):
     ):
         """Test that events older than 30 days are filtered out."""
         sync_data = {
-            "user_id": "test_user", "destination_calendar_id": "dest_cal",
+            "user_id": "test_user",
+            "destination_calendar_id": "dest_cal",
             "source_icals": ["http://test.com/cal.ics"],
         }
         self._setup_common_mocks(mock_firestore, sync_data)
@@ -203,14 +226,18 @@ class TestSyncLogic(unittest.TestCase):
         # Generate event 40 days in the past
         mock_response = MagicMock()
         mock_response.status_code = 200
-        mock_response.content = self._get_ical_content("old_event", "Old Event", days_offset=-40)
+        mock_response.content = self._get_ical_content(
+            "old_event", "Old Event", days_offset=-40
+        )
         mock_get.return_value = mock_response
 
         mock_service = MagicMock()
         mock_build.return_value = mock_service
         mock_batch = MagicMock()
         mock_service.new_batch_http_request.return_value = mock_batch
-        mock_service.events.return_value.list.return_value.execute.return_value = {"items": []}
+        mock_service.events.return_value.list.return_value.execute.return_value = {
+            "items": []
+        }
 
         sync_calendar_logic("sync_filter")
 
@@ -227,7 +254,8 @@ class TestSyncLogic(unittest.TestCase):
     ):
         """Test that events with RRULE are KEPT even if start date is old."""
         sync_data = {
-            "user_id": "test_user", "destination_calendar_id": "dest_cal",
+            "user_id": "test_user",
+            "destination_calendar_id": "dest_cal",
             "source_icals": ["http://test.com/cal.ics"],
         }
         self._setup_common_mocks(mock_firestore, sync_data)
@@ -244,12 +272,15 @@ class TestSyncLogic(unittest.TestCase):
         mock_build.return_value = mock_service
         mock_batch = MagicMock()
         mock_service.new_batch_http_request.return_value = mock_batch
-        mock_service.events.return_value.list.return_value.execute.return_value = {"items": []}
+        mock_service.events.return_value.list.return_value.execute.return_value = {
+            "items": []
+        }
 
         sync_calendar_logic("sync_recurring_keep")
 
         # Verify batch add WAS called (kept)
         self.assertTrue(mock_batch.add.called)
+
 
 if __name__ == "__main__":
     unittest.main()
