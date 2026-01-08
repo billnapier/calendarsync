@@ -1,3 +1,3 @@
-## 2024-05-23 - Submit Button Loading States
-**Learning:** Users lack feedback during async form submissions (sync/create/edit), leading to uncertainty and potential double-clicks. Adding a simple loading state ("Syncing...") significantly improves perceived performance and prevents double-clicks.
-**Action:** Implemented a reusable `ui.js` script that intercepts form submissions, disables the submit button, and updates its text based on a `data-loading-text` attribute. Using `pageshow` event listener ensures buttons are reset when navigating back via browser history (bfcache), a critical detail for smooth UX. Always implement disabled/loading states for form submissions, especially for backend operations known to be slow. Use a centralized script to apply this pattern consistently across separate templates.
+## 2024-05-24 - Focus Management on Dynamic Inputs
+**Learning:** When dynamically adding or toggling form inputs (like "Add another source" or switching "Source Type"), users expect the focus to move to the new interactive element immediately. This reduces friction for keyboard users and power users who want to keep typing without reaching for the mouse.
+**Action:** Always programmatically `focus()` the relevant input field after appending it to the DOM or unhiding it. This simple change significantly improves the "flow" of form completion.

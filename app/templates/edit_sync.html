@@ -262,6 +262,17 @@
             const clone = template.content.cloneNode(true);
             container.appendChild(clone);
             updateRemoveButtons();
+
+            // Focus the first visible input/select of the new entry
+            const newEntry = container.lastElementChild;
+            // Find inputs that are not hidden type, and ensure their parent row is not hidden
+            const inputs = newEntry.querySelectorAll('input:not([type="hidden"]), select');
+            for (const input of inputs) {
+                // Check if the input itself or its parent .input-row is hidden
+                if (input.closest('.hidden')) continue;
+                input.focus();
+                break;
+            }
         }
 
         function removeEntry(btn) {
@@ -298,12 +309,17 @@
                 googleInput.classList.remove('hidden');
                 icalInput.classList.add('hidden');
                 urlInput.value = '';
+                // Focus the select inside google-input
+                const visibleSelect = googleInput.querySelector('select');
+                if (visibleSelect) visibleSelect.focus();
             } else {
                 googleInput.classList.add('hidden');
                 icalInput.classList.remove('hidden');
                 idInput.value = '';
                 const visibleSelect = entry.querySelector('select[name="source_ids_visible"]');
                 if (visibleSelect) visibleSelect.value = "";
+                // Focus the input inside ical-input
+                if (urlInput) urlInput.focus();
             }
         }
 
