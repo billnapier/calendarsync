@@ -727,3 +727,36 @@ details[open] summary.help-summary::before {
         transform: translateY(0);
     }
 }
+
+.profile-pic {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+}
+
+.help-paragraph {
+    margin: 0 0 0.5rem 0;
+}
+
+.help-list {
+    padding-left: 1.2rem;
+    margin: 0;
+}
+
+/* Linting cleanup classes */
+.refresh-link {
+    color: var(--primary-color);
+}
+
+.visibility-hidden {
+    visibility: hidden;
+}
+
+.display-none {
+    display: none;
+}
+
+.empty-state-text {
+    font-size: 1.2rem;
+    margin-bottom: 1rem;
+}
