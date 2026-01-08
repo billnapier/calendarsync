@@ -137,7 +137,9 @@ def test_create_sync_post_fetches_if_missing(
     assert args[0]["destination_calendar_summary"] == "Destination Cal"
 
 
-def test_delete_sync_success(client, mock_firestore):  # pylint: disable=redefined-outer-name
+def test_delete_sync_success(
+    client, mock_firestore
+):  # pylint: disable=redefined-outer-name
     """Test that POST to delete_sync deletes the document."""
     with client.session_transaction() as sess:
         sess["user"] = {"uid": "test_uid"}
@@ -164,7 +166,9 @@ def test_delete_sync_success(client, mock_firestore):  # pylint: disable=redefin
     mock_doc_ref.delete.assert_called_once()
 
 
-def test_delete_sync_not_found(client, mock_firestore):  # pylint: disable=redefined-outer-name
+def test_delete_sync_not_found(
+    client, mock_firestore
+):  # pylint: disable=redefined-outer-name
     """Test delete_sync returns 404 if sync does not exist."""
     with client.session_transaction() as sess:
         sess["user"] = {"uid": "test_uid"}
@@ -187,7 +191,9 @@ def test_delete_sync_not_found(client, mock_firestore):  # pylint: disable=redef
     assert b"Sync not found" in resp.data
 
 
-def test_delete_sync_unauthorized(client, mock_firestore):  # pylint: disable=redefined-outer-name
+def test_delete_sync_unauthorized(
+    client, mock_firestore
+):  # pylint: disable=redefined-outer-name
     """Test delete_sync returns 403 if user does not own sync."""
     with client.session_transaction() as sess:
         sess["user"] = {"uid": "test_uid"}
