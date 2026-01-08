@@ -23,6 +23,8 @@ from google.oauth2 import id_token
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 
+# pylint: disable=too-many-lines
+
 try:
     from app.security import safe_requests_get
 except ImportError:
@@ -752,7 +754,7 @@ def _calculate_end_time(start_dt_prop, duration_prop):
     return {"date": end_dt_obj.isoformat()}
 
 
-def _fetch_google_source(source, user_id):
+def _fetch_google_source(source, user_id):  # pylint: disable=too-many-locals
     """
     Fetch events from a Google Calendar and convert to iCal components.
     """
@@ -1081,7 +1083,7 @@ def _get_google_service(db, user_id):
     return build("calendar", "v3", credentials=creds)
 
 
-def sync_calendar_logic(sync_id):
+def sync_calendar_logic(sync_id):  # pylint: disable=too-many-locals
     """
     Core logic to sync events from source iFals to destination Google Calendar.
     """
