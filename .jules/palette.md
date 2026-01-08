@@ -1,3 +1,3 @@
-## 2024-05-23 - [Loading States for Sync Operations]
-**Learning:** Users lack confidence when long-running operations (like syncing calendars) have no immediate feedback. Adding a simple loading state ("Syncing...") significantly improves perceived performance and prevents double-clicks.
-**Action:** Always implement disabled/loading states for form submissions, especially for backend operations known to be slow. Use a centralized script to apply this pattern consistently across separate templates.
+## 2024-05-23 - Submit Button Loading States
+**Learning:** Users lack feedback during async form submissions (sync/create/edit), leading to uncertainty and potential double-clicks. Adding a simple loading state ("Syncing...") significantly improves perceived performance and prevents double-clicks.
+**Action:** Implemented a reusable `ui.js` script that intercepts form submissions, disables the submit button, and updates its text based on a `data-loading-text` attribute. Using `pageshow` event listener ensures buttons are reset when navigating back via browser history (bfcache), a critical detail for smooth UX. Always implement disabled/loading states for form submissions, especially for backend operations known to be slow. Use a centralized script to apply this pattern consistently across separate templates.

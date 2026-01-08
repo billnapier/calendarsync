@@ -30,7 +30,7 @@ def test_sequential_fetch_performance():
 
     with patch("app.app.safe_requests_get", side_effect=mock_delayed_get):
         start_time = time.time()
-        _fetch_source_events(sources)
+        _fetch_source_events(sources, "test_user")
         end_time = time.time()
 
         duration = end_time - start_time
