@@ -10,26 +10,12 @@ os.environ["TESTING"] = "1"
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../")))
 
 # Initial mocks for import safety
-mock_firestore_module_mock = MagicMock()
-mock_firestore_module_mock.SERVER_TIMESTAMP = "TEST_TIMESTAMP"
-
-# Patch sys.modules to prevent real init on import
-with patch.dict(
-    sys.modules,
-    {
-        "firebase_admin": MagicMock(),
-        "firebase_admin.credentials": MagicMock(),
-        "firebase_admin.firestore": mock_firestore_module_mock,
-        "google.cloud": MagicMock(),
-        "google.cloud.secretmanager": MagicMock(),
-    },
-):
-    import app.app as app_module
-    from app.app import app as flask_app
+import app.app as app_module
+from app.app import app as flask_app
 
 
 @pytest.fixture
-def client():
+def _client():
     flask_app.config["TESTING"] = True
     flask_app.secret_key = "test_secret"
     with flask_app.test_client() as test_client:
@@ -37,14 +23,14 @@ def client():
 
 
 @pytest.fixture
-def mock_fetch_calendars():
+def _mock_fetch_calendars():
     # Force patch on the imported module object to be sure
     with patch.object(app_module, "fetch_user_calendars") as mock:
         yield mock
 
 
 @pytest.fixture
-def mock_firestore():
+def _mock_firestore():
     original_firestore = app_module.firestore
     mock_fs = MagicMock(name="manual_fs")
     app_module.firestore = mock_fs

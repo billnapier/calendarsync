@@ -15,9 +15,7 @@ class TestAutoSync(unittest.TestCase):
 
     @patch("app.app.sync_calendar_logic")
     @patch("app.app.firestore")
-    def test_create_sync_triggers_sync(
-        self, mock_firestore, mock_sync_logic
-    ):
+    def test_create_sync_triggers_sync(self, mock_firestore, mock_sync_logic):
         """Test POST /create_sync triggers auto-sync."""
 
         # Mock Session

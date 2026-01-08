@@ -7,24 +7,11 @@ import pytest
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../")))
 
 # Patch sys.modules to prevent real init on import
-mock_firestore_module_mock = MagicMock()
-mock_firestore_module_mock.SERVER_TIMESTAMP = "TEST_TIMESTAMP"
-
-with patch.dict(
-    sys.modules,
-    {
-        "firebase_admin": MagicMock(),
-        "firebase_admin.credentials": MagicMock(),
-        "firebase_admin.firestore": mock_firestore_module_mock,
-        "google.cloud": MagicMock(),
-        "google.cloud.secretmanager": MagicMock(),
-    },
-):
-    from app.app import app
+from app.app import app
 
 
 @pytest.fixture
-def client():
+def _client():
     app.config["TESTING"] = True
     app.secret_key = "test_key"
     with app.test_client() as _client:

@@ -1,0 +1,78 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-7.4.3, pluggy-1.6.0 -- /home/napier/test/calendarsync/venv/bin/python3.12
+cachedir: .pytest_cache
+rootdir: /home/napier/test/calendarsync
+collecting ... collected 6 items
+
+tests/test_routes.py::test_edit_sync_post_refreshes_stale_cache ERROR    [ 16%]
+tests/test_routes.py::test_create_sync_post_fetches_if_missing ERROR     [ 33%]
+tests/test_routes.py::test_delete_sync_success ERROR                     [ 50%]
+tests/test_routes.py::test_delete_sync_not_found ERROR                   [ 66%]
+tests/test_routes.py::test_delete_sync_unauthorized ERROR                [ 83%]
+tests/test_routes.py::test_delete_sync_not_logged_in ERROR               [100%]
+
+==================================== ERRORS ====================================
+_________ ERROR at setup of test_edit_sync_post_refreshes_stale_cache __________
+file /home/napier/test/calendarsync/tests/test_routes.py, line 41
+  def test_edit_sync_post_refreshes_stale_cache(
+E       fixture '_client' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, client, doctest_namespace, mock_fetch_calendars, mock_firestore, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/home/napier/test/calendarsync/tests/test_routes.py:41
+__________ ERROR at setup of test_create_sync_post_fetches_if_missing __________
+file /home/napier/test/calendarsync/tests/test_routes.py, line 86
+  def test_create_sync_post_fetches_if_missing(
+E       fixture '_client' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, client, doctest_namespace, mock_fetch_calendars, mock_firestore, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/home/napier/test/calendarsync/tests/test_routes.py:86
+__________________ ERROR at setup of test_delete_sync_success __________________
+file /home/napier/test/calendarsync/tests/test_routes.py, line 126
+  def test_delete_sync_success(_client, _mock_firestore):
+E       fixture '_client' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, client, doctest_namespace, mock_fetch_calendars, mock_firestore, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/home/napier/test/calendarsync/tests/test_routes.py:126
+_________________ ERROR at setup of test_delete_sync_not_found _________________
+file /home/napier/test/calendarsync/tests/test_routes.py, line 153
+  def test_delete_sync_not_found(_client, _mock_firestore):
+E       fixture '_client' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, client, doctest_namespace, mock_fetch_calendars, mock_firestore, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/home/napier/test/calendarsync/tests/test_routes.py:153
+_______________ ERROR at setup of test_delete_sync_unauthorized ________________
+file /home/napier/test/calendarsync/tests/test_routes.py, line 176
+  def test_delete_sync_unauthorized(_client, _mock_firestore):
+E       fixture '_client' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, client, doctest_namespace, mock_fetch_calendars, mock_firestore, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/home/napier/test/calendarsync/tests/test_routes.py:176
+_______________ ERROR at setup of test_delete_sync_not_logged_in _______________
+file /home/napier/test/calendarsync/tests/test_routes.py, line 200
+  def test_delete_sync_not_logged_in(_client):
+E       fixture '_client' not found
+>       available fixtures: cache, capfd, capfdbinary, caplog, capsys, capsysbinary, client, doctest_namespace, mock_fetch_calendars, mock_firestore, monkeypatch, pytestconfig, record_property, record_testsuite_property, record_xml_attribute, recwarn, tmp_path, tmp_path_factory, tmpdir, tmpdir_factory
+>       use 'pytest --fixtures [testpath]' for help on them.
+
+/home/napier/test/calendarsync/tests/test_routes.py:200
+=============================== warnings summary ===============================
+<frozen importlib._bootstrap>:488
+  <frozen importlib._bootstrap>:488: DeprecationWarning: Type google._upb._message.MessageMapContainer uses PyType_Spec with a metaclass that has custom tp_new. This is deprecated and will no longer be allowed in Python 3.14.
+
+<frozen importlib._bootstrap>:488
+  <frozen importlib._bootstrap>:488: DeprecationWarning: Type google._upb._message.ScalarMapContainer uses PyType_Spec with a metaclass that has custom tp_new. This is deprecated and will no longer be allowed in Python 3.14.
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ============================
+ERROR tests/test_routes.py::test_edit_sync_post_refreshes_stale_cache
+ERROR tests/test_routes.py::test_create_sync_post_fetches_if_missing
+ERROR tests/test_routes.py::test_delete_sync_success
+ERROR tests/test_routes.py::test_delete_sync_not_found
+ERROR tests/test_routes.py::test_delete_sync_unauthorized
+ERROR tests/test_routes.py::test_delete_sync_not_logged_in
+======================== 2 warnings, 6 errors in 1.27s =========================

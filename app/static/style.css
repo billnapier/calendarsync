@@ -187,6 +187,10 @@ footer {
     gap: 1rem;
 }
 
+.logout-form {
+    display: inline;
+}
+
 .dashboard-container {
     padding: 2rem 5%;
     width: 100%;
