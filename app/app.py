@@ -615,6 +615,9 @@ def delete_sync(sync_id):
     if sync_data["user_id"] != user["uid"]:
         return "Unauthorized", 403
 
+    if not verify_csrf_token(request.form.get("csrf_token")):
+        return "Invalid CSRF token", 400
+
     try:
         # We only remove the configuration, as requested ("remove a sync and all of it's sources").
         sync_ref.delete()

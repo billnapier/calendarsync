@@ -127,6 +127,7 @@ def test_delete_sync_success(_client, _mock_firestore):
     """Test that POST to delete_sync deletes the document."""
     with _client.session_transaction() as sess:
         sess["user"] = {"uid": "test_uid"}
+        sess["csrf_token"] = "valid_token"
 
     mock_db = MagicMock(name="mock_db")
     mock_collection = MagicMock(name="mock_collection")
@@ -143,7 +144,10 @@ def test_delete_sync_success(_client, _mock_firestore):
 
     _mock_firestore.client.return_value = mock_db
 
-    resp = _client.post("/delete_sync/sync123")
+    resp = _client.post(
+        "/delete_sync/sync123",
+        data={"csrf_token": "valid_token"},
+    )
 
     assert resp.status_code == 302  # redirect home
     mock_collection.document.assert_called_with("sync123")
