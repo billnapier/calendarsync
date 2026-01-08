@@ -3,7 +3,7 @@ import os
 import logging
 import time
 import concurrent.futures
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 import json
 import re
 import secrets
@@ -22,6 +22,8 @@ import google.auth.transport.requests
 from google.oauth2 import id_token
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
+
+# pylint: disable=too-many-lines
 
 try:
     from app.security import safe_requests_get
@@ -107,6 +109,17 @@ CALENDAR_LIST_FIELDS = "items(id,summary)"
 EVENT_LIST_FIELDS = (
     "summary,nextPageToken,items(id,summary,description,location,start,end)"
 )
+
+SYNC_WINDOW_PAST_DAYS = 30
+SYNC_WINDOW_FUTURE_DAYS = 365
+
+
+def _get_sync_window_dates():
+    """Returns the start and end datetimes for the sync window."""
+    now = datetime.now(timezone.utc)
+    start = now - timedelta(days=SYNC_WINDOW_PAST_DAYS)
+    end = now + timedelta(days=SYNC_WINDOW_FUTURE_DAYS)
+    return start, end
 
 
 def generate_csrf_token():
@@ -752,7 +765,7 @@ def _calculate_end_time(start_dt_prop, duration_prop):
     return {"date": end_dt_obj.isoformat()}
 
 
-def _fetch_google_source(source, user_id):
+def _fetch_google_source(source, user_id):  # pylint: disable=too-many-locals
     """
     Fetch events from a Google Calendar and convert to iCal components.
     """
@@ -765,7 +778,14 @@ def _fetch_google_source(source, user_id):
         service = _get_google_service(db, user_id)
         calendar_id = source.get("id")
 
-        events, name = _fetch_all_google_events(service, calendar_id, url)
+        # Define sync window: 30 days past -> 365 days future
+        start, end = _get_sync_window_dates()
+        time_min = start.isoformat()
+        time_max = end.isoformat()
+
+        events, name = _fetch_all_google_events(
+            service, calendar_id, url, time_min=time_min, time_max=time_max
+        )
 
         for gevent in events:
             ievent = _map_google_event_to_ical(gevent)
@@ -778,24 +798,31 @@ def _fetch_google_source(source, user_id):
         return [], url, f"{url} (Failed)"
 
 
-def _fetch_all_google_events(service, calendar_id, url):
+def _fetch_all_google_events(
+    service, calendar_id, url, time_min=None, time_max=None
+):  # pylint: disable=too-many-arguments
     """Fetch all events from Google Calendar with pagination."""
     events = []
     page_token = None
     name = url  # Default name
 
+    # Build kwargs for list()
+    list_kwargs = {
+        "calendarId": calendar_id,
+        "singleEvents": True,
+        "orderBy": "startTime",
+        "maxResults": 2500,
+        "fields": EVENT_LIST_FIELDS,
+    }
+    if time_min:
+        list_kwargs["timeMin"] = time_min
+    if time_max:
+        list_kwargs["timeMax"] = time_max
+
     while True:
+        list_kwargs["pageToken"] = page_token
         events_result = (
-            service.events()  # pylint: disable=no-member
-            .list(
-                calendarId=calendar_id,
-                singleEvents=True,
-                orderBy="startTime",
-                maxResults=2500,  # Max allowed per page
-                pageToken=page_token,
-                fields=EVENT_LIST_FIELDS,
-            )
-            .execute()
+            service.events().list(**list_kwargs).execute()  # pylint: disable=no-member
         )
 
         items = events_result.get("items", [])
@@ -1057,7 +1084,7 @@ def _get_google_service(db, user_id):
     return build("calendar", "v3", credentials=creds)
 
 
-def sync_calendar_logic(sync_id):
+def sync_calendar_logic(sync_id):  # pylint: disable=too-many-locals
     """
     Core logic to sync events from source iFals to destination Google Calendar.
     """
@@ -1096,9 +1123,44 @@ def sync_calendar_logic(sync_id):
     )
 
     # 3. Process Events
+    # Define sync window: 30 days past -> 365 days future
+    window_start, window_end = _get_sync_window_dates()
+
+    # Filter source events to ensure we only sync within the window
+    # This handles iCal sources that returned everything, and serves as a safety check
+    filtered_events = []
+    for item in all_events_items:
+        event = item["component"]
+        # Simple check on DTSTART. Recurring rules (RRULE) are complex,
+        # but for a basic sync, checking the start date is a good first approximation.
+        # Note: Google Source events are already filtered by the API call in _fetch_google_source
+        if "dtstart" in event:
+            dt = event["dtstart"].dt
+            # Normalize to UTC for comparison
+            if isinstance(dt, datetime):
+                if dt.tzinfo is None:
+                    dt = dt.replace(tzinfo=timezone.utc)
+            else:
+                # Date object (all day) - convert to datetime at start of day
+                dt = datetime.combine(dt, datetime.min.time()).replace(
+                    tzinfo=timezone.utc
+                )
+
+            # Check if event is within window OR if it is a recurring rule master (RRULE).
+            # We must preserve RRULE masters even if they started long ago,
+            # otherwise the entire series will disappear.
+            if (window_start <= dt <= window_end) or "rrule" in event:
+                filtered_events.append(item)
+        else:
+            # Event without start? Include just in case or skip.
+            # Safe to skip as it won't display anyway.
+            pass
+
     # Fetch existing events map for reliable updates
+    # We do NOT filter here to ensure we know about all existing UIDs (especially recurring masters)
+    # This prevents creating duplicates of events that started before the window.
     existing_map = _get_existing_events_map(service, destination_id)
-    _batch_upsert_events(service, destination_id, all_events_items, existing_map)
+    _batch_upsert_events(service, destination_id, filtered_events, existing_map)
 
 
 def _handle_create_sync_post(user):

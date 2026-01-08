@@ -1,11 +1,12 @@
-import sys
-import os
 import unittest
 from unittest.mock import patch, MagicMock
-from app.app import app
+import sys
+import os
+
 
 # Add app to path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+from app.app import app
 
 
 class TestAutoSync(unittest.TestCase):
@@ -15,7 +16,10 @@ class TestAutoSync(unittest.TestCase):
 
     @patch("app.app.sync_calendar_logic")
     @patch("app.app.firestore")
-    def test_create_sync_triggers_sync(self, mock_firestore, mock_sync_logic):
+    @patch("app.app.fetch_user_calendars")
+    def test_create_sync_triggers_sync(
+        self, mock_fetch_cals, mock_firestore, mock_sync_logic
+    ):
         """Test POST /create_sync triggers auto-sync."""
 
         # Mock Session

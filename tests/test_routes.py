@@ -217,7 +217,7 @@ def test_delete_sync_unauthorized(
     assert b"Unauthorized" in resp.data
 
 
-def test_delete_sync_not_logged_in(client):  # pylint: disable=redefined-outer-name
+def test_delete_sync_not_logged_in(client):
     """Test delete_sync redirects to login if not logged in."""
     resp = client.post("/delete_sync/sync123")
     assert resp.status_code == 302
