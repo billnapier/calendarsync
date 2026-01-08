@@ -1,3 +1,4 @@
+# pylint: disable=too-many-lines
 import os
 import logging
 import time

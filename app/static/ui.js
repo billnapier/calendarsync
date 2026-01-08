@@ -17,8 +17,8 @@
                     return;
                 }
 
-                const submitBtn = form.querySelector('button[type="submit"]');
-                if (!submitBtn) return;
+                const submitBtn = e.submitter;
+                if (!(submitBtn instanceof HTMLButtonElement) || submitBtn.type !== 'submit') return;
 
                 // Check for validation before disabling
                 if (!form.checkValidity()) return;
@@ -50,13 +50,15 @@
         const forms = document.querySelectorAll('form');
         forms.forEach(form => {
             delete form.dataset.submitting;
-            const submitBtn = form.querySelector('button[type="submit"]');
-            if (submitBtn && submitBtn.disabled && submitBtn.dataset.originalText) {
-                submitBtn.innerText = submitBtn.dataset.originalText;
-                submitBtn.disabled = false;
-                submitBtn.style.width = '';
-                submitBtn.classList.remove('btn-loading');
-            }
+            form.querySelectorAll('button[type="submit"]').forEach(submitBtn => {
+                if (submitBtn.disabled && submitBtn.dataset.originalText) {
+                    submitBtn.innerText = submitBtn.dataset.originalText;
+                    submitBtn.disabled = false;
+                    submitBtn.style.width = '';
+                    submitBtn.classList.remove('btn-loading');
+                    delete submitBtn.dataset.originalText;
+                }
+            });
         });
     });
 
