@@ -811,9 +811,7 @@ def _fetch_all_google_events(
     while True:
         list_kwargs["pageToken"] = page_token
         events_result = (
-            service.events()  # pylint: disable=no-member
-            .list(**list_kwargs)
-            .execute()
+            service.events().list(**list_kwargs).execute()  # pylint: disable=no-member
         )
 
         items = events_result.get("items", [])
@@ -955,11 +953,7 @@ def _get_existing_events_map(service, destination_id, time_min=None, time_max=No
     try:
         while True:
             list_kwargs["pageToken"] = page_token
-            events_result = (
-                service.events()
-                .list(**list_kwargs)
-                .execute()
-            )
+            events_result = service.events().list(**list_kwargs).execute()
             for event in events_result.get("items", []):
                 ical_uid = event.get("iCalUID")
                 event_id = event.get("id")

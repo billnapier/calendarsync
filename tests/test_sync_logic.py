@@ -16,7 +16,12 @@ class TestSyncLogic(unittest.TestCase):
     @patch("app.app.build")
     @patch("app.app.requests.get")
     def test_sync_calendar_logic_with_prefix(
-        self, mock_get, mock_build, mock_creds, mock_config, mock_firestore
+        self,
+        mock_get,
+        mock_build,
+        mock_creds,
+        mock_config,
+        mock_firestore,
     ):
         # Setup Mocks
         mock_db = MagicMock()
@@ -102,7 +107,12 @@ class TestSyncLogic(unittest.TestCase):
     @patch("app.app.build")
     @patch("app.app.requests.get")
     def test_sync_calendar_logic_existing_update(
-        self, mock_get, mock_build, mock_creds, mock_config, mock_firestore
+        self,
+        mock_get,
+        mock_build,
+        mock_creds,
+        mock_config,
+        mock_firestore,
     ):
         """Test that existing events trigger an update() call."""
         # Setup Mocks
@@ -182,7 +192,12 @@ class TestSyncLogic(unittest.TestCase):
     @patch("app.app.build")
     @patch("app.app.requests.get")
     def test_sync_calendar_logic_multiple_sources(
-        self, mock_get, mock_build, mock_creds, mock_config, mock_firestore
+        self,
+        mock_get,
+        mock_build,
+        mock_creds,
+        mock_config,
+        mock_firestore,
     ):
         """Test with new data structure: multiple sources and different prefixes."""
         # Setup Mocks
@@ -279,7 +294,12 @@ class TestSyncLogic(unittest.TestCase):
     @patch("app.app.build")
     @patch("app.app.requests.get")
     def test_sync_calendar_logic_failure(
-        self, mock_get, mock_build, mock_creds, mock_config, mock_firestore
+        self,
+        mock_get,
+        mock_build,
+        mock_creds,
+        mock_config,
+        mock_firestore,
     ):
         # Mock Exception on Fetch
         mock_get.side_effect = requests.exceptions.RequestException("Fetch failed")
@@ -346,6 +366,91 @@ class TestSyncLogic(unittest.TestCase):
         self.assertIn(
             "http://fail.com/cal.ics (Failed)", update_data["source_names"].values()
         )
+
+    @patch("app.app.firestore.client")
+    @patch("app.app.get_client_config")
+    @patch("app.app.Credentials")
+    @patch("app.app.build")
+    def test_sync_calendar_logic_google_source_with_time_window(
+        self,
+        mock_build,
+        mock_creds,
+        mock_config,
+        mock_firestore,
+    ):
+        """Test that sync logic with a Google Calendar source uses the time window."""
+        # Setup Mocks
+        mock_db = MagicMock()
+        mock_firestore.return_value = mock_db
+
+        # Mock Sync Document (New Structure with Google Calendar source)
+        mock_sync_ref = MagicMock()
+        mock_sync_doc = MagicMock()
+        mock_sync_doc.exists = True
+        mock_sync_doc.to_dict.return_value = {
+            "user_id": "test_user_gcal",
+            "destination_calendar_id": "dest_cal_gcal",
+            "sources": [
+                {"id": "source_cal_id", "type": "google", "prefix": "GCal"}
+            ],
+        }
+        mock_db.collection.return_value.document.return_value = mock_sync_ref
+        mock_sync_ref.get.return_value = mock_sync_doc
+
+        # User Mock
+        mock_user_doc = MagicMock()
+        mock_user_doc.to_dict.return_value = {"refresh_token": "dummy_token"}
+
+        mock_sync_col = MagicMock()
+        mock_sync_col.document.return_value = mock_sync_ref
+
+        mock_user_col = MagicMock()
+        mock_user_col.document.return_value.get.return_value = mock_user_doc
+
+        def collection_side_effect(name):
+            if name == "syncs":
+                return mock_sync_col
+            if name == "users":
+                return mock_user_col
+            return MagicMock()
+
+        mock_db.collection.side_effect = collection_side_effect
+
+        # Mock Google Calendar Service
+        mock_service = MagicMock()
+        mock_build.return_value = mock_service
+        mock_batch = MagicMock()
+        mock_service.new_batch_http_request.return_value = mock_batch
+
+        # Mock events().list() to return one event
+        mock_service.events.return_value.list.return_value.execute.return_value = {
+            "items": [
+                {
+                    "id": "google_event_id_123",
+                    "summary": "Google Event",
+                    "start": {"dateTime": "2023-01-01T10:00:00Z"},
+                    "end": {"dateTime": "2023-01-01T11:00:00Z"},
+                }
+            ]
+        }
+        
+        # Run Logic
+        sync_calendar_logic("sync_gcal")
+
+        # Verify that the 'list' method was called with 'timeMin' and 'timeMax'
+        list_calls = mock_service.events.return_value.list.call_args_list
+        # The first call is for fetching source events, the second is for existing events map
+        self.assertEqual(len(list_calls), 2)
+        
+        # Check source fetch call
+        _, kwargs_source = list_calls[0]
+        self.assertIn("timeMin", kwargs_source)
+        self.assertIn("timeMax", kwargs_source)
+        
+        # Check existing events map call
+        _, kwargs_existing = list_calls[1]
+        self.assertIn("timeMin", kwargs_existing)
+        self.assertIn("timeMax", kwargs_existing)
 
 
 if __name__ == "__main__":
