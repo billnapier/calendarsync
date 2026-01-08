@@ -1,229 +1,257 @@
 <!DOCTYPE html>
 <html lang="en">
-
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="description" content="Edit your existing calendar synchronizations.">
-    <meta name="keywords" content="calendar, sync, edit, update, manage">
-    <title>Edit Sync - CalendarSync</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-</head>
-
-<body>
-    <header class="header">
-        <a href="{{ url_for('index') }}" class="logo-container">
-            <img src="{{ url_for('static', filename='images/logo.png') }}" alt="CalendarSync Logo" class="logo-img"
-                width="32" height="32">
-            <span class="logo-text">CalendarSync</span>
-        </a>
-        <div class="user-menu">
-            {% if user %}
-            <span>{{ user.name }}</span>
-            <img src="{{ user.picture }}" alt="Profile" class="profile-pic" width="32" height="32">
-            <a href="{{ url_for('logout') }}" class="btn btn-outline btn-sm">Sign Out</a>
-            {% endif %}
-        </div>
-    </header>
-    <main class="dashboard-container">
-        <div class="form-card">
-            <div class="form-header-group">
-                <h1>Edit Sync</h1>
-                <p class="form-hint">Manage your calendar synchronization settings</p>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="description"
+              content="Edit your existing calendar synchronizations.">
+        <meta name="keywords" content="calendar, sync, edit, update, manage">
+        <title>Edit Sync - CalendarSync</title>
+        <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+              rel="stylesheet">
+    </head>
+    <body>
+        <header class="header">
+            <a href="{{ url_for('index') }}" class="logo-container">
+                <img src="{{ url_for('static', filename='images/logo.png') }}"
+                     alt="CalendarSync Logo"
+                     class="logo-img"
+                     width="32"
+                     height="32">
+                <span class="logo-text">CalendarSync</span>
+            </a>
+            <div class="user-menu">
+                {% if user %}
+                    <span>{{ user.name }}</span>
+                    <img src="{{ user.picture }}"
+                         alt="Profile"
+                         class="profile-pic"
+                         width="32"
+                         height="32">
+                    <a href="{{ url_for('logout') }}" class="btn btn-outline btn-sm">Sign Out</a>
+                {% endif %}
             </div>
-            <form action="{{ url_for('edit_sync', sync_id=sync.id) }}" method="post">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                <!-- Destination Section -->
-                <div class="form-group">
-                    <label for="destination_calendar_id">Destination Calendar</label>
-                    {% if calendars %}
-                    <select id="destination_calendar_id" name="destination_calendar_id" required>
-                        <option value="" disabled>Select a calendar</option>
-                        {% for cal in calendars %}
-                        <option value="{{ cal.id }}" {% if cal.id==sync.destination_calendar_id %}selected{% endif %}>{{
-                            cal.summary }}</option>
-                        {% endfor %}
-                    </select>
-                    {% else %}
-                    <input type="text" id="destination_calendar_id" name="destination_calendar_id"
-                        value="{{ sync.destination_calendar_id }}" required>
-                    {% endif %}
-                    <div class="form-hint">Select the Google Calendar you want to sync events TO.</div>
+        </header>
+        <main class="dashboard-container">
+            <div class="form-card">
+                <div class="form-header-group">
+                    <h1>Edit Sync</h1>
+                    <p class="form-hint">Manage your calendar synchronization settings</p>
                 </div>
-                <!-- Sources Section -->
-                <div class="form-group">
-                    <label>Source Calendars</label>
-                    <details class="help-box">
-                        <summary class="help-summary">Need help adding sources?</summary>
-                        <div class="help-content">
-                            <p class="help-paragraph">
-                                <strong>Which type should I choose?</strong>
-                            </p>
-                            <ul class="help-list">
-                                <li>
-                                    <strong>Google Calendar:</strong> Best for syncing your personal calendars (e.g.,
-                                    specific sub-calendars from your own account).
-                                </li>
-                                <li>
-                                    <strong>iCal URL:</strong> Use this for external links like Outlook, iCloud,
-                                    Teamsnap, or public holiday calendars.
-                                </li>
-                            </ul>
-                        </div>
-                    </details>
-                    <div id="ical-container" class="source-list">
-                        {% for source in sync.sources %}
-                        <div class="ical-entry">
-                            <input type="hidden" name="source_types" value="{{ source.type or 'ical' }}">
-                            <input type="hidden" name="source_ids" value="{{ source.id or '' }}">
-                            <!-- Type Selection -->
-                            <div class="source-type-group">
-                                <span class="field-label">Type</span>
-                                <select onchange="changeSourceType(this)">
-                                    <option value="ical" {% if (source.type or 'ical' )=='ical' %}selected{% endif %}>
-                                        iCal URL</option>
-                                    <option value="google" {% if source.type=='google' %}selected{% endif %}>Google Cal
+                <form action="{{ url_for('edit_sync', sync_id=sync.id) }}" method="post">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <!-- Destination Section -->
+                    <div class="form-group">
+                        <label for="destination_calendar_id">Destination Calendar</label>
+                        {% if calendars %}
+                            <select id="destination_calendar_id" name="destination_calendar_id" required>
+                                <option value="" disabled>Select a calendar</option>
+                                {% for cal in calendars %}
+                                    <option value="{{ cal.id }}"
+                                            {% if cal.id==sync.destination_calendar_id %}selected{% endif %}>
+                                        {{
+                                        cal.summary }}
                                     </option>
-                                </select>
+                                {% endfor %}
+                            </select>
+                        {% else %}
+                            <input type="text"
+                                   id="destination_calendar_id"
+                                   name="destination_calendar_id"
+                                   value="{{ sync.destination_calendar_id }}"
+                                   required>
+                        {% endif %}
+                        <div class="form-hint">Select the Google Calendar you want to sync events TO.</div>
+                    </div>
+                    <!-- Sources Section -->
+                    <div class="form-group">
+                        <label>Source Calendars</label>
+                        <details class="help-box">
+                            <summary class="help-summary">Need help adding sources?</summary>
+                            <div class="help-content">
+                                <p class="help-paragraph">
+                                    <strong>Which type should I choose?</strong>
+                                </p>
+                                <ul class="help-list">
+                                    <li>
+                                        <strong>Google Calendar:</strong> Best for syncing your personal calendars (e.g.,
+                                        specific sub-calendars from your own account).
+                                    </li>
+                                    <li>
+                                        <strong>iCal URL:</strong> Use this for external links like Outlook, iCloud,
+                                        Teamsnap, or public holiday calendars.
+                                    </li>
+                                </ul>
                             </div>
-                            <!-- Source Input (Google/URL) -->
-                            <div class="source-input-group">
-                                <span class="field-label">Source</span>
-                                <!-- Google Input -->
-                                <div class="input-row google-input
+                        </details>
+                        <div id="ical-container" class="source-list">
+                            {% for source in sync.sources %}
+                                <div class="ical-entry">
+                                    <input type="hidden" name="source_types" value="{{ source.type or 'ical' }}">
+                                    <input type="hidden" name="source_ids" value="{{ source.id or '' }}">
+                                    <!-- Type Selection -->
+                                    <div class="source-type-group">
+                                        <span class="field-label">Type</span>
+                                        <select onchange="changeSourceType(this)">
+                                            <option value="ical"
+                                                    {% if (source.type or 'ical' )=='ical' %}selected{% endif %}>iCal URL</option>
+                                            <option value="google" {% if source.type=='google' %}selected{% endif %}>Google Cal</option>
+                                        </select>
+                                    </div>
+                                    <!-- Source Input (Google/URL) -->
+                                    <div class="source-input-group">
+                                        <span class="field-label">Source</span>
+                                        <!-- Google Input -->
+                                        <div class="input-row google-input
                                                     {% if source.type != 'google' %}hidden{% endif %}">
-                                    {% if calendars %}
-                                    <select name="source_ids_visible" onchange="updateHiddenId(this)">
-                                        <option value="" disabled {% if not source.id %}selected{% endif %}>
-                                            Select
-                                            Calendar
-                                        </option>
-                                        {% for cal in calendars %}
-                                        <option value="{{ cal.id }}" {% if cal.id==source.id %}selected{% endif %}>
-                                            {{
-                                            cal.summary }}
-                                        </option>
-                                        {% endfor %}
-                                    </select>
-                                    {% else %}
-                                    <p class="form-hint">No Google Calendars available.</p>
-                                    {% endif %}
-                                </div>
-                                <!-- iCal Input -->
-                                <div class="input-row ical-input
+                                            {% if calendars %}
+                                                <select name="source_ids_visible" onchange="updateHiddenId(this)">
+                                                    <option value="" disabled {% if not source.id %}selected{% endif %}>
+                                                        Select
+                                                        Calendar
+                                                    </option>
+                                                    {% for cal in calendars %}
+                                                        <option value="{{ cal.id }}" {% if cal.id==source.id %}selected{% endif %}>
+                                                            {{
+                                                            cal.summary }}
+                                                        </option>
+                                                    {% endfor %}
+                                                </select>
+                                            {% else %}
+                                                <p class="form-hint">No Google Calendars available.</p>
+                                            {% endif %}
+                                        </div>
+                                        <!-- iCal Input -->
+                                        <div class="input-row ical-input
                                                     {% if (source.type or 'ical') != 'ical' %}hidden{% endif %}">
-                                    <input type="text" name="source_urls" value="{{ source.url }}"
-                                        placeholder="https://example.com/calendar.ics" aria-label="Source Calendar URL">
+                                            <input type="text"
+                                                   name="source_urls"
+                                                   value="{{ source.url }}"
+                                                   placeholder="https://example.com/calendar.ics"
+                                                   aria-label="Source Calendar URL">
+                                        </div>
+                                    </div>
+                                    <!-- Prefix Input -->
+                                    <div class="source-prefix-group">
+                                        <span class="field-label">Prefix (Optional)</span>
+                                        <input type="text"
+                                               name="source_prefixes"
+                                               value="{{ source.prefix or '' }}"
+                                               placeholder="e.g. Work"
+                                               aria-label="Source Event Prefix">
+                                    </div>
+                                    <!-- Actions -->
+                                    <div class="source-actions">
+                                        <span class="field-label visibility-hidden">Remove</span>
+                                        <button type="button"
+                                                class="btn btn-danger"
+                                                onclick="removeEntry(this)"
+                                                aria-label="Remove Source">Remove</button>
+                                    </div>
                                 </div>
-                            </div>
-                            <!-- Prefix Input -->
-                            <div class="source-prefix-group">
-                                <span class="field-label">Prefix (Optional)</span>
-                                <input type="text" name="source_prefixes" value="{{ source.prefix or '' }}"
-                                    placeholder="e.g. Work" aria-label="Source Event Prefix">
-                            </div>
-                            <!-- Actions -->
-                            <div class="source-actions">
-                                <span class="field-label visibility-hidden">Remove</span>
-                                <button type="button" class="btn btn-danger" onclick="removeEntry(this)"
-                                    aria-label="Remove Source">Remove</button>
-                            </div>
+                            {% endfor %}
+                            {% if not sync.sources %}
+                                <!-- Fallback empty state with one row -->
+                                <div class="ical-entry">
+                                    <input type="hidden" name="source_types" value="ical">
+                                    <input type="hidden" name="source_ids" value="">
+                                    <div class="source-type-group">
+                                        <span class="field-label">Type</span>
+                                        <select onchange="changeSourceType(this)">
+                                            <option value="ical">iCal URL</option>
+                                            <option value="google">Google Cal</option>
+                                        </select>
+                                    </div>
+                                    <div class="source-input-group">
+                                        <span class="field-label">Source</span>
+                                        <div class="input-row google-input hidden">
+                                            {% if calendars %}
+                                                <select name="source_ids_visible" onchange="updateHiddenId(this)">
+                                                    <option value="" disabled selected>Select Calendar</option>
+                                                    {% for cal in calendars %}<option value="{{ cal.id }}">{{ cal.summary }}</option>{% endfor %}
+                                                </select>
+                                            {% else %}
+                                                <p class="form-hint">No Google Calendars available.</p>
+                                            {% endif %}
+                                        </div>
+                                        <div class="input-row ical-input">
+                                            <input type="text"
+                                                   name="source_urls"
+                                                   placeholder="https://example.com/calendar.ics"
+                                                   aria-label="Source Calendar URL">
+                                        </div>
+                                    </div>
+                                    <div class="source-prefix-group">
+                                        <span class="field-label">Prefix (Optional)</span>
+                                        <input type="text"
+                                               name="source_prefixes"
+                                               placeholder="e.g. Work"
+                                               aria-label="Source Event Prefix">
+                                    </div>
+                                    <div class="source-actions">
+                                        <span class="field-label visibility-hidden">Remove</span>
+                                        <button type="button" class="btn btn-danger" onclick="removeEntry(this)">Remove</button>
+                                    </div>
+                                </div>
+                            {% endif %}
                         </div>
-                        {% endfor %}
-                        {% if not sync.sources %}
-                        <!-- Fallback empty state with one row -->
-                        <div class="ical-entry">
-                            <input type="hidden" name="source_types" value="ical">
-                            <input type="hidden" name="source_ids" value="">
-                            <div class="source-type-group">
-                                <span class="field-label">Type</span>
-                                <select onchange="changeSourceType(this)">
-                                    <option value="ical">iCal URL</option>
-                                    <option value="google">Google Cal</option>
-                                </select>
-                            </div>
-                            <div class="source-input-group">
-                                <span class="field-label">Source</span>
-                                <div class="input-row google-input hidden">
-                                    {% if calendars %}
-                                    <select name="source_ids_visible" onchange="updateHiddenId(this)">
-                                        <option value="" disabled selected>Select Calendar</option>
-                                        {% for cal in calendars %}<option value="{{ cal.id }}">{{ cal.summary }}
-                                        </option>{% endfor %}
-                                    </select>
-                                    {% else %}
-                                    <p class="form-hint">No Google Calendars available.</p>
-                                    {% endif %}
-                                </div>
-                                <div class="input-row ical-input">
-                                    <input type="text" name="source_urls" placeholder="https://example.com/calendar.ics"
-                                        aria-label="Source Calendar URL">
-                                </div>
-                            </div>
-                            <div class="source-prefix-group">
-                                <span class="field-label">Prefix (Optional)</span>
-                                <input type="text" name="source_prefixes" placeholder="e.g. Work"
-                                    aria-label="Source Event Prefix">
-                            </div>
-                            <div class="source-actions">
-                                <span class="field-label visibility-hidden">Remove</span>
-                                <button type="button" class="btn btn-danger" onclick="removeEntry(this)">Remove</button>
-                            </div>
-                        </div>
+                        <button type="button" class="add-btn" onclick="addSourceInput()">+ Add another source</button>
+                    </div>
+                    <div class="form-actions">
+                        <a href="{{ url_for('index') }}" class="btn btn-secondary">Cancel</a>
+                        <button type="submit" class="btn btn-primary" data-loading-text="Saving...">Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </main>
+        <footer>
+            <p>© 2024 CalendarSync. All rights reserved.</p>
+        </footer>
+        <template id="source-entry-template">
+            <div class="ical-entry">
+                <input type="hidden" name="source_types" value="ical">
+                <input type="hidden" name="source_ids" value="">
+                <div class="source-type-group">
+                    <span class="field-label">Type</span>
+                    <select onchange="changeSourceType(this)">
+                        <option value="ical">iCal URL</option>
+                        <option value="google">Google Cal</option>
+                    </select>
+                </div>
+                <div class="source-input-group">
+                    <span class="field-label">Source</span>
+                    <div class="input-row google-input hidden">
+                        {% if calendars %}
+                            <select name="source_ids_visible" onchange="updateHiddenId(this)">
+                                <option value="" disabled selected>Select Calendar</option>
+                                {% for cal in calendars %}<option value="{{ cal.id }}">{{ cal.summary }}</option>{% endfor %}
+                            </select>
+                        {% else %}
+                            <p class="form-hint">No Google Calendars available.</p>
                         {% endif %}
                     </div>
-                    <button type="button" class="add-btn" onclick="addSourceInput()">+ Add another source</button>
+                    <div class="input-row ical-input">
+                        <input type="text"
+                               name="source_urls"
+                               placeholder="https://example.com/calendar.ics"
+                               aria-label="Source Calendar URL">
+                    </div>
                 </div>
-                <div class="form-actions">
-                    <a href="{{ url_for('index') }}" class="btn btn-secondary">Cancel</a>
-                    <button type="submit" class="btn btn-primary" data-loading-text="Saving...">Save Changes</button>
+                <div class="source-prefix-group">
+                    <span class="field-label">Prefix (Optional)</span>
+                    <input type="text"
+                           name="source_prefixes"
+                           placeholder="e.g. Work"
+                           aria-label="Source Event Prefix">
                 </div>
-            </form>
-        </div>
-    </main>
-    <footer>
-        <p>© 2024 CalendarSync. All rights reserved.</p>
-    </footer>
-    <template id="source-entry-template">
-        <div class="ical-entry">
-            <input type="hidden" name="source_types" value="ical">
-            <input type="hidden" name="source_ids" value="">
-            <div class="source-type-group">
-                <span class="field-label">Type</span>
-                <select onchange="changeSourceType(this)">
-                    <option value="ical">iCal URL</option>
-                    <option value="google">Google Cal</option>
-                </select>
-            </div>
-            <div class="source-input-group">
-                <span class="field-label">Source</span>
-                <div class="input-row google-input hidden">
-                    {% if calendars %}
-                    <select name="source_ids_visible" onchange="updateHiddenId(this)">
-                        <option value="" disabled selected>Select Calendar</option>
-                        {% for cal in calendars %}<option value="{{ cal.id }}">{{ cal.summary }}</option>{% endfor %}
-                    </select>
-                    {% else %}
-                    <p class="form-hint">No Google Calendars available.</p>
-                    {% endif %}
-                </div>
-                <div class="input-row ical-input">
-                    <input type="text" name="source_urls" placeholder="https://example.com/calendar.ics"
-                        aria-label="Source Calendar URL">
+                <div class="source-actions">
+                    <span class="field-label visibility-hidden">Remove</span>
+                    <button type="button" class="btn btn-danger" onclick="removeEntry(this)">Remove</button>
                 </div>
             </div>
-            <div class="source-prefix-group">
-                <span class="field-label">Prefix (Optional)</span>
-                <input type="text" name="source_prefixes" placeholder="e.g. Work" aria-label="Source Event Prefix">
-            </div>
-            <div class="source-actions">
-                <span class="field-label visibility-hidden">Remove</span>
-                <button type="button" class="btn btn-danger" onclick="removeEntry(this)">Remove</button>
-            </div>
-        </div>
-    </template>
-    <script>
+        </template>
+        <script>
         function addSourceInput() {
             const container = document.getElementById('ical-container');
             const template = document.getElementById('source-entry-template');
@@ -282,8 +310,7 @@
         }
 
         document.addEventListener('DOMContentLoaded', updateRemoveButtons);
-    </script>
-    <script src="{{ url_for('static', filename='ui.js') }}"></script>
-</body>
-
+        </script>
+        <script src="{{ url_for('static', filename='ui.js') }}"></script>
+    </body>
 </html>

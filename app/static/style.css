@@ -735,7 +735,7 @@ details[open] summary.help-summary::before {
 }
 
 .help-paragraph {
-    margin: 0 0 0.5rem 0;
+    margin: 0 0 0.5rem;
 }
 
 .help-list {
@@ -754,9 +754,4 @@ details[open] summary.help-summary::before {
 
 .display-none {
     display: none;
-}
-
-.empty-state-text {
-    font-size: 1.2rem;
-    margin-bottom: 1rem;
 }
