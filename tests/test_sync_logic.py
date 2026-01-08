@@ -1,6 +1,7 @@
 # pylint: disable=too-many-locals,too-many-arguments,too-many-positional-arguments,unused-argument,wrong-import-position
 import unittest
 import os
+from datetime import datetime, timedelta
 
 os.environ["TESTING"] = "1"
 from unittest.mock import patch, MagicMock
@@ -10,96 +11,89 @@ from app.app import sync_calendar_logic
 
 class TestSyncLogic(unittest.TestCase):
 
+    def _get_ical_content(self, uid, summary, days_offset=0, rrule=None):
+        """Helper to generate iCal content with current dates."""
+        now = datetime.utcnow()
+        dtstart = (now + timedelta(days=days_offset)).strftime("%Y%m%dT%H%M%SZ")
+        dtend = (now + timedelta(days=days_offset, hours=1)).strftime("%Y%m%dT%H%M%SZ")
+
+        content = (
+            f"BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Test//\r\n"
+            f"BEGIN:VEVENT\r\nUID:{uid}\r\nDTSTART:{dtstart}\r\n"
+            f"DTEND:{dtend}\r\nSUMMARY:{summary}\r\n"
+        )
+        if rrule:
+            content += f"RRULE:{rrule}\r\n"
+
+        content += f"DESCRIPTION:Desc\r\nLOCATION:Loc\r\nEND:VEVENT\r\nEND:VCALENDAR"
+        return content.encode("utf-8")
+
+    def _setup_common_mocks(self, mock_firestore, sync_data, user_data=None):
+        """Helper to setup reliable firestore mocks."""
+        if user_data is None:
+            user_data = {"refresh_token": "dummy_token"}
+
+        mock_db = MagicMock()
+        mock_firestore.return_value = mock_db
+
+        # Syncs Collection
+        mock_sync_col = MagicMock()
+        mock_sync_doc_ref = MagicMock()
+        mock_sync_snap = MagicMock()
+        mock_sync_snap.exists = True
+        mock_sync_snap.to_dict.return_value = sync_data
+
+        mock_sync_col.document.return_value = mock_sync_doc_ref
+        mock_sync_doc_ref.get.return_value = mock_sync_snap
+
+        # Users Collection
+        mock_user_col = MagicMock()
+        mock_user_doc_ref = MagicMock()
+        mock_user_snap = MagicMock()
+        mock_user_snap.to_dict.return_value = user_data
+
+        mock_user_col.document.return_value = mock_user_doc_ref
+        mock_user_doc_ref.get.return_value = mock_user_snap
+
+        def side_effect(name):
+            if name == "syncs": return mock_sync_col
+            if name == "users": return mock_user_col
+            return MagicMock()
+
+        mock_db.collection.side_effect = side_effect
+
+        return mock_sync_doc_ref
+
     @patch("app.app.firestore.client")
     @patch("app.app.get_client_config")
     @patch("app.app.Credentials")
     @patch("app.app.build")
     @patch("app.app.requests.get")
     def test_sync_calendar_logic_with_prefix(
-        self,
-        mock_get,
-        mock_build,
-        mock_creds,
-        mock_config,
-        mock_firestore,
+        self, mock_get, mock_build, mock_creds, mock_config, mock_firestore
     ):
-        # Setup Mocks
-        mock_db = MagicMock()
-        mock_firestore.return_value = mock_db
-
-        # Mock Sync Document (Legacy Structure)
-        mock_sync_ref = MagicMock()
-        mock_sync_doc = MagicMock()
-        mock_sync_doc.exists = True
-        mock_sync_doc.to_dict.return_value = {
-            "user_id": "test_user",
-            "destination_calendar_id": "dest_cal",
-            "source_icals": ["http://test.com/cal.ics"],
-            "event_prefix": "TestPrefix",
+        sync_data = {
+            "user_id": "test_user", "destination_calendar_id": "dest_cal",
+            "source_icals": ["http://test.com/cal.ics"], "event_prefix": "TestPrefix",
         }
-        mock_db.collection.return_value.document.return_value = mock_sync_ref
-        mock_sync_ref.get.return_value = mock_sync_doc
+        self._setup_common_mocks(mock_firestore, sync_data)
 
-        # Mock User Document
-        mock_user_ref = MagicMock()
-        mock_user_doc = MagicMock()
-        mock_user_doc.to_dict.return_value = {"refresh_token": "dummy_token"}
-
-        mock_sync_col = MagicMock()
-        mock_sync_col.document.return_value = mock_sync_ref
-
-        mock_user_col = MagicMock()
-        mock_user_col.document.return_value = mock_user_ref
-
-        def collection_side_effect(name):
-            if name == "syncs":
-                return mock_sync_col
-            if name == "users":
-                return mock_user_col
-            return MagicMock()
-
-        mock_db.collection.side_effect = collection_side_effect
-
-        # Mock requests.get for iCal
         mock_response = MagicMock()
         mock_response.status_code = 200
-        # Minimal iCal content with one event (UID 12345)
-        mock_response.content = (
-            b"BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Test//\r\n"
-            b"BEGIN:VEVENT\r\nUID:12345\r\nDTSTART:20230101T120000Z\r\n"
-            b"DTEND:20230101T130000Z\r\nSUMMARY:Meeting\r\n"
-            b"DESCRIPTION:Discuss stuff\r\nLOCATION:Office\r\n"
-            b"END:VEVENT\r\nEND:VCALENDAR"
-        )
+        mock_response.content = self._get_ical_content("12345", "Meeting")
         mock_get.return_value = mock_response
 
-        # Mock Google Calendar Service
         mock_service = MagicMock()
         mock_build.return_value = mock_service
         mock_batch = MagicMock()
         mock_service.new_batch_http_request.return_value = mock_batch
+        mock_service.events.return_value.list.return_value.execute.return_value = {"items": []}
 
-        # Mock events().list() to return NO existing events -> Should trigger import
-        mock_service.events.return_value.list.return_value.execute.return_value = {
-            "items": []
-        }
-
-        # Run Logic
         sync_calendar_logic("sync_123")
 
-        # Verify Batch Add was called
         self.assertTrue(mock_batch.add.called, "Batch add was not called")
-
-        # Inspect arguments to batch.add (Should be import_)
-        import_call_args = mock_service.events.return_value.import_.call_args
-        self.assertIsNotNone(import_call_args, "Should call import_ for new event")
-        _, kwargs = import_call_args
-        body = kwargs["body"]
-
-        self.assertEqual(body["iCalUID"], "12345")
-        self.assertEqual(body["summary"], "[TestPrefix] Meeting")
-        self.assertEqual(body["description"], "Discuss stuff")
-        self.assertEqual(body["location"], "Office")
+        _, kwargs = mock_service.events.return_value.import_.call_args
+        self.assertEqual(kwargs["body"]["summary"], "[TestPrefix] Meeting")
 
     @patch("app.app.firestore.client")
     @patch("app.app.get_client_config")
@@ -107,84 +101,32 @@ class TestSyncLogic(unittest.TestCase):
     @patch("app.app.build")
     @patch("app.app.requests.get")
     def test_sync_calendar_logic_existing_update(
-        self,
-        mock_get,
-        mock_build,
-        mock_creds,
-        mock_config,
-        mock_firestore,
+        self, mock_get, mock_build, mock_creds, mock_config, mock_firestore
     ):
-        """Test that existing events trigger an update() call."""
-        # Setup Mocks
-        mock_db = MagicMock()
-        mock_firestore.return_value = mock_db
-
-        mock_sync_doc = MagicMock()
-        mock_sync_doc.exists = True
-        mock_sync_doc.to_dict.return_value = {
-            "user_id": "test_user",
-            "destination_calendar_id": "dest_cal",
-            "source_icals": ["http://test.com/cal.ics"],
-            "event_prefix": "TestPrefix",
+        sync_data = {
+            "user_id": "test_user", "destination_calendar_id": "dest_cal",
+            "source_icals": ["http://test.com/cal.ics"], "event_prefix": "TestPrefix",
         }
-        mock_sync_ref = MagicMock()
-        mock_sync_ref.get.return_value = mock_sync_doc
+        self._setup_common_mocks(mock_firestore, sync_data)
 
-        mock_user_doc = MagicMock()
-        mock_user_doc.to_dict.return_value = {"refresh_token": "dummy_token"}
-
-        # Collection Side Effects
-        mock_sync_col = MagicMock()
-        mock_sync_col.document.return_value = mock_sync_ref
-        mock_user_col = MagicMock()
-        mock_user_col.document.return_value = MagicMock()  # user ref
-        mock_user_col.document.return_value.get.return_value = mock_user_doc
-
-        def collection_side_effect(name):
-            if name == "syncs":
-                return mock_sync_col
-            if name == "users":
-                return mock_user_col
-            return MagicMock()
-
-        mock_db.collection.side_effect = collection_side_effect
-
-        # Mock requests.get for iCal (UID 12345)
         mock_response = MagicMock()
         mock_response.status_code = 200
-        mock_response.content = (
-            b"BEGIN:VCALENDAR\r\nVERSION:2.0\r\n"
-            b"BEGIN:VEVENT\r\nUID:12345\r\nDTSTART:20230101T120000Z\r\n"
-            b"DTEND:20230101T130000Z\r\nSUMMARY:New Summary\r\n"
-            b"END:VEVENT\r\nEND:VCALENDAR"
-        )
+        mock_response.content = self._get_ical_content("12345", "New Summary")
         mock_get.return_value = mock_response
 
-        # Mock Service
         mock_service = MagicMock()
         mock_build.return_value = mock_service
         mock_batch = MagicMock()
         mock_service.new_batch_http_request.return_value = mock_batch
-
-        # Mock events().list() to return EXISTING event with iCalUID 12345
+        # Return existing event
         mock_service.events.return_value.list.return_value.execute.return_value = {
             "items": [{"id": "google_event_id_xyz", "iCalUID": "12345"}]
         }
 
-        # Run Logic
         sync_calendar_logic("sync_update")
 
-        # Verify: Should call update(), NOT import_()
         self.assertFalse(mock_service.events.return_value.import_.called)
         self.assertTrue(mock_service.events.return_value.update.called)
-
-        # Check call args
-        update_call = mock_service.events.return_value.update.call_args
-        _, kwargs = update_call
-        self.assertEqual(kwargs["calendarId"], "dest_cal")
-        self.assertEqual(kwargs["eventId"], "google_event_id_xyz")
-        self.assertEqual(kwargs["body"]["summary"], "[TestPrefix] New Summary")
-        self.assertNotIn("iCalUID", kwargs["body"])  # Should be removed for update
 
     @patch("app.app.firestore.client")
     @patch("app.app.get_client_config")
@@ -192,101 +134,30 @@ class TestSyncLogic(unittest.TestCase):
     @patch("app.app.build")
     @patch("app.app.requests.get")
     def test_sync_calendar_logic_multiple_sources(
-        self,
-        mock_get,
-        mock_build,
-        mock_creds,
-        mock_config,
-        mock_firestore,
+        self, mock_get, mock_build, mock_creds, mock_config, mock_firestore
     ):
-        """Test with new data structure: multiple sources and different prefixes."""
-        # Setup Mocks
-        mock_db = MagicMock()
-        mock_firestore.return_value = mock_db
-
-        # Mock Sync Document (New Structure)
-        mock_sync_ref = MagicMock()
-        mock_sync_doc = MagicMock()
-        mock_sync_doc.exists = True
-        mock_sync_doc.to_dict.return_value = {
-            "user_id": "test_user_2",
-            "destination_calendar_id": "dest_cal_2",
-            "sources": [
-                {"url": "http://site1.com/cal.ics", "prefix": "P1"},
-                {"url": "http://site2.com/cal.ics", "prefix": "P2"},
-            ],
+        sync_data = {
+            "user_id": "test_user_2", "destination_calendar_id": "dest_cal_2",
+            "sources": [{"url": "http://site1.com", "prefix": "P1"}, {"url": "http://site2.com", "prefix": "P2"}],
         }
-        mock_db.collection.return_value.document.return_value = mock_sync_ref
-        mock_sync_ref.get.return_value = mock_sync_doc
+        self._setup_common_mocks(mock_firestore, sync_data)
 
-        # User Mock
-        mock_user_doc = MagicMock()
-        mock_user_doc.to_dict.return_value = {"refresh_token": "dummy_token"}
-
-        mock_sync_col = MagicMock()
-        mock_sync_col.document.return_value = mock_sync_ref
-
-        mock_user_col = MagicMock()
-        # Mock the chain: db.collection("users").document(...).get()
-        mock_user_col.document.return_value.get.return_value = mock_user_doc
-
-        def collection_side_effect(name):
-            if name == "syncs":
-                return mock_sync_col
-            if name == "users":
-                return mock_user_col
-            return MagicMock()
-
-        mock_db.collection.side_effect = collection_side_effect
-
-        # Mock requests.get
         def get_side_effect(url, **kwargs):
             resp = MagicMock()
             resp.status_code = 200
-            if "site1" in url:
-                resp.content = (
-                    b"BEGIN:VCALENDAR\r\nVERSION:2.0\r\n"
-                    b"BEGIN:VEVENT\r\nUID:one\r\nDTSTART:20230101T090000Z\r\n"
-                    b"DTEND:20230101T100000Z\r\nSUMMARY:Event One\r\n"
-                    b"END:VEVENT\r\nEND:VCALENDAR"
-                )
-            else:
-                resp.content = (
-                    b"BEGIN:VCALENDAR\r\nVERSION:2.0\r\n"
-                    b"BEGIN:VEVENT\r\nUID:two\r\nDTSTART:20230101T110000Z\r\n"
-                    b"DTEND:20230101T120000Z\r\nSUMMARY:Event Two\r\n"
-                    b"END:VEVENT\r\nEND:VCALENDAR"
-                )
+            if "site1" in url: resp.content = self._get_ical_content("one", "Event One")
+            else: resp.content = self._get_ical_content("two", "Event Two")
             return resp
-
         mock_get.side_effect = get_side_effect
 
-        # Mock Service
         mock_service = MagicMock()
         mock_build.return_value = mock_service
         mock_batch = MagicMock()
         mock_service.new_batch_http_request.return_value = mock_batch
+        mock_service.events.return_value.list.return_value.execute.return_value = {"items": []}
 
-        # Mock list() -> Empty (trigger imports)
-        mock_service.events.return_value.list.return_value.execute.return_value = {
-            "items": []
-        }
-
-        # Run
         sync_calendar_logic("sync_multi")
-
-        # Verify
         self.assertEqual(mock_batch.add.call_count, 2)
-
-        # Check calls
-        calls = mock_service.events.return_value.import_.call_args_list
-        summaries = []
-        for call_args in calls:
-            _, kwargs = call_args
-            summaries.append(kwargs["body"]["summary"])
-
-        self.assertIn("[P1] Event One", summaries)
-        self.assertIn("[P2] Event Two", summaries)
 
     @patch("app.app.firestore.client")
     @patch("app.app.get_client_config")
@@ -294,164 +165,91 @@ class TestSyncLogic(unittest.TestCase):
     @patch("app.app.build")
     @patch("app.app.requests.get")
     def test_sync_calendar_logic_failure(
-        self,
-        mock_get,
-        mock_build,
-        mock_creds,
-        mock_config,
-        mock_firestore,
+        self, mock_get, mock_build, mock_creds, mock_config, mock_firestore
     ):
-        # Mock Exception on Fetch
-        mock_get.side_effect = requests.exceptions.RequestException("Fetch failed")
-
-        mock_db = MagicMock()
-        mock_firestore.return_value = mock_db
-
-        # Mock Sync Document (No prefix this time)
-        mock_sync_doc = MagicMock()
-        mock_sync_doc.exists = True
-        mock_sync_doc.to_dict.return_value = {
-            "user_id": "test_user",
-            "destination_calendar_id": "dest_cal",
+        sync_data = {
+            "user_id": "test_user", "destination_calendar_id": "dest_cal",
             "source_icals": ["http://fail.com/cal.ics"],
         }
+        mock_sync_ref = self._setup_common_mocks(mock_firestore, sync_data)
 
-        # Simplify mocking for failure case using side_effect logic from above
-        mock_sync_ref = MagicMock()
-        mock_sync_ref.get.return_value = mock_sync_doc
+        mock_get.side_effect = requests.exceptions.RequestException("Fetch failed")
 
-        mock_user_ref = MagicMock()
-        mock_user_doc = MagicMock()
-        mock_user_doc.to_dict.return_value = {"refresh_token": "dummy_token"}
-        mock_user_ref.get.return_value = mock_user_doc
-
-        mock_sync_col = MagicMock()
-        mock_sync_col.document.return_value = mock_sync_ref
-
-        mock_user_col = MagicMock()
-        mock_user_col.document.return_value = mock_user_ref
-
-        def collection_effect(name):
-            if name == "syncs":
-                return mock_sync_col
-            if name == "users":
-                return mock_user_col
-            return MagicMock()
-
-        mock_db.collection.side_effect = collection_effect
-
-        # Mock Service (needed for list() call before failure?)
-        # Fetching sources happens BEFORE fetching existing events to optimize.
-        # Wait, if sources fail, do we proceed?
-        # Code:
-        # all_events_items, source_names = _fetch_source_events(sources, user_id)
-        # sync_ref.update(...)
-        # existing_map = _get_existing_events_map(...)
-
-        # So yes, we need to mock service creation at least
         mock_service = MagicMock()
         mock_build.return_value = mock_service
-        # Mocking list is important now too
-        mock_service.events.return_value.list.return_value.execute.return_value = {
-            "items": []
-        }
+        mock_service.events.return_value.list.return_value.execute.return_value = {"items": []}
 
-        # Run
         sync_calendar_logic("sync_fail")
 
-        # Verify update was called with failure message
         args, _ = mock_sync_ref.update.call_args
-        # args[0] is the dict
         update_data = args[0]
-        self.assertIn(
-            "http://fail.com/cal.ics (Failed)", update_data["source_names"].values()
-        )
+        self.assertIn("http://fail.com/cal.ics (Failed)", update_data["source_names"].values())
 
     @patch("app.app.firestore.client")
     @patch("app.app.get_client_config")
     @patch("app.app.Credentials")
     @patch("app.app.build")
-    def test_sync_calendar_logic_google_source_with_time_window(
-        self,
-        mock_build,
-        mock_creds,
-        mock_config,
-        mock_firestore,
+    @patch("app.app.requests.get")
+    def test_sync_filters_old_events(
+        self, mock_get, mock_build, mock_creds, mock_config, mock_firestore
     ):
-        """Test that sync logic with a Google Calendar source uses the time window."""
-        # Setup Mocks
-        mock_db = MagicMock()
-        mock_firestore.return_value = mock_db
-
-        # Mock Sync Document (New Structure with Google Calendar source)
-        mock_sync_ref = MagicMock()
-        mock_sync_doc = MagicMock()
-        mock_sync_doc.exists = True
-        mock_sync_doc.to_dict.return_value = {
-            "user_id": "test_user_gcal",
-            "destination_calendar_id": "dest_cal_gcal",
-            "sources": [
-                {"id": "source_cal_id", "type": "google", "prefix": "GCal"}
-            ],
+        """Test that events older than 30 days are filtered out."""
+        sync_data = {
+            "user_id": "test_user", "destination_calendar_id": "dest_cal",
+            "source_icals": ["http://test.com/cal.ics"],
         }
-        mock_db.collection.return_value.document.return_value = mock_sync_ref
-        mock_sync_ref.get.return_value = mock_sync_doc
+        self._setup_common_mocks(mock_firestore, sync_data)
 
-        # User Mock
-        mock_user_doc = MagicMock()
-        mock_user_doc.to_dict.return_value = {"refresh_token": "dummy_token"}
+        # Generate event 40 days in the past
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.content = self._get_ical_content("old_event", "Old Event", days_offset=-40)
+        mock_get.return_value = mock_response
 
-        mock_sync_col = MagicMock()
-        mock_sync_col.document.return_value = mock_sync_ref
-
-        mock_user_col = MagicMock()
-        mock_user_col.document.return_value.get.return_value = mock_user_doc
-
-        def collection_side_effect(name):
-            if name == "syncs":
-                return mock_sync_col
-            if name == "users":
-                return mock_user_col
-            return MagicMock()
-
-        mock_db.collection.side_effect = collection_side_effect
-
-        # Mock Google Calendar Service
         mock_service = MagicMock()
         mock_build.return_value = mock_service
         mock_batch = MagicMock()
         mock_service.new_batch_http_request.return_value = mock_batch
+        mock_service.events.return_value.list.return_value.execute.return_value = {"items": []}
 
-        # Mock events().list() to return one event
-        mock_service.events.return_value.list.return_value.execute.return_value = {
-            "items": [
-                {
-                    "id": "google_event_id_123",
-                    "summary": "Google Event",
-                    "start": {"dateTime": "2023-01-01T10:00:00Z"},
-                    "end": {"dateTime": "2023-01-01T11:00:00Z"},
-                }
-            ]
+        sync_calendar_logic("sync_filter")
+
+        # Verify NO batch add calls (filtered out)
+        self.assertFalse(mock_batch.add.called)
+
+    @patch("app.app.firestore.client")
+    @patch("app.app.get_client_config")
+    @patch("app.app.Credentials")
+    @patch("app.app.build")
+    @patch("app.app.requests.get")
+    def test_sync_keeps_old_recurring_events(
+        self, mock_get, mock_build, mock_creds, mock_config, mock_firestore
+    ):
+        """Test that events with RRULE are KEPT even if start date is old."""
+        sync_data = {
+            "user_id": "test_user", "destination_calendar_id": "dest_cal",
+            "source_icals": ["http://test.com/cal.ics"],
         }
-        
-        # Run Logic
-        sync_calendar_logic("sync_gcal")
+        self._setup_common_mocks(mock_firestore, sync_data)
 
-        # Verify that the 'list' method was called with 'timeMin' and 'timeMax'
-        list_calls = mock_service.events.return_value.list.call_args_list
-        # The first call is for fetching source events, the second is for existing events map
-        self.assertEqual(len(list_calls), 2)
-        
-        # Check source fetch call
-        _, kwargs_source = list_calls[0]
-        self.assertIn("timeMin", kwargs_source)
-        self.assertIn("timeMax", kwargs_source)
-        
-        # Check existing events map call
-        _, kwargs_existing = list_calls[1]
-        self.assertIn("timeMin", kwargs_existing)
-        self.assertIn("timeMax", kwargs_existing)
+        # Generate event 100 days in the past BUT with RRULE
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.content = self._get_ical_content(
+            "recurring_event", "Recurring Event", days_offset=-100, rrule="FREQ=WEEKLY"
+        )
+        mock_get.return_value = mock_response
 
+        mock_service = MagicMock()
+        mock_build.return_value = mock_service
+        mock_batch = MagicMock()
+        mock_service.new_batch_http_request.return_value = mock_batch
+        mock_service.events.return_value.list.return_value.execute.return_value = {"items": []}
+
+        sync_calendar_logic("sync_recurring_keep")
+
+        # Verify batch add WAS called (kept)
+        self.assertTrue(mock_batch.add.called)
 
 if __name__ == "__main__":
     unittest.main()

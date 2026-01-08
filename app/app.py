@@ -811,7 +811,9 @@ def _fetch_all_google_events(
     while True:
         list_kwargs["pageToken"] = page_token
         events_result = (
-            service.events().list(**list_kwargs).execute()  # pylint: disable=no-member
+            service.events()  # pylint: disable=no-member
+            .list(**list_kwargs)
+            .execute()
         )
 
         items = events_result.get("items", [])
@@ -931,29 +933,25 @@ def _fetch_source_events(sources, user_id):
     return all_events_items, source_names
 
 
-def _get_existing_events_map(service, destination_id, time_min=None, time_max=None):
+def _get_existing_events_map(service, destination_id):
     """
     Fetch all existing events from the destination calendar to support updates.
     Returns a dict mapping iCalUID -> eventId.
     """
     existing_map = {}
     page_token = None
-
-    # Build kwargs
-    list_kwargs = {
-        "calendarId": destination_id,
-        "singleEvents": False,  # We want the master recurring events, not instances
-        "fields": "nextPageToken,items(id,iCalUID)",
-    }
-    if time_min:
-        list_kwargs["timeMin"] = time_min
-    if time_max:
-        list_kwargs["timeMax"] = time_max
-
     try:
         while True:
-            list_kwargs["pageToken"] = page_token
-            events_result = service.events().list(**list_kwargs).execute()
+            events_result = (
+                service.events()
+                .list(
+                    calendarId=destination_id,
+                    pageToken=page_token,
+                    singleEvents=False,  # We want the master recurring events, not instances
+                    fields="nextPageToken,items(id,iCalUID)",
+                )
+                .execute()
+            )
             for event in events_result.get("items", []):
                 ical_uid = event.get("iCalUID")
                 event_id = event.get("id")
@@ -1117,19 +1115,45 @@ def sync_calendar_logic(sync_id):  # pylint: disable=too-many-locals
 
     # 3. Process Events
     # Define sync window: 30 days past -> 365 days future
-    # Note: If sources are iCal, we have already fetched everything, but we can still
-    # optimize the destination fetch.
-    # Ideally we should also filter the parsed iCal events here if we want to be strict,
-    # but the biggest win is avoiding fetching thousands of existing events from Google.
     now = datetime.now(timezone.utc)
-    time_min = (now - timedelta(days=30)).isoformat()
-    time_max = (now + timedelta(days=365)).isoformat()
+    window_start = now - timedelta(days=30)
+    window_end = now + timedelta(days=365)
+
+    # Filter source events to ensure we only sync within the window
+    # This handles iCal sources that returned everything, and serves as a safety check
+    filtered_events = []
+    for item in all_events_items:
+        event = item["component"]
+        # Simple check on DTSTART. Recurring rules (RRULE) are complex,
+        # but for a basic sync, checking the start date is a good first approximation.
+        # Note: Google Source events are already filtered by the API call in _fetch_google_source
+        if "dtstart" in event:
+            dt = event["dtstart"].dt
+            # Normalize to UTC for comparison
+            if isinstance(dt, datetime):
+                if dt.tzinfo is None:
+                    dt = dt.replace(tzinfo=timezone.utc)
+            else:
+                # Date object (all day) - convert to datetime at start of day
+                dt = datetime.combine(dt, datetime.min.time()).replace(
+                    tzinfo=timezone.utc
+                )
+
+            # Check if event is within window OR if it is a recurring rule master (RRULE).
+            # We must preserve RRULE masters even if they started long ago,
+            # otherwise the entire series will disappear.
+            if (window_start <= dt <= window_end) or "rrule" in event:
+                filtered_events.append(item)
+        else:
+            # Event without start? Include just in case or skip.
+            # Safe to skip as it won't display anyway.
+            pass
 
     # Fetch existing events map for reliable updates
-    existing_map = _get_existing_events_map(
-        service, destination_id, time_min=time_min, time_max=time_max
-    )
-    _batch_upsert_events(service, destination_id, all_events_items, existing_map)
+    # We do NOT filter here to ensure we know about all existing UIDs (especially recurring masters)
+    # This prevents creating duplicates of events that started before the window.
+    existing_map = _get_existing_events_map(service, destination_id)
+    _batch_upsert_events(service, destination_id, filtered_events, existing_map)
 
 
 def _handle_create_sync_post(user):
