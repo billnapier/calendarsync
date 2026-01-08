@@ -3,9 +3,6 @@
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <meta name="description"
-              content="Edit your existing calendar synchronizations.">
-        <meta name="keywords" content="calendar, sync, edit, update, manage">
         <title>Edit Sync - CalendarSync</title>
         <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
@@ -13,12 +10,10 @@
     </head>
     <body>
         <header class="header">
-            <a href="{{ url_for('index') }}" class="logo-container">
+            <a href="/" class="logo-container">
                 <img src="{{ url_for('static', filename='images/logo.png') }}"
                      alt="CalendarSync Logo"
-                     class="logo-img"
-                     width="32"
-                     height="32">
+                     class="logo-img">
                 <span class="logo-text">CalendarSync</span>
             </a>
             <div class="user-menu">
@@ -26,10 +21,10 @@
                     <span>{{ user.name }}</span>
                     <img src="{{ user.picture }}"
                          alt="Profile"
-                         class="profile-pic"
-                         width="32"
-                         height="32">
-                    <a href="{{ url_for('logout') }}" class="btn btn-outline btn-sm">Sign Out</a>
+                         style="width: 32px;
+                                height: 32px;
+                                border-radius: 50%">
+                    <a href="/logout" class="btn btn-outline btn-sm">Sign Out</a>
                 {% endif %}
             </div>
         </header>
@@ -39,7 +34,7 @@
                     <h1>Edit Sync</h1>
                     <p class="form-hint">Manage your calendar synchronization settings</p>
                 </div>
-                <form action="{{ url_for('edit_sync', sync_id=sync.id) }}" method="post">
+                <form action="/edit_sync/{{ sync.id }}" method="POST">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                     <!-- Destination Section -->
                     <div class="form-group">
@@ -70,10 +65,10 @@
                         <details class="help-box">
                             <summary class="help-summary">Need help adding sources?</summary>
                             <div class="help-content">
-                                <p class="help-paragraph">
+                                <p style="margin: 0 0 0.5rem 0;">
                                     <strong>Which type should I choose?</strong>
                                 </p>
-                                <ul class="help-list">
+                                <ul style="padding-left: 1.2rem; margin: 0;">
                                     <li>
                                         <strong>Google Calendar:</strong> Best for syncing your personal calendars (e.g.,
                                         specific sub-calendars from your own account).
@@ -143,7 +138,7 @@
                                     </div>
                                     <!-- Actions -->
                                     <div class="source-actions">
-                                        <span class="field-label visibility-hidden">Remove</span>
+                                        <span class="field-label" style="visibility: hidden;">Remove</span>
                                         <button type="button"
                                                 class="btn btn-danger"
                                                 onclick="removeEntry(this)"
@@ -190,7 +185,7 @@
                                                aria-label="Source Event Prefix">
                                     </div>
                                     <div class="source-actions">
-                                        <span class="field-label visibility-hidden">Remove</span>
+                                        <span class="field-label" style="visibility: hidden;">Remove</span>
                                         <button type="button" class="btn btn-danger" onclick="removeEntry(this)">Remove</button>
                                     </div>
                                 </div>
@@ -199,14 +194,17 @@
                         <button type="button" class="add-btn" onclick="addSourceInput()">+ Add another source</button>
                     </div>
                     <div class="form-actions">
-                        <a href="{{ url_for('index') }}" class="btn btn-secondary">Cancel</a>
-                        <button type="submit" class="btn btn-primary" data-loading-text="Saving...">Save Changes</button>
+                        <a href="/" class="btn btn-secondary">Cancel</a>
+                        <button type="submit" class="btn btn-primary" data-loading-text="Saving...">
+                            <span class="spinner" aria-hidden="true"></span>
+                            <span class="btn-text">Save Changes</span>
+                        </button>
                     </div>
                 </form>
             </div>
         </main>
         <footer>
-            <p>© 2024 CalendarSync. All rights reserved.</p>
+            <p>&copy; 2024 CalendarSync. All rights reserved.</p>
         </footer>
         <template id="source-entry-template">
             <div class="ical-entry">
@@ -246,7 +244,7 @@
                            aria-label="Source Event Prefix">
                 </div>
                 <div class="source-actions">
-                    <span class="field-label visibility-hidden">Remove</span>
+                    <span class="field-label" style="visibility: hidden;">Remove</span>
                     <button type="button" class="btn btn-danger" onclick="removeEntry(this)">Remove</button>
                 </div>
             </div>
@@ -309,7 +307,9 @@
             idInput.value = select.value;
         }
 
-        document.addEventListener('DOMContentLoaded', updateRemoveButtons);
+        document.addEventListener('DOMContentLoaded', function () {
+            updateRemoveButtons();
+        });
         </script>
         <script src="{{ url_for('static', filename='ui.js') }}"></script>
     </body>

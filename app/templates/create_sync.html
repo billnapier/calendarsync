@@ -3,10 +3,6 @@
     <head>
         <meta charset="UTF-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <meta name="description"
-              content="Create a new calendar synchronization to merge your events.">
-        <meta name="keywords"
-              content="calendar, sync, create, merge, ical, google calendar">
         <title>Create New Sync - CalendarSync</title>
         <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
@@ -14,12 +10,10 @@
     </head>
     <body>
         <header class="header">
-            <a href="{{ url_for('index') }}" class="logo-container">
+            <a href="/" class="logo-container">
                 <img src="{{ url_for('static', filename='images/logo.png') }}"
                      alt="CalendarSync Logo"
-                     class="logo-img"
-                     width="32"
-                     height="32">
+                     class="logo-img">
                 <span class="logo-text">CalendarSync</span>
             </a>
             <div class="user-menu">
@@ -27,10 +21,10 @@
                     <span>{{ user.name }}</span>
                     <img src="{{ user.picture }}"
                          alt="Profile"
-                         class="profile-pic"
-                         width="32"
-                         height="32">
-                    <a href="{{ url_for('logout') }}" class="btn btn-outline btn-sm">Sign Out</a>
+                         style="width: 32px;
+                                height: 32px;
+                                border-radius: 50%">
+                    <a href="/logout" class="btn btn-outline btn-sm">Sign Out</a>
                 {% endif %}
             </div>
         </header>
@@ -40,7 +34,7 @@
                     <h1>Create New Sync</h1>
                     <p class="form-hint">Set up a new synchronization between calendars</p>
                 </div>
-                <form action="{{ url_for('create_sync') }}" method="post">
+                <form action="/create_sync" method="POST">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                     <!-- Destination Section -->
                     <div class="form-group">
@@ -69,10 +63,10 @@
                         <details class="help-box">
                             <summary class="help-summary">Need help adding sources?</summary>
                             <div class="help-content">
-                                <p class="help-paragraph">
+                                <p style="margin: 0 0 0.5rem 0;">
                                     <strong>Which type should I choose?</strong>
                                 </p>
-                                <ul class="help-list">
+                                <ul style="padding-left: 1.2rem; margin: 0;">
                                     <li>
                                         <strong>Google Calendar:</strong> Best for syncing your personal calendars (e.g.,
                                         specific sub-calendars from your own account).
@@ -109,7 +103,7 @@
                                             </select>
                                         {% else %}
                                             <p class="form-hint">
-                                                No Google Calendars found. <a href="{{ url_for('login') }}" class="refresh-link">Refresh?</a>
+                                                No Google Calendars found. <a href="/login" style="color: var(--primary-color);">Refresh?</a>
                                             </p>
                                         {% endif %}
                                     </div>
@@ -131,24 +125,28 @@
                                 </div>
                                 <!-- Actions -->
                                 <div class="source-actions">
-                                    <span class="field-label visibility-hidden">Remove</span>
+                                    <span class="field-label" style="visibility: hidden;">Remove</span>
                                     <button type="button"
-                                            class="btn btn-danger display-none"
-                                            onclick="removeEntry(this)">Remove</button>
+                                            class="btn btn-danger"
+                                            onclick="removeEntry(this)"
+                                            style="display: none">Remove</button>
                                 </div>
                             </div>
                         </div>
                         <button type="button" class="add-btn" onclick="addSourceInput()">+ Add another source</button>
                     </div>
                     <div class="form-actions">
-                        <a href="{{ url_for('index') }}" class="btn btn-secondary">Cancel</a>
-                        <button type="submit" class="btn btn-primary" data-loading-text="Creating...">Create Sync</button>
+                        <a href="/" class="btn btn-secondary">Cancel</a>
+                        <button type="submit" class="btn btn-primary">
+                            <span class="spinner" aria-hidden="true"></span>
+                            <span class="btn-text">Create Sync</span>
+                        </button>
                     </div>
                 </form>
             </div>
         </main>
         <footer>
-            <p>© 2024 CalendarSync. All rights reserved.</p>
+            <p>&copy; 2024 CalendarSync. All rights reserved.</p>
         </footer>
         <!-- Template for new rows -->
         <template id="source-entry-template">
@@ -189,7 +187,7 @@
                            aria-label="Source Event Prefix">
                 </div>
                 <div class="source-actions">
-                    <span class="field-label visibility-hidden">Remove</span>
+                    <span class="field-label" style="visibility: hidden;">Remove</span>
                     <button type="button" class="btn btn-danger" onclick="removeEntry(this)">Remove</button>
                 </div>
             </div>
@@ -252,7 +250,9 @@
             idInput.value = select.value;
         }
 
-        document.addEventListener('DOMContentLoaded', updateRemoveButtons);
+        document.addEventListener('DOMContentLoaded', function () {
+            updateRemoveButtons();
+        });
         </script>
         <script src="{{ url_for('static', filename='ui.js') }}"></script>
     </body>

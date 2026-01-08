@@ -23,11 +23,19 @@ document.addEventListener('DOMContentLoaded', () => {
                         submitter.dataset.originalValue = submitter.value;
                         submitter.value = loadingText;
                     } else {
-                        submitter.dataset.originalText = submitter.textContent;
-                        submitter.textContent = loadingText;
+                        // Check if there is a child span for text (common in buttons with icons)
+                        const textSpan = submitter.querySelector('.btn-text');
+                        if (textSpan) {
+                            submitter.dataset.originalText = textSpan.textContent;
+                            textSpan.textContent = loadingText;
+                        } else {
+                            submitter.dataset.originalText = submitter.textContent;
+                            submitter.textContent = loadingText;
+                        }
                     }
 
                     // Update UI state
+                    submitter.classList.add('btn-loading');
                     submitter.disabled = true;
                     submitter.style.cursor = 'wait';
                 }
@@ -40,14 +48,19 @@ document.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('pageshow', (event) => {
         const buttons = document.querySelectorAll('button[type="submit"][disabled], input[type="submit"][disabled]');
         buttons.forEach(btn => {
+            btn.disabled = false;
+            btn.classList.remove('btn-loading');
+            btn.style.cursor = '';
+
             if (btn.tagName === 'INPUT' && btn.dataset.originalValue) {
-                btn.disabled = false;
                 btn.value = btn.dataset.originalValue;
-                btn.style.cursor = '';
             } else if (btn.dataset.originalText) {
-                btn.disabled = false;
-                btn.textContent = btn.dataset.originalText;
-                btn.style.cursor = '';
+                const textSpan = btn.querySelector('.btn-text');
+                if (textSpan) {
+                    textSpan.textContent = btn.dataset.originalText;
+                } else {
+                    btn.textContent = btn.dataset.originalText;
+                }
             }
         });
     });

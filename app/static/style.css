@@ -755,3 +755,9 @@ details[open] summary.help-summary::before {
 .display-none {
     display: none;
 }
+
+.btn-loading {
+    opacity: 0.8;
+    pointer-events: none;
+    cursor: not-allowed;
+}
