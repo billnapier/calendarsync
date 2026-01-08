@@ -794,8 +794,11 @@ def _fetch_google_source(source, user_id):  # pylint: disable=too-many-locals
         )
 
         for gevent in events:
-            ievent = _map_google_event_to_ical(gevent)
-            events_items.append({"component": ievent, "prefix": prefix})
+            # Optimization: Skip iCal conversion for Google sources to improve performance.
+            # We pass the raw Google JSON dict and flag it.
+            events_items.append(
+                {"component": gevent, "prefix": prefix, "type": "google_json"}
+            )
 
         return events_items, url, name
 
@@ -980,10 +983,43 @@ def _get_existing_events_map(service, destination_id):
     return existing_map
 
 
-def _build_event_body(event, prefix):
+def _build_event_body(event, prefix, is_google_json=False):
     """
     Helper to construct Google Calendar event body.
     """
+    if is_google_json:
+        # Optimization: Direct mapping from Google Event JSON
+        # We use the existing 'id' as 'iCalUID' to ensure uniqueness for expanded instances.
+        # Legacy behavior: _map_google_event_to_ical maps gevent['id'] -> ievent['uid'].
+        # Then _build_event_body uses ievent['uid'] as iCalUID.
+        # So we MUST use event['id'] here to maintain backward compatibility and avoid duplicates.
+        uid = event.get("id")
+        if not uid:
+            return None, None
+
+        summary = event.get("summary", "")
+        if prefix:
+            summary = f"[{prefix}] {summary}"
+
+        # Start/End are already in correct format or dict
+        start = event.get("start")
+        end = event.get("end")
+
+        if not start:
+            return None, None
+
+        body = {
+            "summary": summary,
+            "description": event.get("description", ""),
+            "location": event.get("location", ""),
+            "start": start,
+            "end": end,
+            "iCalUID": uid,
+        }
+        # Clean None values
+        body = {k: v for k, v in body.items() if v is not None}
+        return body, uid
+
     uid = event.get("UID")
     if not uid:
         return None, None
@@ -1033,7 +1069,10 @@ def _batch_upsert_events(service, destination_id, events_items, existing_map=Non
             app.logger.error("Failed to upsert event %s: %s", request_id, exception)
 
     for item in events_items:
-        body, uid = _build_event_body(item["component"], item["prefix"])
+        is_google_json = item.get("type") == "google_json"
+        body, uid = _build_event_body(
+            item["component"], item["prefix"], is_google_json=is_google_json
+        )
         if not body:
             continue
 
@@ -1137,11 +1176,33 @@ def sync_calendar_logic(sync_id):  # pylint: disable=too-many-locals
     filtered_events = []
     for item in all_events_items:
         event = item["component"]
-        # Simple check on DTSTART. Recurring rules (RRULE) are complex,
-        # but for a basic sync, checking the start date is a good first approximation.
-        # Note: Google Source events are already filtered by the API call in _fetch_google_source
-        if "dtstart" in event:
-            dt = event["dtstart"].dt
+        is_google_json = item.get("type") == "google_json"
+        dt = None
+        has_rrule = False
+
+        if is_google_json:
+            # Google Source: Event is a dict
+            start = event.get("start", {})
+            if "dateTime" in start:
+                try:
+                    dt = datetime.fromisoformat(start["dateTime"])
+                except ValueError:
+                    pass
+            elif "date" in start:
+                try:
+                    dt = datetime.strptime(start["date"], "%Y-%m-%d")
+                except ValueError:
+                    pass
+            # Google expanded events don't have RRULE (they are instances)
+            # Masters (if any) might, but we used singleEvents=True
+            has_rrule = False
+        else:
+            # iCal Source: Event is icalendar.Event
+            if "dtstart" in event:
+                dt = event["dtstart"].dt
+            has_rrule = "rrule" in event
+
+        if dt:
             # Normalize to UTC for comparison
             if isinstance(dt, datetime):
                 if dt.tzinfo is None:
@@ -1155,12 +1216,11 @@ def sync_calendar_logic(sync_id):  # pylint: disable=too-many-locals
             # Check if event is within window OR if it is a recurring rule master (RRULE).
             # We must preserve RRULE masters even if they started long ago,
             # otherwise the entire series will disappear.
-            if (window_start <= dt <= window_end) or "rrule" in event:
+            if (window_start <= dt <= window_end) or has_rrule:
                 filtered_events.append(item)
-        else:
-            # Event without start? Include just in case or skip.
-            # Safe to skip as it won't display anyway.
-            pass
+        elif has_rrule:
+            # If no start date but has RRULE (unlikely but possible in iCal), preserve it.
+            filtered_events.append(item)
 
     # Fetch existing events map for reliable updates
     # We do NOT filter here to ensure we know about all existing UIDs (especially recurring masters)
