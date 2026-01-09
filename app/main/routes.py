@@ -3,7 +3,15 @@ import time
 import os
 import re
 import json
-from flask import Blueprint, render_template, session, request, redirect, url_for, current_app
+from flask import (
+    Blueprint,
+    render_template,
+    session,
+    request,
+    redirect,
+    url_for,
+    current_app,
+)
 from firebase_admin import firestore
 import google.api_core.exceptions
 from google.cloud import tasks_v2
@@ -13,7 +21,9 @@ from app.sync import sync_calendar_logic, fetch_user_calendars, resolve_source_n
 from app.security import verify_task_auth
 
 from . import main_bp
+
 logger = logging.getLogger(__name__)
+
 
 @main_bp.route("/")
 def index():
@@ -42,6 +52,7 @@ def index():
         "index.html", user=user, syncs=syncs, google_client_id=google_client_id
     )
 
+
 @main_bp.route("/sync/<sync_id>", methods=["POST"])
 def run_sync(sync_id):
     """
@@ -68,6 +79,7 @@ def run_sync(sync_id):
     except Exception as e:
         logger.error("Sync failed: %s", e)
         return "Sync failed. Please check logs for details.", 500
+
 
 def _get_sources_from_form(form):
     """Helper to extract sources from form data and sanitize them."""
@@ -108,6 +120,7 @@ def _get_sources_from_form(form):
 
     return sources
 
+
 def _handle_edit_sync_post(req, sync_ref, calendars):
     """Handle POST request for edit_sync."""
     destination_id = req.form.get("destination_calendar_id")
@@ -144,6 +157,7 @@ def _handle_edit_sync_post(req, sync_ref, calendars):
 
     return redirect(url_for("main.index"))
 
+
 def _handle_edit_sync_get(user, sync_data):
     """Handle GET request for edit_sync."""
     # Refresh calendars cache if needed
@@ -179,6 +193,7 @@ def _handle_edit_sync_get(user, sync_data):
         calendars=calendars,
         csrf_token=csrf_token,
     )
+
 
 @main_bp.route("/edit_sync/<sync_id>", methods=["GET", "POST"])
 def edit_sync(sync_id):
@@ -222,6 +237,7 @@ def edit_sync(sync_id):
 
     return _handle_edit_sync_get(user, sync_data)
 
+
 @main_bp.route("/delete_sync/<sync_id>", methods=["POST"])
 def delete_sync(sync_id):
     """
@@ -253,6 +269,7 @@ def delete_sync(sync_id):
     except Exception as e:
         logger.error("Error deleting sync %s: %s", sync_id, e)
         return f"Error deleting sync: {e}", 500
+
 
 def _handle_create_sync_post(user):
     destination_id = request.form.get("destination_calendar_id")
@@ -311,6 +328,7 @@ def _handle_create_sync_post(user):
 
     return redirect(url_for("main.index"))
 
+
 @main_bp.route("/create_sync", methods=["GET", "POST"])
 def create_sync():
     user = session.get("user")
@@ -343,6 +361,7 @@ def create_sync():
 
     return "Method not allowed", 405
 
+
 @main_bp.route("/logout", methods=["POST"])
 def logout():
     """Secure logout endpoint (POST only, CSRF protected)."""
@@ -352,6 +371,7 @@ def logout():
 
     session.clear()
     return redirect(url_for("main.index"))
+
 
 @main_bp.route("/tasks/sync_one", methods=["POST"])
 def sync_one_user():
@@ -382,6 +402,7 @@ def sync_one_user():
         logger.error("Worker failed for sync_id %s: %s", sync_id, e)
         # Return 500 to trigger Cloud Tasks retry
         return "Worker failed. Please check logs for details.", 500
+
 
 @main_bp.route("/tasks/sync_all", methods=["POST"])
 def sync_all_users():
@@ -438,9 +459,7 @@ def sync_all_users():
                 client.create_task(request={"parent": parent, "task": task})
                 count += 1
             except Exception as e:
-                logger.error(
-                    "Failed to enqueue task for sync_id %s: %s", sync_id, e
-                )
+                logger.error("Failed to enqueue task for sync_id %s: %s", sync_id, e)
 
         logger.info("Dispatched %d sync tasks.", count)
         return f"Dispatched {count} tasks", 200
