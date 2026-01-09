@@ -14,6 +14,7 @@ SCOPES = [
     "https://www.googleapis.com/auth/calendar",
 ]
 
+
 @auth_bp.route("/auth/google/callback", methods=["POST"])
 def google_auth_callback():
     """Handle Google Identity Services (GIS) Sign-In Callback."""

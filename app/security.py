@@ -118,4 +118,3 @@ def verify_task_auth():
 
     except Exception as e:
         raise ValueError(f"Invalid token: {e}") from e
-

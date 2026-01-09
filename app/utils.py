@@ -8,6 +8,7 @@ from google.cloud import secretmanager
 SYNC_WINDOW_PAST_DAYS = 30
 SYNC_WINDOW_FUTURE_DAYS = 365
 
+
 def get_sync_window_dates():
     """Returns the start and end datetimes for the sync window."""
     now = datetime.now(timezone.utc)
@@ -15,11 +16,13 @@ def get_sync_window_dates():
     end = now + timedelta(days=SYNC_WINDOW_FUTURE_DAYS)
     return start, end
 
+
 def generate_csrf_token():
     """Generate a CSRF token and store it in the session."""
     if "csrf_token" not in session:
         session["csrf_token"] = secrets.token_hex(16)
     return session["csrf_token"]
+
 
 def verify_csrf_token(form_token):
     """Verify the CSRF token from the form against the session."""
@@ -27,6 +30,7 @@ def verify_csrf_token(form_token):
     if not session_token or not form_token or session_token != form_token:
         return False
     return True
+
 
 def time_ago_filter(dt):
     """Returns a relative time string (e.g., '2 hours ago')."""
@@ -68,6 +72,7 @@ def time_ago_filter(dt):
     days = int(seconds // 86400)
     return f"{days} day{'s' if days != 1 else ''} ago"
 
+
 def get_secret(secret_name):
     """
     Retrieve secret from Environment Variable or Google Secret Manager.
@@ -94,6 +99,7 @@ def get_secret(secret_name):
     except Exception as e:  # pylint: disable=broad-exception-caught
         current_app.logger.error("Failed to fetch secret %s: %s", secret_name, e)
         return None
+
 
 def get_client_config():
     """Construct client config for OAuth flow."""

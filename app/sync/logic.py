@@ -27,6 +27,7 @@ EVENT_LIST_FIELDS = (
 
 logger = logging.getLogger(__name__)
 
+
 def fetch_user_calendars(user_uid):
     """Fetch user's Google Calendars using stored refresh token."""
     calendars = []
