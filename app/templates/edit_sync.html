@@ -11,6 +11,7 @@
         <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
               rel="stylesheet">
         <script src="{{ url_for('static', filename='ui.js') }}" defer></script>
+        <script src="{{ url_for('static', filename='sync_form.js') }}" defer></script>
     </head>
     <body>
         <header class="header">
@@ -100,7 +101,7 @@
                                     <!-- Type Selection -->
                                     <div class="source-type-group">
                                         <span class="field-label">Type</span>
-                                        <select onchange="changeSourceType(this)">
+                                        <select>
                                             <option value="ical"
                                                     {% if (source.type or 'ical' )=='ical' %}selected{% endif %}>iCal URL</option>
                                             <option value="google" {% if source.type=='google' %}selected{% endif %}>Google Cal</option>
@@ -113,7 +114,7 @@
                                         <div class="input-row google-input
                                                     {% if source.type != 'google' %}hidden{% endif %}">
                                             {% if calendars %}
-                                                <select name="source_ids_visible" onchange="updateHiddenId(this)">
+                                                <select name="source_ids_visible">
                                                     <option value="" disabled {% if not source.id %}selected{% endif %}>
                                                         Select
                                                         Calendar
@@ -153,7 +154,6 @@
                                         <span class="field-label visibility-hidden">Remove</span>
                                         <button type="button"
                                                 class="btn btn-danger"
-                                                onclick="removeEntry(this)"
                                                 aria-label="Remove Source">Remove</button>
                                     </div>
                                 </div>
@@ -165,7 +165,7 @@
                                     <input type="hidden" name="source_ids" value="">
                                     <div class="source-type-group">
                                         <span class="field-label">Type</span>
-                                        <select onchange="changeSourceType(this)">
+                                        <select>
                                             <option value="ical">iCal URL</option>
                                             <option value="google">Google Cal</option>
                                         </select>
@@ -174,7 +174,7 @@
                                         <span class="field-label">Source</span>
                                         <div class="input-row google-input hidden">
                                             {% if calendars %}
-                                                <select name="source_ids_visible" onchange="updateHiddenId(this)">
+                                                <select name="source_ids_visible">
                                                     <option value="" disabled selected>Select Calendar</option>
                                                     {% for cal in calendars %}<option value="{{ cal.id }}">{{ cal.summary }}</option>{% endfor %}
                                                 </select>
@@ -198,12 +198,12 @@
                                     </div>
                                     <div class="source-actions">
                                         <span class="field-label visibility-hidden">Remove</span>
-                                        <button type="button" class="btn btn-danger" onclick="removeEntry(this)">Remove</button>
+                                        <button type="button" class="btn btn-danger">Remove</button>
                                     </div>
                                 </div>
                             {% endif %}
                         </div>
-                        <button type="button" class="add-btn" onclick="addSourceInput()">+ Add another source</button>
+                        <button type="button" class="add-btn" id="add-source-btn">+ Add another source</button>
                     </div>
                     <div class="form-actions">
                         <a href="{{ url_for('main.index') }}" class="btn btn-secondary">Cancel</a>
@@ -221,7 +221,7 @@
                 <input type="hidden" name="source_ids" value="">
                 <div class="source-type-group">
                     <span class="field-label">Type</span>
-                    <select onchange="changeSourceType(this)">
+                    <select>
                         <option value="ical">iCal URL</option>
                         <option value="google">Google Cal</option>
                     </select>
@@ -230,7 +230,7 @@
                     <span class="field-label">Source</span>
                     <div class="input-row google-input hidden">
                         {% if calendars %}
-                            <select name="source_ids_visible" onchange="updateHiddenId(this)">
+                            <select name="source_ids_visible">
                                 <option value="" disabled selected>Select Calendar</option>
                                 {% for cal in calendars %}<option value="{{ cal.id }}">{{ cal.summary }}</option>{% endfor %}
                             </select>
@@ -254,72 +254,9 @@
                 </div>
                 <div class="source-actions">
                     <span class="field-label visibility-hidden">Remove</span>
-                    <button type="button" class="btn btn-danger" onclick="removeEntry(this)">Remove</button>
+                    <button type="button" class="btn btn-danger">Remove</button>
                 </div>
             </div>
         </template>
-        <script>
-        function addSourceInput() {
-            const container = document.getElementById('ical-container');
-            const template = document.getElementById('source-entry-template');
-            const clone = template.content.cloneNode(true);
-            container.appendChild(clone);
-            updateRemoveButtons();
-        }
-
-        function removeEntry(btn) {
-            const entry = btn.closest('.ical-entry');
-            if (document.querySelectorAll('.ical-entry').length > 1) {
-                entry.remove();
-                updateRemoveButtons();
-            }
-        }
-
-        function updateRemoveButtons() {
-            const entries = document.querySelectorAll('.ical-entry');
-            entries.forEach((entry) => {
-                const btn = entry.querySelector('.btn-danger');
-                if (entries.length === 1) {
-                    btn.style.display = 'none'; // Changed from visibility: hidden to display: none for better layout
-                } else {
-                    btn.style.display = 'inline-flex';
-                }
-            });
-        }
-
-        function changeSourceType(select) {
-            const entry = select.closest('.ical-entry');
-            const typeInput = entry.querySelector('input[name="source_types"]');
-            const googleInput = entry.querySelector('.google-input');
-            const icalInput = entry.querySelector('.ical-input');
-            const idInput = entry.querySelector('input[name="source_ids"]');
-            const urlInput = entry.querySelector('input[name="source_urls"]');
-
-            typeInput.value = select.value;
-
-            if (select.value === 'google') {
-                googleInput.classList.remove('hidden');
-                icalInput.classList.add('hidden');
-                urlInput.value = '';
-            } else {
-                googleInput.classList.add('hidden');
-                icalInput.classList.remove('hidden');
-                idInput.value = '';
-                const visibleSelect = entry.querySelector('select[name="source_ids_visible"]');
-                if (visibleSelect) visibleSelect.value = "";
-            }
-        }
-
-        function updateHiddenId(select) {
-            const entry = select.closest('.ical-entry');
-            const idInput = entry.querySelector('input[name="source_ids"]');
-            idInput.value = select.value;
-        }
-
-        document.addEventListener('DOMContentLoaded', function () {
-            updateRemoveButtons();
-        });
-        </script>
-        <script src="{{ url_for('static', filename='ui.js') }}"></script>
     </body>
 </html>
