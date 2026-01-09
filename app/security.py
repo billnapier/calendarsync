@@ -5,7 +5,14 @@ Security utilities for the application.
 import socket
 import ipaddress
 from urllib.parse import urlparse, urljoin
+import os
+import logging
 import requests
+from flask import request
+import google.auth.transport.requests
+from google.oauth2 import id_token
+
+logger = logging.getLogger(__name__)
 
 
 def validate_url(url):
@@ -73,3 +80,41 @@ def safe_requests_get(url, **kwargs):
 
     timeout = kwargs.pop("timeout", 10)
     return requests.get(url, timeout=timeout, **kwargs)
+
+
+def verify_task_auth():
+    """Verifies that the request is authorized by a service account."""
+    if os.environ.get("FLASK_ENV") == "development":
+        return
+
+    auth_header = request.headers.get("Authorization")
+    if not auth_header:
+        raise ValueError("Missing Authorization header")
+
+    parts = auth_header.split(" ")
+    if len(parts) != 2 or parts[0].lower() != "bearer":
+        raise ValueError("Invalid Authorization header format")
+
+    token = parts[1]
+
+    try:
+        request_obj = google.auth.transport.requests.Request()
+        # Verify the token.
+        # Note: We are not verifying audience here because it depends on the
+        # dynamic service URL which is not always known in this context.
+        # However, we rely on strict allow-listing of the invoker email.
+        id_info = id_token.verify_oauth2_token(token, request_obj)
+
+        email = id_info.get("email")
+        allowed_email = os.environ.get("SCHEDULER_INVOKER_EMAIL")
+
+        # Fail closed: If no allow-list email is configured, deny everything.
+        if not allowed_email:
+            logger.error("SCHEDULER_INVOKER_EMAIL not set. Denying task access.")
+            raise ValueError("Configuration error: SCHEDULER_INVOKER_EMAIL not set")
+
+        if email != allowed_email:
+            raise ValueError(f"Unauthorized email: {email}")
+
+    except Exception as e:
+        raise ValueError(f"Invalid token: {e}") from e

@@ -13,8 +13,8 @@ class TestAutoSync(unittest.TestCase):
         self.app = app.test_client()
         self.app.testing = True
 
-    @patch("app.app.sync_calendar_logic")
-    @patch("app.app.firestore")
+    @patch("app.main.routes.sync_calendar_logic")
+    @patch("app.main.routes.firestore")
     def test_create_sync_triggers_sync(self, mock_firestore, mock_sync_logic):
         """Test POST /create_sync triggers auto-sync."""
 
@@ -45,8 +45,8 @@ class TestAutoSync(unittest.TestCase):
         # Verify sync_calendar_logic was called with new sync ID
         mock_sync_logic.assert_called_once_with("new_sync_id")
 
-    @patch("app.app.sync_calendar_logic")
-    @patch("app.app.firestore")
+    @patch("app.main.routes.sync_calendar_logic")
+    @patch("app.main.routes.firestore")
     def test_edit_sync_triggers_sync(self, mock_firestore, mock_sync_logic):
         """Test POST /edit_sync triggers auto-sync."""
 

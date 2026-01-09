@@ -1,6 +1,6 @@
 import time
 from unittest.mock import patch
-from app.app import _fetch_source_events
+from app.sync.logic import _fetch_source_events
 
 
 # Mock response object

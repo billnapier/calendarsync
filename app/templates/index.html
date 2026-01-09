@@ -19,7 +19,7 @@
     </head>
     <body>
         <header class="header">
-            <a href="{{ url_for('index') }}" class="logo-container">
+            <a href="{{ url_for('main.index') }}" class="logo-container">
                 <img src="{{ url_for('static', filename='images/logo.png') }}"
                      alt="CalendarSync Logo"
                      class="logo-img"
@@ -30,7 +30,9 @@
             <div class="user-menu">
                 {% if user %}
                     <span>Hello, <strong>{{ user.name }}</strong></span>
-                    <form action="{{ url_for('logout') }}" method="post" class="logout-form">
+                    <form action="{{ url_for('main.logout') }}"
+                          method="post"
+                          class="logout-form">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                         <button type="submit" class="btn btn-outline">Logout</button>
                     </form>
@@ -55,7 +57,7 @@
                         <!-- djlint:off H037 -->
                         <div id="g_id_onload"
                              data-client_id="{{ google_client_id }}"
-                             data-login_uri="{{ url_for('google_auth_callback', _external=True) }}"
+                             data-login_uri="{{ url_for('auth.google_auth_callback', _external=True) }}"
                              data-auto_prompt="false"></div>
                         <!-- djlint:on -->
                         <div class="g_id_signin"
@@ -116,7 +118,7 @@
                     <h2>Your Syncs</h2>
                     <p>Manage your calendar synchronizations.</p>
                     <div>
-                        <a href="{{ url_for('create_sync') }}"
+                        <a href="{{ url_for('main.create_sync') }}"
                            class="btn btn-primary dashboard-cta">+ Create New Sync</a>
                     </div>
                 </div>
@@ -130,13 +132,14 @@
                                         sync.destination_calendar_id }}
                                     </h3>
                                     <div class="sync-actions">
-                                        <form action="{{ url_for('run_sync', sync_id=sync.id) }}" method="post">
+                                        <form action="{{ url_for('main.run_sync', sync_id=sync.id) }}"
+                                              method="post">
                                             <button type="submit" class="btn btn-primary" data-loading-text="Syncing...">
                                                 Sync
                                                 Now
                                             </button>
                                         </form>
-                                        <a href="{{ url_for('edit_sync', sync_id=sync.id) }}"
+                                        <a href="{{ url_for('main.edit_sync', sync_id=sync.id) }}"
                                            class="btn btn-outline">Edit</a>
                                     </div>
                                 </div>
@@ -179,7 +182,7 @@
                 {% else %}
                     <div class="empty-state">
                         <p class="empty-state-text">You haven't created any syncs yet.</p>
-                        <a href="{{ url_for('create_sync') }}" class="btn btn-outline">Get Started</a>
+                        <a href="{{ url_for('main.create_sync') }}" class="btn btn-outline">Get Started</a>
                     </div>
                 {% endif %}
             </div>

@@ -25,17 +25,16 @@ def _client():
 @pytest.fixture
 def _mock_fetch_calendars():
     # Force patch on the imported module object to be sure
-    with patch.object(app_module, "fetch_user_calendars") as mock:
+    # Patch where it is used in main routes
+    with patch("app.main.routes.fetch_user_calendars") as mock:
         yield mock
 
 
 @pytest.fixture
 def _mock_firestore():
-    original_firestore = app_module.firestore
-    mock_fs = MagicMock(name="manual_fs")
-    app_module.firestore = mock_fs
-    yield mock_fs
-    app_module.firestore = original_firestore
+    # Patch where it is used in main routes
+    with patch("app.main.routes.firestore") as mock_fs:
+        yield mock_fs
 
 
 def test_edit_sync_post_refreshes_stale_cache(

@@ -13,7 +13,7 @@
     </head>
     <body>
         <header class="header">
-            <a href="{{ url_for('index') }}" class="logo-container">
+            <a href="{{ url_for('main.index') }}" class="logo-container">
                 <img src="{{ url_for('static', filename='images/logo.png') }}"
                      alt="CalendarSync Logo"
                      class="logo-img"
@@ -29,7 +29,9 @@
                          class="profile-pic"
                          width="32"
                          height="32">
-                    <form action="{{ url_for('logout') }}" method="post" class="logout-form">
+                    <form action="{{ url_for('main.logout') }}"
+                          method="post"
+                          class="logout-form">
                         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                         <button type="submit" class="btn btn-outline btn-sm">Sign Out</button>
                     </form>
@@ -42,7 +44,7 @@
                     <h1>Create New Sync</h1>
                     <p class="form-hint">Set up a new synchronization between calendars</p>
                 </div>
-                <form action="{{ url_for('create_sync') }}" method="post">
+                <form action="{{ url_for('main.create_sync') }}" method="post">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                     <!-- Destination Section -->
                     <div class="form-group">
@@ -111,7 +113,7 @@
                                             </select>
                                         {% else %}
                                             <p class="form-hint">
-                                                No Google Calendars found. <a href="{{ url_for('login') }}" class="refresh-link">Refresh?</a>
+                                                No Google Calendars found. <a href="{{ url_for('auth.login') }}" class="refresh-link">Refresh?</a>
                                             </p>
                                         {% endif %}
                                     </div>
@@ -144,7 +146,7 @@
                         <button type="button" class="add-btn" onclick="addSourceInput()">+ Add another source</button>
                     </div>
                     <div class="form-actions">
-                        <a href="{{ url_for('index') }}" class="btn btn-secondary">Cancel</a>
+                        <a href="{{ url_for('main.index') }}" class="btn btn-secondary">Cancel</a>
                         <button type="submit" class="btn btn-primary" data-loading-text="Creating...">Create Sync</button>
                     </div>
                 </form>
