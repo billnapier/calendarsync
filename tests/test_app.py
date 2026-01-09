@@ -49,7 +49,7 @@ def client():  # pylint: disable=redefined-outer-name
 
 def test_home_page(client):  # pylint: disable=redefined-outer-name
     """Test that the home page returns 200 and contains the expected text."""
-    with patch("app.app.session", {}):  # just in case
+    with patch("app.main.routes.session", {}):  # just in case
         response = client.get("/")
         assert response.status_code == 200
         assert b"CalendarSync" in response.data

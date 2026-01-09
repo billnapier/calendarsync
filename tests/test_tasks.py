@@ -21,9 +21,9 @@ def client_with_mocks():
         yield test_client
 
 
-@patch("app.app.verify_task_auth")
-@patch("app.app.tasks_v2.CloudTasksClient")
-@patch("app.app.firestore.client")
+@patch("app.main.routes.verify_task_auth")
+@patch("app.main.routes.tasks_v2.CloudTasksClient")
+@patch("app.main.routes.firestore.client")
 def test_sync_all_users_dispatch(
     mock_firestore_client, mock_tasks_client, mock_verify_auth, client_with_mocks
 ):
@@ -64,8 +64,8 @@ def test_sync_all_users_dispatch(
     assert mock_tasks_client.return_value.create_task.call_count == 2
 
 
-@patch("app.app.verify_task_auth")
-@patch("app.app.sync_calendar_logic")
+@patch("app.main.routes.verify_task_auth")
+@patch("app.main.routes.sync_calendar_logic")
 def test_sync_one_user_worker(mock_sync_logic, mock_verify_auth, client_with_mocks):
     """Test the worker endpoint."""
 
@@ -85,7 +85,7 @@ def test_sync_one_user_worker(mock_sync_logic, mock_verify_auth, client_with_moc
     assert response_fail.status_code == 500
 
 
-@patch("app.app.verify_task_auth")
+@patch("app.main.routes.verify_task_auth")
 def test_sync_one_user_worker_invalid_payload(mock_verify_auth, client_with_mocks):
     """Test the worker endpoint with an invalid payload."""
     mock_verify_auth.return_value = None
@@ -115,12 +115,12 @@ def test_sync_one_user_worker_missing_config(client_with_mocks):
     with patch.dict(os.environ, {}, clear=True):
 
         # Mock id_token.verify_oauth2_token so it proceeds to check email
-        with patch("app.app.id_token.verify_oauth2_token") as mock_verify:
+        with patch("app.security.id_token.verify_oauth2_token") as mock_verify:
             # Token is valid, but config is missing
             mock_verify.return_value = {"email": "attacker@example.com"}
 
             # Mock google.auth.transport.requests.Request to avoid network
-            with patch("app.app.google.auth.transport.requests.Request"):
+            with patch("app.security.google.auth.transport.requests.Request"):
 
                 # Send request with valid header
                 response = client_with_mocks.post(

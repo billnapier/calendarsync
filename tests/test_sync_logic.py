@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 os.environ["TESTING"] = "1"
 from unittest.mock import patch, MagicMock
 import requests
-from app.app import sync_calendar_logic
+from app.sync import sync_calendar_logic
 
 
 class TestSyncLogic(unittest.TestCase):
@@ -66,11 +66,11 @@ class TestSyncLogic(unittest.TestCase):
 
         return mock_sync_doc_ref
 
-    @patch("app.app.firestore.client")
-    @patch("app.app.get_client_config")
-    @patch("app.app.Credentials")
-    @patch("app.app.build")
-    @patch("app.app.requests.get")
+    @patch("app.sync.logic.firestore.client")
+    @patch("app.sync.logic.get_client_config")
+    @patch("app.sync.logic.Credentials")
+    @patch("app.sync.logic.build")
+    @patch("app.sync.logic.requests.get")
     def test_sync_calendar_logic_with_prefix(
         self, mock_get, mock_build, mock_creds, mock_config, mock_firestore
     ):
@@ -101,11 +101,11 @@ class TestSyncLogic(unittest.TestCase):
         _, kwargs = mock_service.events.return_value.import_.call_args
         self.assertEqual(kwargs["body"]["summary"], "[TestPrefix] Meeting")
 
-    @patch("app.app.firestore.client")
-    @patch("app.app.get_client_config")
-    @patch("app.app.Credentials")
-    @patch("app.app.build")
-    @patch("app.app.requests.get")
+    @patch("app.sync.logic.firestore.client")
+    @patch("app.sync.logic.get_client_config")
+    @patch("app.sync.logic.Credentials")
+    @patch("app.sync.logic.build")
+    @patch("app.sync.logic.requests.get")
     def test_sync_calendar_logic_existing_update(
         self, mock_get, mock_build, mock_creds, mock_config, mock_firestore
     ):
@@ -136,11 +136,11 @@ class TestSyncLogic(unittest.TestCase):
         self.assertFalse(mock_service.events.return_value.import_.called)
         self.assertTrue(mock_service.events.return_value.update.called)
 
-    @patch("app.app.firestore.client")
-    @patch("app.app.get_client_config")
-    @patch("app.app.Credentials")
-    @patch("app.app.build")
-    @patch("app.app.requests.get")
+    @patch("app.sync.logic.firestore.client")
+    @patch("app.sync.logic.get_client_config")
+    @patch("app.sync.logic.Credentials")
+    @patch("app.sync.logic.build")
+    @patch("app.sync.logic.requests.get")
     def test_sync_calendar_logic_multiple_sources(
         self, mock_get, mock_build, mock_creds, mock_config, mock_firestore
     ):
@@ -176,11 +176,11 @@ class TestSyncLogic(unittest.TestCase):
         sync_calendar_logic("sync_multi")
         self.assertEqual(mock_batch.add.call_count, 2)
 
-    @patch("app.app.firestore.client")
-    @patch("app.app.get_client_config")
-    @patch("app.app.Credentials")
-    @patch("app.app.build")
-    @patch("app.app.requests.get")
+    @patch("app.sync.logic.firestore.client")
+    @patch("app.sync.logic.get_client_config")
+    @patch("app.sync.logic.Credentials")
+    @patch("app.sync.logic.build")
+    @patch("app.sync.logic.requests.get")
     def test_sync_calendar_logic_failure(
         self, mock_get, mock_build, mock_creds, mock_config, mock_firestore
     ):
@@ -207,11 +207,11 @@ class TestSyncLogic(unittest.TestCase):
             "http://fail.com/cal.ics (Failed)", update_data["source_names"].values()
         )
 
-    @patch("app.app.firestore.client")
-    @patch("app.app.get_client_config")
-    @patch("app.app.Credentials")
-    @patch("app.app.build")
-    @patch("app.app.requests.get")
+    @patch("app.sync.logic.firestore.client")
+    @patch("app.sync.logic.get_client_config")
+    @patch("app.sync.logic.Credentials")
+    @patch("app.sync.logic.build")
+    @patch("app.sync.logic.requests.get")
     def test_sync_filters_old_events(
         self, mock_get, mock_build, mock_creds, mock_config, mock_firestore
     ):
@@ -244,11 +244,11 @@ class TestSyncLogic(unittest.TestCase):
         # Verify NO batch add calls (filtered out)
         self.assertFalse(mock_batch.add.called)
 
-    @patch("app.app.firestore.client")
-    @patch("app.app.get_client_config")
-    @patch("app.app.Credentials")
-    @patch("app.app.build")
-    @patch("app.app.requests.get")
+    @patch("app.sync.logic.firestore.client")
+    @patch("app.sync.logic.get_client_config")
+    @patch("app.sync.logic.Credentials")
+    @patch("app.sync.logic.build")
+    @patch("app.sync.logic.requests.get")
     def test_sync_keeps_old_recurring_events(
         self, mock_get, mock_build, mock_creds, mock_config, mock_firestore
     ):
