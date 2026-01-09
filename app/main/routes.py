@@ -151,9 +151,14 @@ def _handle_edit_sync_get(user, sync_data):
         "calendars" not in session
         or time.time() - session.get("calendars_timestamp", 0) > 300
     ):
-        calendars = fetch_user_calendars(user["uid"])
-        session["calendars"] = calendars
-        session["calendars_timestamp"] = time.time()
+        try:
+            calendars = fetch_user_calendars(user["uid"])
+            session["calendars"] = calendars
+            session["calendars_timestamp"] = time.time()
+        except Exception as e:
+            logger.error("Failed to fetch calendars on edit GET: %s", e)
+            # Fallback to using potentially stale cache if fetch fails
+            calendars = session.get("calendars", [])
     else:
         calendars = session.get("calendars")
 
@@ -260,7 +265,11 @@ def _handle_create_sync_post(user):
     destination_summary = destination_id
     user_calendars = session.get("calendars")
 
-    if "calendars" not in session:
+    # Refresh calendars if missing or stale
+    if (
+        "calendars" not in session
+        or time.time() - session.get("calendars_timestamp", 0) > 300
+    ):
         try:
             user_calendars = fetch_user_calendars(user["uid"])
             if user_calendars:
@@ -268,6 +277,10 @@ def _handle_create_sync_post(user):
                 session["calendars_timestamp"] = time.time()
         except Exception as e:
             logger.error("Failed to fetch calendars on create POST: %s", e)
+            # Fallback to using potentially stale cache if available
+            user_calendars = session.get("calendars", [])
+    else:
+        user_calendars = session.get("calendars")
 
     if user_calendars:
         for cal in user_calendars:
