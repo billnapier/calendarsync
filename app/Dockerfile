@@ -20,7 +20,6 @@ RUN chown -R appuser:appgroup /workspace
 
 # Switch to the non-root user
 USER appuser
-
 # Run the web service
 # Point to app.app module (app package -> app.py module -> app instance)
 CMD exec gunicorn --bind :$PORT --workers 1 --threads 8 --timeout 0 app.app:app
