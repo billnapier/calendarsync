@@ -63,7 +63,7 @@ def fetch_user_calendars(user_uid):
                         {"id": cal["id"], "summary": cal.get("summary", cal["id"])}
                     )
 
-    except Exception as e:  # pylint: disable=broad-exception-caught
+    except google.api_core.exceptions.GoogleAPICallError as e:
         logger.error("Error fetching calendars: %s", e)
 
     # Sort calendars alphabetically by summary
@@ -84,7 +84,7 @@ def get_calendar_name_from_ical(url):
         name = cal.get("X-WR-CALNAME")
         if name:
             return str(name)
-    except Exception as e:  # pylint: disable=broad-exception-caught
+    except (requests.exceptions.RequestException, ValueError) as e:
         logger.warning("Failed to extract name from %s: %s", url, e)
     return url
 

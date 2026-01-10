@@ -50,8 +50,9 @@ def time_ago_filter(dt):
             except ValueError:
                 continue
         else:
-            # If all parses fail, return duplicate original string
-            return dt
+            # If all parses fail, log a warning and return an empty string
+            current_app.logger.warning("Could not parse date string: %s", dt)
+            return ""
 
     now = datetime.now(timezone.utc)
     if dt.tzinfo is None:
