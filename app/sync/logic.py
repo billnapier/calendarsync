@@ -7,9 +7,8 @@ from firebase_admin import firestore
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 import google.api_core.exceptions
-from flask import current_app
 
-from app.utils import get_client_config, get_sync_window_dates
+from app.utils import get_client_config, get_sync_window_dates, get_base_url
 from app.security import safe_requests_get
 
 # Constants
@@ -287,7 +286,9 @@ def _fetch_google_source(source, user_id):  # pylint: disable=too-many-locals
 
         for gevent in events:
             ievent = _map_google_event_to_ical(gevent)
-            events_items.append({"component": ievent, "prefix": prefix})
+            events_items.append(
+                {"component": ievent, "prefix": prefix, "source_title": name}
+            )
 
         return events_items, url, name
 
@@ -319,7 +320,9 @@ def _fetch_single_source(source, user_id):
 
         for component in cal.walk():
             if component.name == "VEVENT":
-                events_items.append({"component": component, "prefix": prefix})
+                events_items.append(
+                    {"component": component, "prefix": prefix, "source_title": name}
+                )
 
         return events_items, url, name
 
@@ -394,7 +397,7 @@ def _get_existing_events_map(service, destination_id):
     return existing_map
 
 
-def _build_event_body(event, prefix):
+def _build_event_body(event, prefix, source_title=None, base_url=None):
     """
     Helper to construct Google Calendar event body.
     """
@@ -425,12 +428,17 @@ def _build_event_body(event, prefix):
         "iCalUID": uid,
     }
 
+    if source_title and base_url:
+        body["source"] = {"title": source_title, "url": base_url}
+
     # Clean None values
     body = {k: v for k, v in body.items() if v is not None}
     return body, uid
 
 
-def _batch_upsert_events(service, destination_id, events_items, existing_map=None):
+def _batch_upsert_events(
+    service, destination_id, events_items, existing_map=None, base_url=None
+):
     """
     Batch upsert events to Google Calendar.
     events_items: list of {'component': event_obj, 'prefix': str}
@@ -447,7 +455,12 @@ def _batch_upsert_events(service, destination_id, events_items, existing_map=Non
             logger.error("Failed to upsert event %s: %s", request_id, exception)
 
     for item in events_items:
-        body, uid = _build_event_body(item["component"], item["prefix"])
+        body, uid = _build_event_body(
+            item["component"],
+            item["prefix"],
+            item.get("source_title"),
+            base_url=base_url,
+        )
         if not body:
             continue
 
@@ -509,6 +522,7 @@ def sync_calendar_logic(sync_id):  # pylint: disable=too-many-locals
 
     # 1. Get User Credentials
     service = _get_google_service(db, user_id)
+    base_url = get_base_url()
 
     # 2. Fetch and Parse
     all_events_items, source_names = _fetch_source_events(sources, user_id)
@@ -559,4 +573,6 @@ def sync_calendar_logic(sync_id):  # pylint: disable=too-many-locals
     # We do NOT filter here to ensure we know about all existing UIDs (especially recurring masters)
     # This prevents creating duplicates of events that started before the window.
     existing_map = _get_existing_events_map(service, destination_id)
-    _batch_upsert_events(service, destination_id, filtered_events, existing_map)
+    _batch_upsert_events(
+        service, destination_id, filtered_events, existing_map, base_url=base_url
+    )

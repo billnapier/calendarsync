@@ -18,7 +18,7 @@ class TestSyncLogic(unittest.TestCase):
         dtend = (now + timedelta(days=days_offset, hours=1)).strftime("%Y%m%dT%H%M%SZ")
 
         content = (
-            f"BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Test//\r\n"
+            f"BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Test//\r\nX-WR-CALNAME:Test Calendar\r\n"
             f"BEGIN:VEVENT\r\nUID:{uid}\r\nDTSTART:{dtstart}\r\n"
             f"DTEND:{dtend}\r\nSUMMARY:{summary}\r\n"
         )
@@ -71,9 +71,17 @@ class TestSyncLogic(unittest.TestCase):
     @patch("app.sync.logic.Credentials")
     @patch("app.sync.logic.build")
     @patch("app.sync.logic.requests.get")
+    @patch("app.sync.logic.get_base_url")
     def test_sync_calendar_logic_with_prefix(
-        self, mock_get, mock_build, mock_creds, mock_config, mock_firestore
+        self,
+        mock_base_url,
+        mock_get,
+        mock_build,
+        mock_creds,
+        mock_config,
+        mock_firestore,
     ):
+        mock_base_url.return_value = "https://mock.url"
         sync_data = {
             "user_id": "test_user",
             "destination_calendar_id": "dest_cal",
@@ -100,6 +108,8 @@ class TestSyncLogic(unittest.TestCase):
         self.assertTrue(mock_batch.add.called, "Batch add was not called")
         _, kwargs = mock_service.events.return_value.import_.call_args
         self.assertEqual(kwargs["body"]["summary"], "[TestPrefix] Meeting")
+        self.assertEqual(kwargs["body"]["source"]["title"], "Test Calendar")
+        self.assertEqual(kwargs["body"]["source"]["url"], "https://mock.url")
 
     @patch("app.sync.logic.firestore.client")
     @patch("app.sync.logic.get_client_config")

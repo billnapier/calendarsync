@@ -4,11 +4,8 @@ on:
   push:
     branches-ignore:
       - main
-    paths-ignore:
-      - 'terraform/**'
-      - 'docs/**'
-      - 'README.md'
-      - '.github/workflows/terraform*'
+
+  workflow_dispatch:
 
 permissions:
   contents: 'read'

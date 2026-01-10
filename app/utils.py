@@ -118,3 +118,16 @@ def get_client_config():
             "token_uri": "https://oauth2.googleapis.com/token",
         }
     }
+
+
+def get_base_url():
+    """Returns the base serving URL based on the environment."""
+    project_id = os.environ.get("GOOGLE_CLOUD_PROJECT") or os.environ.get(
+        "FIREBASE_PROJECT_ID"
+    )
+
+    url_mapping = {
+        "calendarsync-napier-dev": "https://calendarsync-dev.billnapier.com",
+        "calendarsync-napier": "https://calendarsync.billnapier.com",
+    }
+    return url_mapping.get(project_id, "https://calendarsync.billnapier.com")
