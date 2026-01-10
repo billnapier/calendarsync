@@ -9,7 +9,7 @@ from googleapiclient.discovery import build
 import google.api_core.exceptions
 from flask import current_app
 
-from app.utils import get_client_config, get_sync_window_dates
+from app.utils import get_client_config, get_sync_window_dates, get_base_url
 from app.security import safe_requests_get
 
 # Constants
@@ -287,7 +287,9 @@ def _fetch_google_source(source, user_id):  # pylint: disable=too-many-locals
 
         for gevent in events:
             ievent = _map_google_event_to_ical(gevent)
-            events_items.append({"component": ievent, "prefix": prefix})
+            events_items.append(
+                {"component": ievent, "prefix": prefix, "source_title": name}
+            )
 
         return events_items, url, name
 
@@ -319,7 +321,9 @@ def _fetch_single_source(source, user_id):
 
         for component in cal.walk():
             if component.name == "VEVENT":
-                events_items.append({"component": component, "prefix": prefix})
+                events_items.append(
+                    {"component": component, "prefix": prefix, "source_title": name}
+                )
 
         return events_items, url, name
 
@@ -394,7 +398,7 @@ def _get_existing_events_map(service, destination_id):
     return existing_map
 
 
-def _build_event_body(event, prefix):
+def _build_event_body(event, prefix, source_title=None):
     """
     Helper to construct Google Calendar event body.
     """
@@ -425,6 +429,9 @@ def _build_event_body(event, prefix):
         "iCalUID": uid,
     }
 
+    if source_title:
+        body["source"] = {"title": source_title, "url": get_base_url()}
+
     # Clean None values
     body = {k: v for k, v in body.items() if v is not None}
     return body, uid
@@ -447,7 +454,9 @@ def _batch_upsert_events(service, destination_id, events_items, existing_map=Non
             logger.error("Failed to upsert event %s: %s", request_id, exception)
 
     for item in events_items:
-        body, uid = _build_event_body(item["component"], item["prefix"])
+        body, uid = _build_event_body(
+            item["component"], item["prefix"], item.get("source_title")
+        )
         if not body:
             continue
 
