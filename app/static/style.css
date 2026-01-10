@@ -718,7 +718,33 @@ details[open] summary.help-summary::before {
 }
 
 
+/* Danger Zone */
+.form-divider {
+    border: 0;
+    border-top: 1px solid var(--border-color);
+    margin: 2rem 0;
+}
 
+.danger-zone {
+    border: 1px solid #f5c6cb;
+    background-color: #fff8f8;
+    padding: 1.5rem;
+    border-radius: 8px;
+    color: #721c24;
+}
+
+.danger-zone h3 {
+    margin-top: 0;
+    font-size: 1.25rem;
+    color: var(--danger-color);
+    margin-bottom: 0.5rem;
+}
+
+.danger-zone p {
+    font-size: 0.95rem;
+    margin-bottom: 1rem;
+    color: var(--text-dark);
+}
 
 @keyframes fade-in {
     from {
