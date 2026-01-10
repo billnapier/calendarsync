@@ -17,7 +17,15 @@
                     return;
                 }
 
+                // Handle Delete Confirmation (data-confirm attribute)
                 const submitBtn = e.submitter;
+                if (submitBtn && submitBtn.dataset.confirm) {
+                    if (!confirm(submitBtn.dataset.confirm)) {
+                        e.preventDefault();
+                        return;
+                    }
+                }
+
                 if (!(submitBtn instanceof HTMLButtonElement) || submitBtn.type !== 'submit') return;
 
                 // Check for validation before disabling
@@ -38,9 +46,6 @@
                 submitBtn.innerText = loadingText;
                 submitBtn.disabled = true;
                 submitBtn.classList.add('btn-loading');
-
-                // If it's a delete action (using onsubmit confirm), the confirm happens BEFORE this event
-                // because inline handlers run first. So if we are here, the user said YES.
             });
         });
     }
