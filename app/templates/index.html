@@ -134,6 +134,7 @@
                                     <div class="sync-actions">
                                         <form action="{{ url_for('main.run_sync', sync_id=sync.id) }}"
                                               method="post">
+                                            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                                             <button type="submit" class="btn btn-primary" data-loading-text="Syncing...">
                                                 Sync
                                                 Now

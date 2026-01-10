@@ -62,6 +62,11 @@ def run_sync(sync_id):
     if not user:
         return redirect(url_for("auth.login"))
 
+    # CSRF Protection
+    if not verify_csrf_token(request.form.get("csrf_token")):
+        logger.warning("Sync failed: Invalid CSRF token")
+        return "Invalid CSRF token", 403
+
     db = firestore.client()
     sync_ref = db.collection("syncs").document(sync_id)
     sync_doc = sync_ref.get()
@@ -246,6 +251,11 @@ def delete_sync(sync_id):
     user = session.get("user")
     if not user:
         return redirect(url_for("auth.login"))
+
+    # CSRF Protection
+    if not verify_csrf_token(request.form.get("csrf_token")):
+        logger.warning("Delete sync failed: Invalid CSRF token")
+        return "Invalid CSRF token", 403
 
     db = firestore.client()
     sync_ref = db.collection("syncs").document(sync_id)

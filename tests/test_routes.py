@@ -126,6 +126,7 @@ def test_delete_sync_success(_client, _mock_firestore):
     """Test that POST to delete_sync deletes the document."""
     with _client.session_transaction() as sess:
         sess["user"] = {"uid": "test_uid"}
+        sess["csrf_token"] = "valid_token"
 
     mock_db = MagicMock(name="mock_db")
     mock_collection = MagicMock(name="mock_collection")
@@ -142,7 +143,7 @@ def test_delete_sync_success(_client, _mock_firestore):
 
     _mock_firestore.client.return_value = mock_db
 
-    resp = _client.post("/delete_sync/sync123")
+    resp = _client.post("/delete_sync/sync123", data={"csrf_token": "valid_token"})
 
     assert resp.status_code == 302  # redirect home
     mock_collection.document.assert_called_with("sync123")
@@ -153,6 +154,7 @@ def test_delete_sync_not_found(_client, _mock_firestore):
     """Test delete_sync returns 404 if sync does not exist."""
     with _client.session_transaction() as sess:
         sess["user"] = {"uid": "test_uid"}
+        sess["csrf_token"] = "valid_token"
 
     mock_db = MagicMock(name="mock_db")
     mock_collection = MagicMock(name="mock_collection")
@@ -167,7 +169,7 @@ def test_delete_sync_not_found(_client, _mock_firestore):
 
     _mock_firestore.client.return_value = mock_db
 
-    resp = _client.post("/delete_sync/missing_sync")
+    resp = _client.post("/delete_sync/missing_sync", data={"csrf_token": "valid_token"})
     assert resp.status_code == 404
     assert b"Sync not found" in resp.data
 
@@ -176,6 +178,7 @@ def test_delete_sync_unauthorized(_client, _mock_firestore):
     """Test delete_sync returns 403 if user does not own sync."""
     with _client.session_transaction() as sess:
         sess["user"] = {"uid": "test_uid"}
+        sess["csrf_token"] = "valid_token"
 
     mock_db = MagicMock(name="mock_db")
     mock_collection = MagicMock(name="mock_collection")
@@ -191,7 +194,7 @@ def test_delete_sync_unauthorized(_client, _mock_firestore):
 
     _mock_firestore.client.return_value = mock_db
 
-    resp = _client.post("/delete_sync/sync123")
+    resp = _client.post("/delete_sync/sync123", data={"csrf_token": "valid_token"})
     assert resp.status_code == 403
     assert b"Unauthorized" in resp.data
 
