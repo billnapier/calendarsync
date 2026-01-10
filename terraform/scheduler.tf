@@ -27,6 +27,20 @@ resource "google_cloud_run_service_iam_member" "scheduler_invoker" {
   member   = "serviceAccount:${google_service_account.scheduler_invoker.email}"
 }
 
+# Get the service identity for the Cloud Scheduler service
+resource "google_project_service_identity" "cloud_scheduler" {
+  provider = google-beta
+  project  = data.google_project.project.project_id
+  service  = google_project_service.cloudscheduler_api.service
+}
+
+# Grant the Cloud Scheduler Service Agent permission to impersonate the invoker SA
+resource "google_service_account_iam_member" "scheduler_impersonation" {
+  service_account_id = google_service_account.scheduler_invoker.name
+  role               = "roles/iam.serviceAccountUser"
+  member             = "serviceAccount:${google_project_service_identity.cloud_scheduler.email}"
+}
+
 resource "google_project_service" "cloudscheduler_api" {
   service            = "cloudscheduler.googleapis.com"
   disable_on_destroy = false
