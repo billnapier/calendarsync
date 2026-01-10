@@ -96,9 +96,9 @@ def resolve_source_names(sources, calendars):
     - calendars: list of Google Calendar dicts (id, summary)
     """
     source_names = {}
-
-    # Create a lookup map for calendar names for efficiency
     cal_map = {cal["id"]: cal["summary"] for cal in calendars} if calendars else {}
+
+    ical_sources = []
 
     try:
         for source in sources:
@@ -107,7 +107,22 @@ def resolve_source_names(sources, calendars):
                 # Use map for O(1) lookup
                 source_names[url] = cal_map.get(source["id"], source["id"])
             else:
-                source_names[url] = get_calendar_name_from_ical(url)
+                ical_sources.append(url)
+
+        if ical_sources:
+            with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+                future_to_url = {
+                    executor.submit(get_calendar_name_from_ical, url): url
+                    for url in ical_sources
+                }
+                for future in concurrent.futures.as_completed(future_to_url):
+                    url = future_to_url[future]
+                    try:
+                        source_names[url] = future.result()
+                    except Exception as e:  # pylint: disable=broad-exception-caught
+                        logger.warning("Error fetching name for %s: %s", url, e)
+                        source_names[url] = url
+
     except Exception as e:  # pylint: disable=broad-exception-caught
         logger.warning("Failed to resolve source names: %s", e)
 
