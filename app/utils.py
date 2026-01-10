@@ -126,9 +126,8 @@ def get_base_url():
         "FIREBASE_PROJECT_ID"
     )
 
-    if project_id == "calendarsync-napier-dev":
-        return "https://calendarsync-dev.billnapier.com"
-    if project_id == "calendarsync-napier":
-        return "https://calendarsync.billnapier.com"
-
-    return "https://calendarsync.billnapier.com"
+    url_mapping = {
+        "calendarsync-napier-dev": "https://calendarsync-dev.billnapier.com",
+        "calendarsync-napier": "https://calendarsync.billnapier.com",
+    }
+    return url_mapping.get(project_id, "https://calendarsync.billnapier.com")

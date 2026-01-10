@@ -73,7 +73,13 @@ class TestSyncLogic(unittest.TestCase):
     @patch("app.sync.logic.requests.get")
     @patch("app.sync.logic.get_base_url")
     def test_sync_calendar_logic_with_prefix(
-        self, mock_base_url, mock_get, mock_build, mock_creds, mock_config, mock_firestore
+        self,
+        mock_base_url,
+        mock_get,
+        mock_build,
+        mock_creds,
+        mock_config,
+        mock_firestore,
     ):
         mock_base_url.return_value = "https://mock.url"
         sync_data = {
