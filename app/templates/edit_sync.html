@@ -114,7 +114,7 @@
                                         <div class="input-row google-input
                                                     {% if source.type != 'google' %}hidden{% endif %}">
                                             {% if calendars %}
-                                                <select name="source_ids_visible">
+                                                <select name="source_ids_visible" required>
                                                     <option value="" disabled {% if not source.id %}selected{% endif %}>
                                                         Select
                                                         Calendar
@@ -133,11 +133,12 @@
                                         <!-- iCal Input -->
                                         <div class="input-row ical-input
                                                     {% if (source.type or 'ical') != 'ical' %}hidden{% endif %}">
-                                            <input type="text"
+                                            <input type="url"
                                                    name="source_urls"
                                                    value="{{ source.url }}"
                                                    placeholder="https://example.com/calendar.ics"
-                                                   aria-label="Source Calendar URL">
+                                                   aria-label="Source Calendar URL"
+                                                   required>
                                         </div>
                                     </div>
                                     <!-- Prefix Input -->
@@ -172,7 +173,7 @@
                                         <span class="field-label">Source</span>
                                         <div class="input-row google-input hidden">
                                             {% if calendars %}
-                                                <select name="source_ids_visible">
+                                                <select name="source_ids_visible" required>
                                                     <option value="" disabled selected>Select Calendar</option>
                                                     {% for cal in calendars %}<option value="{{ cal.id }}">{{ cal.summary }}</option>{% endfor %}
                                                 </select>
@@ -181,10 +182,11 @@
                                             {% endif %}
                                         </div>
                                         <div class="input-row ical-input">
-                                            <input type="text"
+                                            <input type="url"
                                                    name="source_urls"
                                                    placeholder="https://example.com/calendar.ics"
-                                                   aria-label="Source Calendar URL">
+                                                   aria-label="Source Calendar URL"
+                                                   required>
                                         </div>
                                     </div>
                                     <div class="source-prefix-group">
@@ -242,7 +244,7 @@
                     <span class="field-label">Source</span>
                     <div class="input-row google-input hidden">
                         {% if calendars %}
-                            <select name="source_ids_visible">
+                            <select name="source_ids_visible" required>
                                 <option value="" disabled selected>Select Calendar</option>
                                 {% for cal in calendars %}<option value="{{ cal.id }}">{{ cal.summary }}</option>{% endfor %}
                             </select>
@@ -251,10 +253,11 @@
                         {% endif %}
                     </div>
                     <div class="input-row ical-input">
-                        <input type="text"
+                        <input type="url"
                                name="source_urls"
                                placeholder="https://example.com/calendar.ics"
-                               aria-label="Source Calendar URL">
+                               aria-label="Source Calendar URL"
+                               required>
                     </div>
                 </div>
                 <div class="source-prefix-group">

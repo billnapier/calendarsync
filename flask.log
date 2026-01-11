@@ -1,9 +1,6 @@
  * Serving Flask app 'app/app.py'
  * Debug mode: off
 INFO:werkzeug:[31m[1mWARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.[0m
- * Running on http://127.0.0.1:5000
+ * Running on http://127.0.0.1:8080
 INFO:werkzeug:[33mPress CTRL+C to quit[0m
-INFO:werkzeug:127.0.0.1 - - [05/Jan/2026 03:54:22] "GET / HTTP/1.1" 200 -
-INFO:werkzeug:127.0.0.1 - - [05/Jan/2026 03:54:22] "GET /static/style.css HTTP/1.1" 200 -
-INFO:werkzeug:127.0.0.1 - - [05/Jan/2026 03:54:22] "GET /static/images/hero.png HTTP/1.1" 200 -
-INFO:werkzeug:127.0.0.1 - - [05/Jan/2026 03:54:22] "GET /static/images/logo.png HTTP/1.1" 200 -
+INFO:werkzeug:127.0.0.1 - - [11/Jan/2026 08:06:57] "[32mGET /create_sync HTTP/1.1[0m" 302 -
