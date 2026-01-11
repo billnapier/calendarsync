@@ -5,3 +5,7 @@
 ## 2024-05-24 - Destructive Actions in Forms
 **Learning:** Users need a way to delete configurations, but it should be distinct from editing. Hiding destructive actions or mixing them with primary actions can lead to accidents or frustration when the feature is missing.
 **Action:** Implemented a "Danger Zone" pattern in the `edit_sync` form. This separates the delete action visually (using color and spacing) from the main "Save" action, reducing the risk of accidental clicks while making the feature discoverable. Always confirm destructive actions with a dialog.
+
+## 2024-05-25 - Form Input Types and Validation
+**Learning:** Using `type="text"` for URL inputs forces users on mobile devices to switch keyboards manually, increasing friction. Additionally, failing to mark essential fields as `required` allows for empty submissions that break backend logic or require server-side error handling which disrupts the user flow.
+**Action:** Updated `source_urls` to use `type="url"` to trigger the correct mobile keyboard and leverage browser validation for protocol checks. Added `required` attributes to both `source_urls` and `source_ids_visible` to ensure data integrity before submission. Using browser-native constraint validation improves accessibility and provides immediate feedback without round-trips to the server.
