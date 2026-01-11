@@ -380,6 +380,7 @@ def _get_existing_events_map(service, destination_id):
                     calendarId=destination_id,
                     pageToken=page_token,
                     singleEvents=False,  # We want the master recurring events, not instances
+                    maxResults=2500,  # Optimization: Fetch max allowed events per page
                     fields="nextPageToken,items(id,iCalUID)",
                 )
                 .execute()
