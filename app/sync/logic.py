@@ -82,7 +82,9 @@ def get_calendar_name_from_ical(url):
         # Stream the response to avoid downloading large files just for the name
         # Use contextlib.closing to ensure response is closed (connection returned to pool)
         # even if we return early.
-        with contextlib.closing(safe_requests_get(url, timeout=10, stream=True)) as response:
+        with contextlib.closing(
+            safe_requests_get(url, timeout=10, stream=True)
+        ) as response:
             response.raise_for_status()
 
             # Read line by line, looking for X-WR-CALNAME
@@ -405,7 +407,6 @@ def _get_existing_events_map(service, destination_id):
                     calendarId=destination_id,
                     pageToken=page_token,
                     singleEvents=False,  # We want the master recurring events, not instances
-                    maxResults=2500,  # Optimization: Fetch max allowed events per page
                     fields="nextPageToken,items(id,iCalUID)",
                 )
                 .execute()
