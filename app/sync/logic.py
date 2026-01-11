@@ -1,6 +1,7 @@
 import logging
 import concurrent.futures
 from datetime import datetime, timezone
+import contextlib
 import requests
 import icalendar
 from firebase_admin import firestore
@@ -73,18 +74,44 @@ def fetch_user_calendars(user_uid):
 
 def get_calendar_name_from_ical(url):
     """
-    Fetches the iCal URL and attempts to extract the calendar name (X-WR-CALNAME).
+    Fetches the iCal URL and attempts to extract the calendar name (X-WR-CALNAME) efficiently.
+    Streams the response and stops after finding the name or reading a limit.
     Returns the URL if extraction fails or name is not present.
     """
     try:
-        response = safe_requests_get(url, timeout=10)
-        response.raise_for_status()
-        cal = icalendar.Calendar.from_ical(response.content)
-        name = cal.get("X-WR-CALNAME")
-        if name:
-            return str(name)
+        # Stream the response to avoid downloading large files just for the name
+        # Use contextlib.closing to ensure response is closed (connection returned to pool)
+        # even if we return early.
+        with contextlib.closing(
+            safe_requests_get(url, timeout=10, stream=True)
+        ) as response:
+            response.raise_for_status()
+
+            # Read line by line, looking for X-WR-CALNAME
+            # Limit to 50KB to avoid excessive processing
+            max_bytes = 50 * 1024
+            bytes_read = 0
+
+            for line in response.iter_lines(decode_unicode=True):
+                if line:
+                    bytes_read += len(line)
+                    # Normalize line to handle case insensitivity
+                    line_upper = line.upper()
+
+                    if line_upper.startswith("X-WR-CALNAME"):
+                        # Handle potential parameters (e.g. X-WR-CALNAME;LANGUAGE=en:Name)
+                        # Split by first colon
+                        parts = line.split(":", 1)
+                        if len(parts) == 2:
+                            return parts[1].strip()
+
+                    # Stop if we hit the limit or see the start of events (name usually comes before)
+                    if bytes_read > max_bytes or line_upper.startswith("BEGIN:VEVENT"):
+                        break
+
     except (requests.exceptions.RequestException, ValueError) as e:
         logger.warning("Failed to extract name from %s: %s", url, e)
+
     return url
 
 
