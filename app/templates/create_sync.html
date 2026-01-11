@@ -108,7 +108,7 @@
                                     <!-- Google Input -->
                                     <div class="input-row google-input hidden">
                                         {% if calendars %}
-                                            <select name="source_ids_visible" required>
+                                            <select name="source_ids_visible">
                                                 <option value="" disabled selected>Select Calendar</option>
                                                 {% for cal in calendars %}<option value="{{ cal.id }}">{{ cal.summary }}</option>{% endfor %}
                                             </select>
@@ -120,11 +120,10 @@
                                     </div>
                                     <!-- iCal Input -->
                                     <div class="input-row ical-input">
-                                        <input type="url"
+                                        <input type="text"
                                                name="source_urls"
                                                placeholder="https://example.com/calendar.ics"
-                                               aria-label="Source Calendar URL"
-                                               required>
+                                               aria-label="Source Calendar URL">
                                     </div>
                                 </div>
                                 <!-- Prefix Input -->
@@ -172,7 +171,7 @@
                     <span class="field-label">Source</span>
                     <div class="input-row google-input hidden">
                         {% if calendars %}
-                            <select name="source_ids_visible" required>
+                            <select name="source_ids_visible">
                                 <option value="" disabled selected>Select Calendar</option>
                                 {% for cal in calendars %}<option value="{{ cal.id }}">{{ cal.summary }}</option>{% endfor %}
                             </select>
@@ -181,11 +180,10 @@
                         {% endif %}
                     </div>
                     <div class="input-row ical-input">
-                        <input type="url"
+                        <input type="text"
                                name="source_urls"
                                placeholder="https://example.com/calendar.ics"
-                               aria-label="Source Calendar URL"
-                               required>
+                               aria-label="Source Calendar URL">
                     </div>
                 </div>
                 <div class="source-prefix-group">
