@@ -1,0 +1,16 @@
+ * Serving Flask app 'mock_app'
+ * Debug mode: off
+WARNING: This is a development server. Do not use it in a production deployment. Use a production WSGI server instead.
+ * Running on http://127.0.0.1:5001
+Press CTRL+C to quit
+127.0.0.1 - - [11/Jan/2026 08:09:22] "GET /create_sync HTTP/1.1" 200 -
+127.0.0.1 - - [11/Jan/2026 08:09:50] "GET /create_sync HTTP/1.1" 200 -
+127.0.0.1 - - [11/Jan/2026 08:09:50] "GET /static/style.css HTTP/1.1" 200 -
+127.0.0.1 - - [11/Jan/2026 08:09:50] "GET /static/ui.js HTTP/1.1" 200 -
+127.0.0.1 - - [11/Jan/2026 08:09:50] "GET /static/sync_form.js HTTP/1.1" 200 -
+127.0.0.1 - - [11/Jan/2026 08:09:50] "GET /static/images/logo.png HTTP/1.1" 200 -
+127.0.0.1 - - [11/Jan/2026 08:09:51] "GET /edit_sync HTTP/1.1" 200 -
+127.0.0.1 - - [11/Jan/2026 08:09:51] "GET /static/ui.js HTTP/1.1" 304 -
+127.0.0.1 - - [11/Jan/2026 08:09:51] "GET /static/style.css HTTP/1.1" 304 -
+127.0.0.1 - - [11/Jan/2026 08:09:51] "GET /static/sync_form.js HTTP/1.1" 304 -
+127.0.0.1 - - [11/Jan/2026 08:09:51] "GET /static/images/logo.png HTTP/1.1" 304 -
