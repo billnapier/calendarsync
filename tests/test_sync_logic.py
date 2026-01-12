@@ -6,7 +6,7 @@ from datetime import datetime, timedelta
 os.environ["TESTING"] = "1"
 from unittest.mock import patch, MagicMock
 import requests
-from app.sync import sync_calendar_logic
+from app.sync import logic
 
 
 class TestSyncLogic(unittest.TestCase):
@@ -103,7 +103,7 @@ class TestSyncLogic(unittest.TestCase):
             "items": []
         }
 
-        sync_calendar_logic("sync_123")
+        logic.sync_calendar_logic("sync_123")
 
         self.assertTrue(mock_batch.add.called, "Batch add was not called")
         _, kwargs = mock_service.events.return_value.import_.call_args
@@ -141,7 +141,7 @@ class TestSyncLogic(unittest.TestCase):
             "items": [{"id": "google_event_id_xyz", "iCalUID": "12345"}]
         }
 
-        sync_calendar_logic("sync_update")
+        logic.sync_calendar_logic("sync_update")
 
         self.assertFalse(mock_service.events.return_value.import_.called)
         self.assertTrue(mock_service.events.return_value.update.called)
@@ -183,7 +183,7 @@ class TestSyncLogic(unittest.TestCase):
             "items": []
         }
 
-        sync_calendar_logic("sync_multi")
+        logic.sync_calendar_logic("sync_multi")
         self.assertEqual(mock_batch.add.call_count, 2)
 
     @patch("app.sync.logic.firestore.client")
@@ -209,7 +209,7 @@ class TestSyncLogic(unittest.TestCase):
             "items": []
         }
 
-        sync_calendar_logic("sync_fail")
+        logic.sync_calendar_logic("sync_fail")
 
         args, _ = mock_sync_ref.update.call_args
         update_data = args[0]
@@ -249,7 +249,7 @@ class TestSyncLogic(unittest.TestCase):
             "items": []
         }
 
-        sync_calendar_logic("sync_filter")
+        logic.sync_calendar_logic("sync_filter")
 
         # Verify NO batch add calls (filtered out)
         self.assertFalse(mock_batch.add.called)
@@ -286,10 +286,23 @@ class TestSyncLogic(unittest.TestCase):
             "items": []
         }
 
-        sync_calendar_logic("sync_recurring_keep")
+        logic.sync_calendar_logic("sync_recurring_keep")
 
         # Verify batch add WAS called (kept)
         self.assertTrue(mock_batch.add.called)
+
+    def test_get_existing_events_map_uses_max_results(self):
+        """Test that _get_existing_events_map uses maxResults=2500 for optimization."""
+        mock_service = MagicMock()
+        mock_events = mock_service.events.return_value
+        mock_list = mock_events.list
+        mock_list.return_value.execute.return_value = {"items": []}
+
+        logic._get_existing_events_map(mock_service, "dest_cal")
+
+        # Verify call args
+        _, kwargs = mock_list.call_args
+        self.assertEqual(kwargs.get("maxResults"), 2500, "maxResults should be 2500")
 
 
 if __name__ == "__main__":
