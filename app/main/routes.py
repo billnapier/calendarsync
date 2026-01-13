@@ -265,10 +265,10 @@ def delete_sync(sync_id):
         return redirect(url_for("main.index"))
     except google.api_core.exceptions.GoogleAPICallError as e:
         logger.error("Firestore API error deleting sync %s: %s", sync_id, e)
-        return f"Firestore error: {e}", 503
+        return "Service unavailable. Please try again later.", 503
     except Exception as e:
         logger.error("Error deleting sync %s: %s", sync_id, e)
-        return f"Error deleting sync: {e}", 500
+        return "An error occurred while deleting the sync.", 500
 
 
 def _handle_create_sync_post(user):
