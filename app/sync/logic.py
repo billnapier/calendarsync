@@ -407,6 +407,7 @@ def _get_existing_events_map(service, destination_id):
                     calendarId=destination_id,
                     pageToken=page_token,
                     singleEvents=False,  # We want the master recurring events, not instances
+                    maxResults=2500,  # Optimization: Fetch max allowed events per page
                     fields="nextPageToken,items(id,iCalUID)",
                 )
                 .execute()
@@ -476,6 +477,8 @@ def _batch_upsert_events(
 
     # pylint: disable=no-member
     batch = service.new_batch_http_request()
+    batch_count = 0
+    BATCH_LIMIT = 50
 
     def batch_callback(request_id, _response, exception):
         if exception:
@@ -517,10 +520,26 @@ def _batch_upsert_events(
                 callback=batch_callback,
             )
 
-    try:
-        batch.execute()
-    except Exception as e:  # pylint: disable=broad-exception-caught
-        logger.error("Batch execution failed: %s", e)
+        batch_count += 1
+
+        if batch_count >= BATCH_LIMIT:
+            try:
+                batch.execute()
+                # Start a new batch
+                batch = service.new_batch_http_request()
+                batch_count = 0
+            except Exception as e:  # pylint: disable=broad-exception-caught
+                logger.error("Batch execution failed: %s", e)
+                # Depending on failure mode, we might want to continue or stop.
+                # Here we continue to try next chunk.
+                batch = service.new_batch_http_request()
+                batch_count = 0
+
+    if batch_count > 0:
+        try:
+            batch.execute()
+        except Exception as e:  # pylint: disable=broad-exception-caught
+            logger.error("Batch execution failed: %s", e)
 
 
 def sync_calendar_logic(sync_id):  # pylint: disable=too-many-locals
