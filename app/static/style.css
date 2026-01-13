@@ -302,6 +302,7 @@ label {
 }
 
 input[type="text"],
+input[type="url"],
 select {
     width: 100%;
     padding: 0.75rem 1rem;
@@ -315,6 +316,7 @@ select {
 }
 
 input[type="text"]:focus,
+input[type="url"]:focus,
 select:focus {
     outline: none;
     border-color: var(--primary-color);
