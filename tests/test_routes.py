@@ -145,9 +145,7 @@ def test_delete_sync_success(_client, _mock_firestore):
     with _client.session_transaction() as sess:
         sess["csrf_token"] = "valid_token"
 
-    resp = _client.post(
-        "/delete_sync/sync123", data={"csrf_token": "valid_token"}
-    )
+    resp = _client.post("/delete_sync/sync123", data={"csrf_token": "valid_token"})
 
     assert resp.status_code == 302  # redirect home
     mock_collection.document.assert_called_with("sync123")
@@ -173,9 +171,7 @@ def test_delete_sync_not_found(_client, _mock_firestore):
 
     _mock_firestore.client.return_value = mock_db
 
-    resp = _client.post(
-        "/delete_sync/missing_sync", data={"csrf_token": "valid_token"}
-    )
+    resp = _client.post("/delete_sync/missing_sync", data={"csrf_token": "valid_token"})
     assert resp.status_code == 404
     assert b"Sync not found" in resp.data
 
@@ -200,9 +196,7 @@ def test_delete_sync_unauthorized(_client, _mock_firestore):
 
     _mock_firestore.client.return_value = mock_db
 
-    resp = _client.post(
-        "/delete_sync/sync123", data={"csrf_token": "valid_token"}
-    )
+    resp = _client.post("/delete_sync/sync123", data={"csrf_token": "valid_token"})
     assert resp.status_code == 403
     assert b"Unauthorized" in resp.data
 
