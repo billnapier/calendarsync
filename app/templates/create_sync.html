@@ -95,20 +95,20 @@
                                 <input type="hidden" name="source_types" value="ical">
                                 <input type="hidden" name="source_ids" value="">
                                 <!-- Type Selection -->
-                                <div class="source-type-group">
+                                <label class="source-type-group">
                                     <span class="field-label">Type</span>
                                     <select>
                                         <option value="ical">iCal URL</option>
                                         <option value="google">Google Cal</option>
                                     </select>
-                                </div>
+                                </label>
                                 <!-- Source Input -->
                                 <div class="source-input-group">
                                     <span class="field-label">Source</span>
                                     <!-- Google Input -->
                                     <div class="input-row google-input hidden">
                                         {% if calendars %}
-                                            <select name="source_ids_visible">
+                                            <select name="source_ids_visible" aria-label="Google Calendar Source">
                                                 <option value="" disabled selected>Select Calendar</option>
                                                 {% for cal in calendars %}<option value="{{ cal.id }}">{{ cal.summary }}</option>{% endfor %}
                                             </select>
@@ -128,19 +128,17 @@
                                     </div>
                                 </div>
                                 <!-- Prefix Input -->
-                                <div class="source-prefix-group">
+                                <label class="source-prefix-group">
                                     <span class="field-label">Prefix (Optional)</span>
                                     <input type="text"
                                            name="source_prefixes"
                                            placeholder="e.g. Work"
                                            aria-label="Source Event Prefix">
-                                </div>
+                                </label>
                                 <!-- Actions -->
                                 <div class="source-actions">
                                     <span class="field-label visibility-hidden">Remove</span>
-                                    <button type="button"
-                                            class="btn btn-danger"
-                                            class="btn btn-danger display-none">Remove</button>
+                                    <button type="button" class="btn btn-danger" aria-label="Remove Source">Remove</button>
                                 </div>
                             </div>
                         </div>
@@ -161,18 +159,18 @@
             <div class="ical-entry">
                 <input type="hidden" name="source_types" value="ical">
                 <input type="hidden" name="source_ids" value="">
-                <div class="source-type-group">
+                <label class="source-type-group">
                     <span class="field-label">Type</span>
                     <select>
                         <option value="ical">iCal URL</option>
                         <option value="google">Google Cal</option>
                     </select>
-                </div>
+                </label>
                 <div class="source-input-group">
                     <span class="field-label">Source</span>
                     <div class="input-row google-input hidden">
                         {% if calendars %}
-                            <select name="source_ids_visible">
+                            <select name="source_ids_visible" aria-label="Google Calendar Source">
                                 <option value="" disabled selected>Select Calendar</option>
                                 {% for cal in calendars %}<option value="{{ cal.id }}">{{ cal.summary }}</option>{% endfor %}
                             </select>
@@ -188,16 +186,16 @@
                                inputmode="url">
                     </div>
                 </div>
-                <div class="source-prefix-group">
+                <label class="source-prefix-group">
                     <span class="field-label">Prefix (Optional)</span>
                     <input type="text"
                            name="source_prefixes"
                            placeholder="e.g. Work"
                            aria-label="Source Event Prefix">
-                </div>
+                </label>
                 <div class="source-actions">
                     <span class="field-label visibility-hidden">Remove</span>
-                    <button type="button" class="btn btn-danger">Remove</button>
+                    <button type="button" class="btn btn-danger" aria-label="Remove Source">Remove</button>
                 </div>
             </div>
         </template>
