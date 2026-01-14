@@ -7,3 +7,5 @@ venv/
 __pycache__/
 *.pyc
 venv4/
+*.pid
+*.log

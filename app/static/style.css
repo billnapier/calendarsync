@@ -28,6 +28,11 @@
     --badge-text: #1967d2;
 }
 
+:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+}
+
 body {
     font-family: var(--font-stack);
     margin: 0;
