@@ -231,41 +231,101 @@ def _fetch_all_google_events(
     return events, name
 
 
-def _map_google_event_to_ical(gevent):
+class GoogleEventAdapter:
     """
-    Helper to map a single Google API event resource to an icalendar Event.
+    Adapts a Google Calendar Event resource to behave like an icalendar.Event
+    for read operations needed by sync logic, while retaining the raw dict
+    for efficient write operations.
     """
-    ievent = icalendar.Event()
 
-    # Map fields
-    if "summary" in gevent:
-        ievent.add("summary", gevent["summary"])
-    if "description" in gevent:
-        ievent.add("description", gevent["description"])
-    if "location" in gevent:
-        ievent.add("location", gevent["location"])
-    if "id" in gevent:
-        ievent.add("uid", gevent["id"])
+    def __init__(self, google_event):
+        self.google_event = google_event
+        self._dtstart_prop = None
 
-    # Handle Dates
-    start = gevent.get("start")
-    end = gevent.get("end")
+    def get(self, key, default=None):
+        """Mock icalendar.Event.get() for essential keys."""
+        key = key.upper()
+        if key == "DTSTART":
+            if "dtstart" in self:
+                return self["dtstart"]
+            return default
+        if key == "DTEND":
+            # Used in _build_event_body if we fallback
+            start = self.google_event.get("end")
+            if not start:
+                return default
+            return self._make_prop(start)
+        if key == "DURATION":
+            return default
+        if key == "UID":
+            return self.google_event.get("id")
+        if key == "SUMMARY":
+            return self.google_event.get("summary", "")
+        if key == "DESCRIPTION":
+            return self.google_event.get("description", "")
+        if key == "LOCATION":
+            return self.google_event.get("location", "")
+        if key == "RRULE":
+            if "recurrence" in self.google_event:
+                return self.google_event["recurrence"]
+            return default
+        return default
 
-    if start:
-        if "dateTime" in start:
-            dt = datetime.fromisoformat(start["dateTime"])
-            ievent.add("dtstart", dt)
-        elif "date" in start:
-            ievent.add("dtstart", datetime.strptime(start["date"], "%Y-%m-%d").date())
+    def _make_prop(self, date_dict):
+        """Creates a dummy object with .dt attribute matching icalendar behavior."""
 
-    if end:
-        if "dateTime" in end:
-            dt = datetime.fromisoformat(end["dateTime"])
-            ievent.add("dtend", dt)
-        elif "date" in end:
-            ievent.add("dtend", datetime.strptime(end["date"], "%Y-%m-%d").date())
+        class DateProp:  # pylint: disable=too-few-public-methods
+            def __init__(self, dt_val):
+                self.dt = dt_val
 
-    return ievent
+        if "dateTime" in date_dict:
+            return DateProp(datetime.fromisoformat(date_dict["dateTime"]))
+        if "date" in date_dict:
+            return DateProp(datetime.strptime(date_dict["date"], "%Y-%m-%d").date())
+        return None
+
+    def __contains__(self, key):
+        key = key.lower()
+        if key == "dtstart":
+            return "start" in self.google_event
+        if key == "rrule":
+            return "recurrence" in self.google_event
+        return False
+
+    def __getitem__(self, key):
+        key = key.lower()
+        if key == "dtstart":
+            if self._dtstart_prop:
+                return self._dtstart_prop
+            start = self.google_event.get("start")
+            if not start:
+                raise KeyError(key)
+            self._dtstart_prop = self._make_prop(start)
+            return self._dtstart_prop
+        raise KeyError(key)
+
+    def to_google_body(self, prefix, source_title=None, base_url=None):
+        """Fast path to construct Google Calendar body from raw dict."""
+        ge = self.google_event
+        summary = ge.get("summary", "")
+        if prefix:
+            summary = f"[{prefix}] {summary}"
+
+        body = {
+            "summary": summary,
+            "description": ge.get("description", ""),
+            "location": ge.get("location", ""),
+            "start": ge.get("start"),
+            "end": ge.get("end"),
+            "iCalUID": ge.get("id"),
+        }
+
+        if source_title and base_url:
+            body["source"] = {"title": source_title, "url": base_url}
+
+        # Clean None values (though .get() usually returns defaults)
+        body = {k: v for k, v in body.items() if v is not None}
+        return body, ge.get("id")
 
 
 def _get_google_service(db, user_id):
@@ -312,9 +372,10 @@ def _fetch_google_source(source, user_id):  # pylint: disable=too-many-locals
         )
 
         for gevent in events:
-            ievent = _map_google_event_to_ical(gevent)
+            # Optimization: Use Adapter instead of converting to icalendar object
+            adapter = GoogleEventAdapter(gevent)
             events_items.append(
-                {"component": ievent, "prefix": prefix, "source_title": name}
+                {"component": adapter, "prefix": prefix, "source_title": name}
             )
 
         return events_items, url, name
@@ -429,6 +490,10 @@ def _build_event_body(event, prefix, source_title=None, base_url=None):
     """
     Helper to construct Google Calendar event body.
     """
+    # Fast path for Google Sources to avoid re-parsing
+    if isinstance(event, GoogleEventAdapter):
+        return event.to_google_body(prefix, source_title, base_url)
+
     uid = event.get("UID")
     if not uid:
         return None, None
