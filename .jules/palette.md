@@ -5,3 +5,7 @@
 ## 2024-05-24 - Destructive Actions in Forms
 **Learning:** Users need a way to delete configurations, but it should be distinct from editing. Hiding destructive actions or mixing them with primary actions can lead to accidents or frustration when the feature is missing.
 **Action:** Implemented a "Danger Zone" pattern in the `edit_sync` form. This separates the delete action visually (using color and spacing) from the main "Save" action, reducing the risk of accidental clicks while making the feature discoverable. Always confirm destructive actions with a dialog.
+
+## 2024-05-24 - Focus Visible Indicators
+**Learning:** Default browser focus rings are often suppressed by `outline: none` or lost in design, making navigation impossible for keyboard users.
+**Action:** Added a global `:focus-visible` style in `style.css` using the primary color. This ensures all interactive elements (buttons, links, inputs) have a clear, consistent visual indicator when focused via keyboard, without affecting mouse users.
