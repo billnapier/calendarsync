@@ -66,6 +66,35 @@ class TestSyncLogic(unittest.TestCase):
 
         return mock_sync_doc_ref
 
+    def _mock_batch_setup(self, mock_batch, response_map=None, default_response=None):
+        """
+        Helper to simulate batch execution triggers.
+        """
+        if default_response is None:
+            default_response = ({}, None)
+
+        # We need to capture requests added to the batch
+        batch_requests = []
+
+        def add_side_effect(request, callback=None, request_id=None):
+            batch_requests.append((request_id, callback))
+            return MagicMock()
+
+        mock_batch.add.side_effect = add_side_effect
+
+        def execute_side_effect():
+            for req_id, callback in batch_requests:
+                if callback:
+                    resp, exc = (
+                        response_map.get(req_id, default_response)
+                        if response_map
+                        else default_response
+                    )
+                    callback(req_id, resp, exc)
+            batch_requests.clear()
+
+        mock_batch.execute.side_effect = execute_side_effect
+
     @patch("app.sync.logic.firestore.client")
     @patch("app.sync.logic.get_client_config")
     @patch("app.sync.logic.Credentials")
@@ -97,11 +126,10 @@ class TestSyncLogic(unittest.TestCase):
 
         mock_service = MagicMock()
         mock_build.return_value = mock_service
+
         mock_batch = MagicMock()
         mock_service.new_batch_http_request.return_value = mock_batch
-        mock_service.events.return_value.list.return_value.execute.return_value = {
-            "items": []
-        }
+        self._mock_batch_setup(mock_batch) # Default empty response
 
         logic.sync_calendar_logic("sync_123")
 
@@ -134,12 +162,15 @@ class TestSyncLogic(unittest.TestCase):
 
         mock_service = MagicMock()
         mock_build.return_value = mock_service
+
         mock_batch = MagicMock()
         mock_service.new_batch_http_request.return_value = mock_batch
-        # Return existing event
-        mock_service.events.return_value.list.return_value.execute.return_value = {
-            "items": [{"id": "google_event_id_xyz", "iCalUID": "12345"}]
+
+        # Simulate finding the event
+        response_map = {
+            "12345": ({"items": [{"id": "google_event_id_xyz", "iCalUID": "12345"}]}, None)
         }
+        self._mock_batch_setup(mock_batch, response_map=response_map)
 
         logic.sync_calendar_logic("sync_update")
 
@@ -177,14 +208,14 @@ class TestSyncLogic(unittest.TestCase):
 
         mock_service = MagicMock()
         mock_build.return_value = mock_service
+
         mock_batch = MagicMock()
         mock_service.new_batch_http_request.return_value = mock_batch
-        mock_service.events.return_value.list.return_value.execute.return_value = {
-            "items": []
-        }
+        self._mock_batch_setup(mock_batch)
 
         logic.sync_calendar_logic("sync_multi")
-        self.assertEqual(mock_batch.add.call_count, 2)
+        # 2 fetches + 2 upserts = 4
+        self.assertEqual(mock_batch.add.call_count, 4)
 
     @patch("app.sync.logic.firestore.client")
     @patch("app.sync.logic.get_client_config")
