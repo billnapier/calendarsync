@@ -11,6 +11,7 @@ from flask import (
     redirect,
     url_for,
     current_app,
+    flash,
 )
 from firebase_admin import firestore
 import google.api_core.exceptions
@@ -63,14 +64,16 @@ def run_sync(sync_id):
         return redirect(url_for("auth.login"))
 
     if not verify_csrf_token(request.form.get("csrf_token")):
-        return "Invalid CSRF token", 403
+        flash("Invalid CSRF token", "error")
+        return redirect(url_for("main.index"))
 
     db = firestore.client()
     sync_ref = db.collection("syncs").document(sync_id)
     sync_doc = sync_ref.get()
 
     if not sync_doc.exists:
-        return "Sync not found", 404
+        flash("Sync not found", "error")
+        return redirect(url_for("main.index"))
 
     sync_data = sync_doc.to_dict()
     if sync_data["user_id"] != user["uid"]:
@@ -78,10 +81,12 @@ def run_sync(sync_id):
 
     try:
         sync_calendar_logic(sync_id)
+        flash("Sync started successfully.", "success")
         return redirect(url_for("main.index"))
     except Exception as e:
         logger.error("Sync failed: %s", e)
-        return "Sync failed. Please check logs for details.", 500
+        flash("Sync failed. Please check logs for details.", "error")
+        return redirect(url_for("main.index"))
 
 
 def _get_sources_from_form(form):
@@ -158,6 +163,7 @@ def _handle_edit_sync_post(req, sync_ref, calendars):
     except Exception as e:
         logger.warning("Auto-sync on edit failed: %s", e)
 
+    flash("Sync updated successfully.", "success")
     return redirect(url_for("main.index"))
 
 
@@ -271,13 +277,16 @@ def delete_sync(sync_id):
         # We only remove the configuration, as requested.
         sync_ref.delete()
         logger.info("Deleted sync %s for user %s", sync_id, user["uid"])
+        flash("Sync deleted successfully.", "success")
         return redirect(url_for("main.index"))
     except google.api_core.exceptions.GoogleAPICallError as e:
         logger.error("Firestore API error deleting sync %s: %s", sync_id, e)
-        return "Service unavailable. Please try again later.", 503
+        flash("Service unavailable. Please try again later.", "error")
+        return redirect(url_for("main.index"))
     except Exception as e:
         logger.error("Error deleting sync %s: %s", sync_id, e)
-        return "An error occurred while deleting the sync.", 500
+        flash("An error occurred while deleting the sync.", "error")
+        return redirect(url_for("main.index"))
 
 
 def _handle_create_sync_post(user):
@@ -335,6 +344,7 @@ def _handle_create_sync_post(user):
     except Exception as e:
         logger.warning("Auto-sync on create failed: %s", e)
 
+    flash("Sync created successfully.", "success")
     return redirect(url_for("main.index"))
 
 
