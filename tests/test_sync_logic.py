@@ -134,12 +134,23 @@ class TestSyncLogic(unittest.TestCase):
 
         mock_service = MagicMock()
         mock_build.return_value = mock_service
-        mock_batch = MagicMock()
-        mock_service.new_batch_http_request.return_value = mock_batch
-        # Return existing event
-        mock_service.events.return_value.list.return_value.execute.return_value = {
-            "items": [{"id": "google_event_id_xyz", "iCalUID": "12345"}]
-        }
+
+        # Create separate batches for lookup and upsert
+        mock_batch_lookup = MagicMock()
+        mock_batch_upsert = MagicMock()
+        mock_service.new_batch_http_request.side_effect = [mock_batch_lookup, mock_batch_upsert]
+
+        # Mock lookup execution to simulate finding the event
+        def lookup_execute_side_effect():
+            for call_args in mock_batch_lookup.add.call_args_list:
+                _, kwargs = call_args
+                callback = kwargs.get('callback')
+                if callback:
+                    # Simulate finding the event
+                    response = {"items": [{"id": "google_event_id_xyz", "iCalUID": "12345"}]}
+                    callback("req_id", response, None)
+
+        mock_batch_lookup.execute.side_effect = lookup_execute_side_effect
 
         logic.sync_calendar_logic("sync_update")
 
@@ -177,14 +188,16 @@ class TestSyncLogic(unittest.TestCase):
 
         mock_service = MagicMock()
         mock_build.return_value = mock_service
-        mock_batch = MagicMock()
-        mock_service.new_batch_http_request.return_value = mock_batch
-        mock_service.events.return_value.list.return_value.execute.return_value = {
-            "items": []
-        }
+
+        # Separate batches
+        mock_batch_lookup = MagicMock()
+        mock_batch_upsert = MagicMock()
+        mock_service.new_batch_http_request.side_effect = [mock_batch_lookup, mock_batch_upsert]
 
         logic.sync_calendar_logic("sync_multi")
-        self.assertEqual(mock_batch.add.call_count, 2)
+
+        # Upsert batch should have 2 additions (one for each event)
+        self.assertEqual(mock_batch_upsert.add.call_count, 2)
 
     @patch("app.sync.logic.firestore.client")
     @patch("app.sync.logic.get_client_config")
@@ -303,6 +316,43 @@ class TestSyncLogic(unittest.TestCase):
         # Verify call args
         _, kwargs = mock_list.call_args
         self.assertEqual(kwargs.get("maxResults"), 2500, "maxResults should be 2500")
+
+    def test_get_existing_events_map_batch_fetch(self):
+        """Test that _get_existing_events_map uses batch fetch for small UIDs."""
+        mock_service = MagicMock()
+        mock_batch = MagicMock()
+        mock_service.new_batch_http_request.return_value = mock_batch
+
+        known_uids = ["123", "456"]
+
+        logic._get_existing_events_map(mock_service, "dest_cal", known_uids=known_uids)
+
+        # Verify batch was created and executed
+        self.assertTrue(mock_service.new_batch_http_request.called)
+        self.assertTrue(mock_batch.execute.called)
+        self.assertEqual(mock_batch.add.call_count, 2)
+
+        # Verify we did NOT call list().execute() (the full list fallback)
+        self.assertFalse(
+            mock_service.events.return_value.list.return_value.execute.called
+        )
+
+    def test_get_existing_events_map_large_fallback(self):
+        """Test fallback to full list if known_uids is large."""
+        mock_service = MagicMock()
+        mock_events = mock_service.events.return_value
+        mock_list = mock_events.list
+        mock_list.return_value.execute.return_value = {"items": []}
+
+        known_uids = [str(i) for i in range(150)]  # > 100
+
+        logic._get_existing_events_map(mock_service, "dest_cal", known_uids=known_uids)
+
+        # Should NOT use batch
+        self.assertFalse(mock_service.new_batch_http_request.called)
+
+        # Should use list().execute()
+        self.assertTrue(mock_list.return_value.execute.called)
 
 
 if __name__ == "__main__":
