@@ -453,12 +453,64 @@ def _fetch_source_events(sources, user_id):
     return all_events_items, source_names
 
 
-def _get_existing_events_map(service, destination_id):
+def _get_existing_events_map(service, destination_id, known_uids=None):
     """
     Fetch all existing events from the destination calendar to support updates.
     Returns a dict mapping iCalUID -> eventId.
+
+    If known_uids is provided and small, use batch fetching for efficiency.
     """
     existing_map = {}
+
+    # Optimization: If we have a small set of UIDs, batch fetch them instead of listing everything.
+    # Threshold: 100 UIDs (2 batches)
+    if known_uids is not None and len(known_uids) < 100:
+        if not known_uids:
+            return {}
+
+        logger.info("Optimized: Batch fetching %d existing events", len(known_uids))
+        # pylint: disable=no-member
+        batch = service.new_batch_http_request()
+
+        def _batch_lookup_callback(request_id, response, exception):  # pylint: disable=unused-argument
+            if exception:
+                # 404 is fine, means doesn't exist. Other errors log.
+                if hasattr(exception, "resp") and exception.resp.status != 404:
+                    logger.warning(
+                        "Error looking up event %s: %s", request_id, exception
+                    )
+                return
+
+            items = response.get("items", [])
+            for event in items:
+                uid = event.get("iCalUID")
+                eid = event.get("id")
+                if uid and eid:
+                    existing_map[uid] = eid
+
+        # Deduplicate
+        unique_uids = list(set(known_uids))
+
+        for uid in unique_uids:
+            batch.add(
+                service.events().list(
+                    calendarId=destination_id,
+                    iCalUID=uid,
+                    singleEvents=False,
+                    fields="items(id,iCalUID)",
+                ),
+                callback=_batch_lookup_callback,
+            )
+
+        try:
+            batch.execute()
+        except Exception as e:  # pylint: disable=broad-exception-caught
+            logger.error("Batch lookup failed: %s", e)
+            # If batch fails completely, we return partial/empty map.
+
+        return existing_map
+
+    # Fallback / Default: List all events
     page_token = None
     try:
         while True:
@@ -683,7 +735,15 @@ def sync_calendar_logic(sync_id):  # pylint: disable=too-many-locals
     # Fetch existing events map for reliable updates
     # We do NOT filter here to ensure we know about all existing UIDs (especially recurring masters)
     # This prevents creating duplicates of events that started before the window.
-    existing_map = _get_existing_events_map(service, destination_id)
+    known_uids = []
+    for item in filtered_events:
+        uid = item["component"].get("UID")
+        if uid:
+            known_uids.append(str(uid))
+
+    existing_map = _get_existing_events_map(
+        service, destination_id, known_uids=known_uids
+    )
     _batch_upsert_events(
         service, destination_id, filtered_events, existing_map, base_url=base_url
     )
