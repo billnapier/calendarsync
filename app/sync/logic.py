@@ -9,7 +9,12 @@ from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 import google.api_core.exceptions
 
-from app.utils import get_client_config, get_sync_window_dates, get_base_url
+from app.utils import (
+    get_client_config,
+    get_sync_window_dates,
+    get_base_url,
+    clean_url_for_log,
+)
 from app.security import safe_requests_get
 
 # Constants
@@ -110,7 +115,8 @@ def get_calendar_name_from_ical(url):
                         break
 
     except (requests.exceptions.RequestException, ValueError) as e:
-        logger.warning("Failed to extract name from %s: %s", url, e)
+        safe_url = clean_url_for_log(url)
+        logger.warning("Failed to extract name from %s: %s", safe_url, e)
 
     return url
 
@@ -381,7 +387,8 @@ def _fetch_google_source(source, user_id):  # pylint: disable=too-many-locals
         return events_items, url, name
 
     except Exception as e:  # pylint: disable=broad-exception-caught
-        logger.error("Failed to fetch Google Calendar %s: %s", url, e)
+        safe_url = clean_url_for_log(url)
+        logger.error("Failed to fetch Google Calendar %s: %s", safe_url, e)
         return [], url, f"{url} (Failed)"
 
 
@@ -418,7 +425,8 @@ def _fetch_single_source(source, user_id):
         requests.exceptions.RequestException,
         ValueError,
     ) as e:  # pylint: disable=broad-exception-caught
-        logger.error("Failed to fetch/parse %s: %s", url, e)
+        safe_url = clean_url_for_log(url)
+        logger.error("Failed to fetch/parse %s: %s", safe_url, e)
         return [], url, f"{url} (Failed)"
 
 

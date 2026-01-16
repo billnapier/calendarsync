@@ -1,6 +1,7 @@
 import os
 import secrets
 from datetime import datetime, timedelta, timezone
+from urllib.parse import urlparse
 from flask import session, current_app
 from google.cloud import secretmanager
 
@@ -15,6 +16,22 @@ def get_sync_window_dates():
     start = now - timedelta(days=SYNC_WINDOW_PAST_DAYS)
     end = now + timedelta(days=SYNC_WINDOW_FUTURE_DAYS)
     return start, end
+
+
+def clean_url_for_log(url):
+    """
+    Returns a sanitized version of the URL for logging.
+    Removes query parameters to prevent leaking sensitive tokens.
+    """
+    if not url:
+        return url
+    try:
+        parsed = urlparse(url)
+        # Reconstruct URL without query and fragment
+        sanitized = parsed._replace(query="", fragment="").geturl()
+        return sanitized
+    except Exception:  # pylint: disable=broad-exception-caught
+        return url
 
 
 def generate_csrf_token():
