@@ -129,7 +129,7 @@ class TestSyncLogic(unittest.TestCase):
 
         mock_batch = MagicMock()
         mock_service.new_batch_http_request.return_value = mock_batch
-        self._mock_batch_setup(mock_batch) # Default empty response
+        self._mock_batch_setup(mock_batch)  # Default empty response
 
         logic.sync_calendar_logic("sync_123")
 
@@ -168,7 +168,10 @@ class TestSyncLogic(unittest.TestCase):
 
         # Simulate finding the event
         response_map = {
-            "12345": ({"items": [{"id": "google_event_id_xyz", "iCalUID": "12345"}]}, None)
+            "12345": (
+                {"items": [{"id": "google_event_id_xyz", "iCalUID": "12345"}]},
+                None,
+            )
         }
         self._mock_batch_setup(mock_batch, response_map=response_map)
 
