@@ -193,8 +193,13 @@
                     </div>
                 {% else %}
                     <div class="empty-state">
-                        <p class="empty-state-text">You haven't created any syncs yet.</p>
-                        <a href="{{ url_for('main.create_sync') }}" class="btn btn-outline">Get Started</a>
+                        <div class="feature-icon">
+                            <span role="img" aria-label="Calendar">📅</span>
+                        </div>
+                        <h3 class="feature-title">No syncs yet</h3>
+                        <p class="empty-state-text">Create your first synchronization to merge your calendars.</p>
+                        <a href="{{ url_for('main.create_sync') }}"
+                           class="btn btn-primary dashboard-cta">Get Started</a>
                     </div>
                 {% endif %}
             </div>

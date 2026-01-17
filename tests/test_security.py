@@ -67,6 +67,37 @@ class TestSecurity(unittest.TestCase):
         self.assertIn("response", kwargs["hooks"])
 
     @patch("app.security.validate_url")
+    @patch("app.security.requests.get")
+    def test_safe_requests_get_detects_private_ip_connection(
+        self, mock_get, mock_validate
+    ):
+        # Setup mock response with a private IP socket
+        mock_resp = MagicMock()
+        mock_sock = MagicMock()
+        mock_sock.getpeername.return_value = ("192.168.1.1", 443)  # Private IP
+
+        # We need to structure the mock so that resp.raw._connection.sock = mock_sock
+        mock_resp.raw._connection.sock = mock_sock
+
+        def side_effect(url, **kwargs):
+            hooks = kwargs.get("hooks", {})
+            response_hooks = hooks.get("response", [])
+            for hook in response_hooks:
+                # The hook might raise an exception
+                hook(mock_resp)
+            return mock_resp
+
+        mock_get.side_effect = side_effect
+
+        # validate_url passes (simulating DNS rebinding success at check time)
+        mock_validate.return_value = None
+
+        with self.assertRaises(ValueError) as cm:
+            safe_requests_get("http://evil.com/setup")
+
+        self.assertIn("Restricted IP address connected", str(cm.exception))
+
+    @patch("app.security.validate_url")
     def test_safe_requests_get_redirect_hook(self, mock_validate):
         # We need to simulate the hook execution
         # safe_requests_get returns the result of requests.get
@@ -87,6 +118,11 @@ class TestSecurity(unittest.TestCase):
             mock_resp.is_redirect = True
             mock_resp.headers = {"Location": "http://redirected.com"}
             mock_resp.url = "http://original.com"
+
+            # Setup mock socket for IP verification (part of safe_requests_get hooks)
+            mock_sock = MagicMock()
+            mock_sock.getpeername.return_value = ("8.8.8.8", 80)
+            mock_resp.raw._connection.sock = mock_sock
 
             # Invoke hooks
             for hook in hooks:
