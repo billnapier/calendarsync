@@ -1,16 +1,17 @@
-import logging
 import concurrent.futures
-from datetime import datetime, timezone
 import contextlib
-import requests
+import logging
+from datetime import datetime, timezone
+
+import google.api_core.exceptions
 import icalendar
+import requests
 from firebase_admin import firestore
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
-import google.api_core.exceptions
 
-from app.utils import get_client_config, get_sync_window_dates, get_base_url
 from app.security import safe_requests_get
+from app.utils import get_base_url, get_client_config, get_sync_window_dates
 
 # Constants
 SCOPES = [
@@ -490,7 +491,8 @@ def _get_existing_events_map(service, destination_id, known_uids=None):
 
         except Exception as e:  # pylint: disable=broad-exception-caught
             logger.warning(
-                "Batch fetch for existing events failed, falling back to full list: %s", e
+                "Batch fetch for existing events failed, falling back to full list: %s",
+                e,
             )
             existing_map = {}
 
