@@ -453,12 +453,67 @@ def _fetch_source_events(sources, user_id):
     return all_events_items, source_names
 
 
-def _get_existing_events_map(service, destination_id):
+def _get_existing_events_map(service, destination_id, known_uids=None):
     """
-    Fetch all existing events from the destination calendar to support updates.
+    Fetch existing events from the destination calendar to support updates.
     Returns a dict mapping iCalUID -> eventId.
+
+    Optimization: If known_uids is provided, fetches only those specific events
+    using batch requests, rather than listing the entire calendar.
     """
     existing_map = {}
+
+    if known_uids is not None:
+        # Deduplicate UIDs
+        uids_to_fetch = list(set(known_uids))
+        if not uids_to_fetch:
+            return existing_map
+
+        # Batch limit is 50 for Google Calendar API
+        batch_limit = 50
+
+        def batch_callback(request_id, response, exception):
+            if exception:
+                # 404 or empty results are handled gracefully (just not added to map)
+                logger.debug(
+                    "Error fetching existing event UID %s: %s", request_id, exception
+                )
+                return
+
+            items = response.get("items", [])
+            if items:
+                # Assuming uniqueness, take the first match
+                event = items[0]
+                ical_uid = event.get("iCalUID")
+                event_id = event.get("id")
+                if ical_uid and event_id:
+                    existing_map[ical_uid] = event_id
+
+        for i in range(0, len(uids_to_fetch), batch_limit):
+            chunk = uids_to_fetch[i : i + batch_limit]
+            batch = service.new_batch_http_request()
+            for uid in chunk:
+                # Search specifically for this iCalUID
+                batch.add(
+                    service.events().list(
+                        calendarId=destination_id,
+                        iCalUID=uid,
+                        fields="items(id,iCalUID)",
+                    ),
+                    request_id=uid,
+                    callback=batch_callback,
+                )
+
+            try:
+                batch.execute()
+            except Exception as e:  # pylint: disable=broad-exception-caught
+                logger.error(
+                    "Batch execution failed in _get_existing_events_map: %s", e
+                )
+
+        return existing_map
+
+    # Fallback: Fetch ALL events (slow path for backward compatibility or bulk ops)
     page_token = None
     try:
         while True:
@@ -681,9 +736,16 @@ def sync_calendar_logic(sync_id):  # pylint: disable=too-many-locals
             pass
 
     # Fetch existing events map for reliable updates
-    # We do NOT filter here to ensure we know about all existing UIDs (especially recurring masters)
-    # This prevents creating duplicates of events that started before the window.
-    existing_map = _get_existing_events_map(service, destination_id)
+    # Optimization: Only fetch events we plan to sync to avoid listing entire calendar history
+    event_uids = []
+    for item in filtered_events:
+        uid = item["component"].get("UID")
+        if uid:
+            event_uids.append(str(uid))
+
+    existing_map = _get_existing_events_map(
+        service, destination_id, known_uids=event_uids
+    )
     _batch_upsert_events(
         service, destination_id, filtered_events, existing_map, base_url=base_url
     )
