@@ -507,7 +507,9 @@ def _get_existing_events_map(service, destination_id, known_uids=None):
             try:
                 batch.execute()
             except Exception as e:  # pylint: disable=broad-exception-caught
-                logger.error("Batch execution failed in _get_existing_events_map: %s", e)
+                logger.error(
+                    "Batch execution failed in _get_existing_events_map: %s", e
+                )
 
         return existing_map
 
