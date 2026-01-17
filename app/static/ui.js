@@ -69,3 +69,20 @@
 
     document.addEventListener('DOMContentLoaded', initSubmitButtons);
 })();
+
+    // Auto-dismiss alerts after 5 seconds
+    function initAlertDismissal() {
+        const alerts = document.querySelectorAll('.alert');
+        if (alerts.length > 0) {
+            setTimeout(() => {
+                alerts.forEach(alert => {
+                    alert.classList.add('alert-dismissing');
+                    alert.addEventListener('transitionend', () => {
+                        alert.remove();
+                    });
+                });
+            }, 5000);
+        }
+    }
+
+    document.addEventListener('DOMContentLoaded', initAlertDismissal);
