@@ -18,7 +18,7 @@ from google.cloud import tasks_v2
 
 from app.utils import get_client_config, generate_csrf_token, verify_csrf_token
 from app.sync import sync_calendar_logic, fetch_user_calendars, resolve_source_names
-from app.security import verify_task_auth
+from app.security import verify_task_auth, validate_url
 
 from . import main_bp
 
@@ -119,6 +119,8 @@ def _get_sources_from_form(form):
             if i < len(urls):
                 url = urls[i].strip()
                 if url:
+                    # Validate URL to prevent invalid data and SSRF at configuration time
+                    validate_url(url)
                     sources.append({"type": "ical", "url": url, "prefix": prefix})
 
     return sources
@@ -127,7 +129,12 @@ def _get_sources_from_form(form):
 def _handle_edit_sync_post(req, sync_ref, calendars):
     """Handle POST request for edit_sync."""
     destination_id = req.form.get("destination_calendar_id")
-    sources = _get_sources_from_form(req.form)
+
+    try:
+        sources = _get_sources_from_form(req.form)
+    except ValueError as e:
+        logger.warning("Invalid source URL in edit_sync: %s", e)
+        return f"Invalid source URL: {e}", 400
 
     if not destination_id:
         return "Destination Calendar ID is required", 400
@@ -282,7 +289,12 @@ def delete_sync(sync_id):
 
 def _handle_create_sync_post(user):
     destination_id = request.form.get("destination_calendar_id")
-    sources = _get_sources_from_form(request.form)
+
+    try:
+        sources = _get_sources_from_form(request.form)
+    except ValueError as e:
+        logger.warning("Invalid source URL in create_sync: %s", e)
+        return f"Invalid source URL: {e}", 400
 
     if not destination_id:
         return "Destination Calendar ID is required", 400
