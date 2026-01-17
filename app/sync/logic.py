@@ -453,12 +453,47 @@ def _fetch_source_events(sources, user_id):
     return all_events_items, source_names
 
 
-def _get_existing_events_map(service, destination_id):
+def _get_existing_events_map(service, destination_id, known_uids=None):
     """
     Fetch all existing events from the destination calendar to support updates.
     Returns a dict mapping iCalUID -> eventId.
     """
     existing_map = {}
+
+    # Optimization: Use batch fetch for small number of UIDs to avoid listing thousands of events
+    # Threshold of 80 is chosen to balance batch overhead vs large list response
+    if known_uids and len(known_uids) < 80:
+        try:
+            # pylint: disable=no-member
+            batch = service.new_batch_http_request()
+
+            def callback(_request_id, response, _exception):
+                if response:
+                    for event in response.get("items", []):
+                        uid = event.get("iCalUID")
+                        eid = event.get("id")
+                        if uid and eid:
+                            existing_map[uid] = eid
+
+            for uid in known_uids:
+                batch.add(
+                    service.events().list(
+                        calendarId=destination_id,
+                        iCalUID=uid,
+                        singleEvents=False,
+                        fields="items(id,iCalUID)",
+                    ),
+                    callback=callback,
+                )
+            batch.execute()
+            return existing_map
+
+        except Exception as e:  # pylint: disable=broad-exception-caught
+            logger.warning(
+                "Batch fetch for existing events failed, falling back to full list: %s", e
+            )
+            existing_map = {}
+
     page_token = None
     try:
         while True:
@@ -683,7 +718,12 @@ def sync_calendar_logic(sync_id):  # pylint: disable=too-many-locals
     # Fetch existing events map for reliable updates
     # We do NOT filter here to ensure we know about all existing UIDs (especially recurring masters)
     # This prevents creating duplicates of events that started before the window.
-    existing_map = _get_existing_events_map(service, destination_id)
+    known_uids = {
+        str(item["component"].get("UID"))
+        for item in filtered_events
+        if item["component"].get("UID")
+    }
+    existing_map = _get_existing_events_map(service, destination_id, known_uids)
     _batch_upsert_events(
         service, destination_id, filtered_events, existing_map, base_url=base_url
     )
