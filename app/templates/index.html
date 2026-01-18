@@ -41,14 +41,16 @@
                 {% endif %}
             </div>
         </header>
-
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 <div class="flash-messages-container">
                     {% for category, message in messages %}
                         <div class="alert alert-{{ category }}">
                             {{ message }}
-                            <button type="button" class="alert-close" onclick="this.parentElement.remove()" aria-label="Close">&times;</button>
+                            <button type="button"
+                                    class="alert-close"
+                                    onclick="this.parentElement.remove()"
+                                    aria-label="Close">&times;</button>
                         </div>
                     {% endfor %}
                 </div>

@@ -8,6 +8,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../")))
 
 from app.app import app as flask_app
 
+
 @pytest.fixture
 def _client():
     flask_app.config["TESTING"] = True
@@ -15,15 +16,18 @@ def _client():
     with flask_app.test_client() as test_client:
         yield test_client
 
+
 @pytest.fixture
 def _mock_firestore():
     with patch("app.main.routes.firestore") as mock_fs:
         yield mock_fs
 
+
 @pytest.fixture
 def _mock_fetch_calendars():
     with patch("app.main.routes.fetch_user_calendars") as mock:
         yield mock
+
 
 def test_delete_sync_flash_message_presence(_client, _mock_firestore):
     """Test that a flash message IS set on delete."""
@@ -55,13 +59,18 @@ def test_delete_sync_flash_message_presence(_client, _mock_firestore):
         assert flashes[0][0] == "success"
         assert "Sync deleted successfully" in flashes[0][1]
 
-def test_create_sync_flash_message_presence(_client, _mock_firestore, _mock_fetch_calendars):
+
+def test_create_sync_flash_message_presence(
+    _client, _mock_firestore, _mock_fetch_calendars
+):
     """Test that a flash message IS set on create."""
     with _client.session_transaction() as sess:
         sess["user"] = {"uid": "test_uid"}
         sess["csrf_token"] = "valid_token"
 
-    _mock_fetch_calendars.return_value = [{"id": "dest_cal", "summary": "Destination Cal"}]
+    _mock_fetch_calendars.return_value = [
+        {"id": "dest_cal", "summary": "Destination Cal"}
+    ]
 
     mock_db = MagicMock()
     mock_collection = MagicMock()
