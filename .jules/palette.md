@@ -13,3 +13,7 @@
 ## 2024-05-25 - Empty State Delight
 **Learning:** A plain text empty state ("You haven't created any syncs yet") is functional but uninspiring. It misses an opportunity to guide the user and reinforce the value proposition.
 **Action:** Enhanced the dashboard empty state with a visual icon (using existing `feature-icon` styles), a clear heading, and a primary call-to-action button. This treats the "zero data" state as a first-class UI state, encouraging the user to take the first step. Always design empty states to be welcoming and actionable.
+
+## 2024-05-25 - Feedback Loop & Template Constraints
+**Learning:** The application lacks a shared base template, making global UI elements (like flash messages) difficult to implement DRYly. However, since most actions (create, edit, delete, run) redirect to the dashboard (`index.html`), placing the feedback container solely on the dashboard is an effective, lightweight solution that avoids code duplication across independent templates.
+**Action:** Implemented a Flask flash message system rendered only on `index.html`. For future features, prioritize redirect-to-dashboard flows to leverage this centralized feedback mechanism, or consider a larger refactor to introduce a `base.html` if local feedback becomes necessary.
