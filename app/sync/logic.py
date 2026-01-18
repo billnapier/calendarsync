@@ -385,6 +385,26 @@ def _fetch_google_source(source, user_id):  # pylint: disable=too-many-locals
         return [], url, f"{url} (Failed)"
 
 
+def _is_event_in_window(event, window_start, window_end):
+    """
+    Checks if an event falls within the sync window or is a recurring master.
+    """
+    if "dtstart" in event:
+        dt = event["dtstart"].dt
+        # Normalize to UTC for comparison
+        if isinstance(dt, datetime):
+            if dt.tzinfo is None:
+                dt = dt.replace(tzinfo=timezone.utc)
+        else:
+            # Date object (all day) - convert to datetime at start of day
+            dt = datetime.combine(dt, datetime.min.time()).replace(tzinfo=timezone.utc)
+
+        # Check if event is within window OR if it is a recurring rule master (RRULE).
+        if (window_start <= dt <= window_end) or "rrule" in event:
+            return True
+    return False
+
+
 def _fetch_single_source(source, user_id):
     """
     Helper to fetch a single source.
@@ -406,11 +426,16 @@ def _fetch_single_source(source, user_id):
         cal_name = cal.get("X-WR-CALNAME")
         name = str(cal_name) if cal_name else url
 
+        # Optimization: Filter events during fetch to reduce memory and processing
+        window_start, window_end = get_sync_window_dates()
+
         for component in cal.walk():
             if component.name == "VEVENT":
-                events_items.append(
-                    {"component": component, "prefix": prefix, "source_title": name}
-                )
+                # Check if event is within window before adding
+                if _is_event_in_window(component, window_start, window_end):
+                    events_items.append(
+                        {"component": component, "prefix": prefix, "source_title": name}
+                    )
 
         return events_items, url, name
 
@@ -709,31 +734,12 @@ def sync_calendar_logic(sync_id):  # pylint: disable=too-many-locals
     # This handles iCal sources that returned everything, and serves as a safety check
     filtered_events = []
     for item in all_events_items:
-        event = item["component"]
-        # Simple check on DTSTART. Recurring rules (RRULE) are complex,
-        # but for a basic sync, checking the start date is a good first approximation.
-        # Note: Google Source events are already filtered by the API call in _fetch_google_source
-        if "dtstart" in event:
-            dt = event["dtstart"].dt
-            # Normalize to UTC for comparison
-            if isinstance(dt, datetime):
-                if dt.tzinfo is None:
-                    dt = dt.replace(tzinfo=timezone.utc)
-            else:
-                # Date object (all day) - convert to datetime at start of day
-                dt = datetime.combine(dt, datetime.min.time()).replace(
-                    tzinfo=timezone.utc
-                )
-
-            # Check if event is within window OR if it is a recurring rule master (RRULE).
-            # We must preserve RRULE masters even if they started long ago,
-            # otherwise the entire series will disappear.
-            if (window_start <= dt <= window_end) or "rrule" in event:
-                filtered_events.append(item)
-        else:
-            # Event without start? Include just in case or skip.
-            # Safe to skip as it won't display anyway.
-            pass
+        # Optimization: _fetch_single_source now already filters events.
+        # But we check again for safety and consistency, especially as _fetch_google_source
+        # uses the API filter which might behave slightly differently (though should be consistent).
+        # We can reuse the helper function.
+        if _is_event_in_window(item["component"], window_start, window_end):
+            filtered_events.append(item)
 
     # Fetch existing events map for reliable updates
     # Optimization: Only fetch events we plan to sync to avoid listing entire calendar history
