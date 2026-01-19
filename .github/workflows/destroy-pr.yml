@@ -1,0 +1,37 @@
+name: Destroy (PR)
+
+on:
+  pull_request:
+    types: [closed]
+
+permissions:
+  contents: 'read'
+  id-token: 'write'
+
+jobs:
+  destroy-pr:
+    name: "Destroy PR Environment"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # ratchet:actions/checkout@v4
+
+      - id: 'auth'
+        name: 'Authenticate to Google Cloud'
+        uses: 'google-github-actions/auth@c200f3691d83b41bf9bbd8638997a462592937ed' # ratchet:google-github-actions/auth@v2
+        with:
+          workload_identity_provider: "projects/61852959082/locations/global/workloadIdentityPools/github-pool/providers/github-provider"
+          service_account: "github-actions-sa@calendarsync-napier-dev.iam.gserviceaccount.com"
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@e427ad8a34f8676edf47cf7d7925499adf3eb74f # ratchet:google-github-actions/setup-gcloud@v2
+
+      - name: Delete Cloud Run Service
+        run: |
+          SERVICE_NAME="calendarsync-pr-${{ github.event.number }}"
+          echo "Deleting service: $SERVICE_NAME"
+          # Attempt to delete, but don't fail if it doesn't exist (e.g. if deployment failed)
+          gcloud run services delete $SERVICE_NAME \
+            --project ${{ vars.DEV_GCP_PROJECT_ID }} \
+            --region us-central1 \
+            --quiet || echo "Service not found or already deleted"

@@ -23,6 +23,16 @@ on:
         required: false
         type: string
         description: "Custom URL to checking smoke test against"
+      env_vars:
+        required: false
+        type: string
+        default: ""
+        description: "Environment variables for Cloud Run service (KEY=VALUE)"
+      secrets:
+        required: false
+        type: string
+        default: ""
+        description: "Secrets for Cloud Run service (KEY=SECRET:VERSION)"
       wif_provider:
         required: true
         type: string
@@ -40,6 +50,8 @@ jobs:
     permissions:
       contents: 'read'
       id-token: 'write'
+    outputs:
+      url: ${{ steps.deploy.outputs.url }}
 
     steps:
       - name: Checkout
@@ -74,6 +86,8 @@ jobs:
           service: ${{ inputs.service_name }}
           region: ${{ inputs.region }}
           image: ${{ inputs.region }}-docker.pkg.dev/${{ inputs.project_id }}/${{ inputs.service_name }}/${{ inputs.service_name }}:${{ github.sha }}
+          env_vars: ${{ inputs.env_vars }}
+          secrets: ${{ inputs.secrets }}
 
       - name: Deploy to Firebase Hosting
         # Only run if firebase.json exists
