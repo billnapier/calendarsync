@@ -76,8 +76,6 @@ jobs:
 
       - name: Build and Push Container
         env:
-      - name: Build and Push Container
-        env:
           PROJECT_ID: ${{ inputs.project_id }}
           SERVICE_NAME: ${{ inputs.service_name }}
           ARTIFACT_REPO: ${{ inputs.artifact_repo || inputs.service_name }}
