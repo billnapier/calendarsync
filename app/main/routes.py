@@ -25,6 +25,8 @@ from . import main_bp
 
 logger = logging.getLogger(__name__)
 
+MAX_SOURCES_LIMIT = 50
+
 
 @main_bp.route("/")
 def index():
@@ -97,6 +99,9 @@ def _get_sources_from_form(form):
     sources = []
     count = max(len(urls), len(ids), len(types))
 
+    if count > MAX_SOURCES_LIMIT:
+        raise ValueError(f"Too many sources. Limit is {MAX_SOURCES_LIMIT}.")
+
     for i in range(count):
         # Default to ical if type is missing (legacy)
         s_type = types[i] if i < len(types) else "ical"
@@ -136,11 +141,13 @@ def _handle_edit_sync_post(req, sync_ref, calendars):
     try:
         sources = _get_sources_from_form(req.form)
     except ValueError as e:
-        logger.warning("Invalid source URL in edit_sync: %s", e)
-        return f"Invalid source URL: {e}", 400
+        logger.warning("Invalid source configuration in edit_sync: %s", e)
+        flash(f"Invalid source configuration: {e}", "danger")
+        return redirect(url_for("main.edit_sync", sync_id=sync_ref.id))
 
     if not destination_id:
-        return "Destination Calendar ID is required", 400
+        flash("Destination Calendar ID is required", "danger")
+        return redirect(url_for("main.edit_sync", sync_id=sync_ref.id))
 
     # Lookup friendly name
     destination_summary = destination_id
@@ -300,11 +307,13 @@ def _handle_create_sync_post(user):
     try:
         sources = _get_sources_from_form(request.form)
     except ValueError as e:
-        logger.warning("Invalid source URL in create_sync: %s", e)
-        return f"Invalid source URL: {e}", 400
+        logger.warning("Invalid source configuration in create_sync: %s", e)
+        flash(f"Invalid source configuration: {e}", "danger")
+        return redirect(url_for("main.create_sync"))
 
     if not destination_id:
-        return "Destination Calendar ID is required", 400
+        flash("Destination Calendar ID is required", "danger")
+        return redirect(url_for("main.create_sync"))
 
     # Lookup destination summary from cached calendars
     destination_summary = destination_id
