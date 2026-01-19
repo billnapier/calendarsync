@@ -35,15 +35,24 @@
                 form.dataset.submitting = "true";
 
                 // Save original text and width to prevent layout jump
-                const originalText = submitBtn.innerText;
+                const originalContent = submitBtn.innerHTML;
                 const width = submitBtn.offsetWidth;
 
-                submitBtn.dataset.originalText = originalText;
+                submitBtn.dataset.originalContent = originalContent;
                 submitBtn.style.width = `${width}px`;
 
                 // Set loading state
                 const loadingText = submitBtn.dataset.loadingText || 'Loading...';
-                submitBtn.innerText = loadingText;
+
+                submitBtn.textContent = '';
+
+                const spinner = document.createElement('span');
+                spinner.className = 'spinner';
+                spinner.setAttribute('aria-hidden', 'true');
+
+                submitBtn.appendChild(spinner);
+                submitBtn.appendChild(document.createTextNode(' ' + loadingText));
+
                 submitBtn.disabled = true;
                 submitBtn.classList.add('btn-loading');
             });
@@ -56,12 +65,12 @@
         forms.forEach(form => {
             delete form.dataset.submitting;
             form.querySelectorAll('button[type="submit"]').forEach(submitBtn => {
-                if (submitBtn.disabled && submitBtn.dataset.originalText) {
-                    submitBtn.innerText = submitBtn.dataset.originalText;
+                if (submitBtn.disabled && submitBtn.dataset.originalContent) {
+                    submitBtn.innerHTML = submitBtn.dataset.originalContent;
                     submitBtn.disabled = false;
                     submitBtn.style.width = '';
                     submitBtn.classList.remove('btn-loading');
-                    delete submitBtn.dataset.originalText;
+                    delete submitBtn.dataset.originalContent;
                 }
             });
         });

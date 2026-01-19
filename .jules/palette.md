@@ -17,3 +17,7 @@
 ## 2024-05-25 - Feedback Loop & Template Constraints
 **Learning:** The application lacks a shared base template, making global UI elements (like flash messages) difficult to implement DRYly. However, since most actions (create, edit, delete, run) redirect to the dashboard (`index.html`), placing the feedback container solely on the dashboard is an effective, lightweight solution that avoids code duplication across independent templates.
 **Action:** Implemented a Flask flash message system rendered only on `index.html`. For future features, prioritize redirect-to-dashboard flows to leverage this centralized feedback mechanism, or consider a larger refactor to introduce a `base.html` if local feedback becomes necessary.
+
+## 2026-01-19 - Visual Feedback for Loading States
+**Learning:** While changing button text to "Loading..." is helpful, it lacks the immediate visual dynamism that confirms an active process. Users associate spinning indicators with "working" states more strongly than static text changes.
+**Action:** Enhanced the existing loading state pattern by injecting a CSS-only spinner alongside the loading text. This was achieved by modifying the reusable `ui.js` script to use `innerHTML` injection, ensuring a consistent and polished experience across all forms without requiring changes to individual templates.
