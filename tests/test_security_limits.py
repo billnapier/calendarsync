@@ -9,6 +9,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "../")))
 import app.app as app_module
 from app.app import app as flask_app
 
+
 @pytest.fixture
 def _client():
     flask_app.config["TESTING"] = True
@@ -16,22 +17,28 @@ def _client():
     with flask_app.test_client() as test_client:
         yield test_client
 
+
 @pytest.fixture
 def _mock_firestore():
     with patch("app.main.routes.firestore") as mock_fs:
         yield mock_fs
+
 
 @pytest.fixture
 def _mock_validate_url():
     with patch("app.main.routes.validate_url") as mock:
         yield mock
 
+
 @pytest.fixture
 def _mock_sync_logic():
     with patch("app.main.routes.sync_calendar_logic") as mock:
         yield mock
 
-def test_create_sync_excessive_sources_dos(_client, _mock_firestore, _mock_validate_url, _mock_sync_logic):
+
+def test_create_sync_excessive_sources_dos(
+    _client, _mock_firestore, _mock_validate_url, _mock_sync_logic
+):
     """
     Test that submitting a large number of sources is rejected (DoS protection).
     """
@@ -56,7 +63,7 @@ def test_create_sync_excessive_sources_dos(_client, _mock_firestore, _mock_valid
         "destination_calendar_id": "dest_cal",
         "csrf_token": "valid_token",
         "source_urls": source_urls,
-        "source_types": source_types
+        "source_types": source_types,
     }
 
     resp = _client.post("/create_sync", data=data)
