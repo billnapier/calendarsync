@@ -11,6 +11,7 @@ from flask import (
     redirect,
     url_for,
     current_app,
+    flash,
 )
 from firebase_admin import firestore
 import google.api_core.exceptions
@@ -78,10 +79,12 @@ def run_sync(sync_id):
 
     try:
         sync_calendar_logic(sync_id)
+        flash("Sync completed successfully!", "success")
         return redirect(url_for("main.index"))
     except Exception as e:
         logger.error("Sync failed: %s", e)
-        return "Sync failed. Please check logs for details.", 500
+        flash("Sync failed. Please check logs for details.", "danger")
+        return redirect(url_for("main.index"))
 
 
 def _get_sources_from_form(form):
@@ -165,6 +168,7 @@ def _handle_edit_sync_post(req, sync_ref, calendars):
     except Exception as e:
         logger.warning("Auto-sync on edit failed: %s", e)
 
+    flash("Sync updated successfully!", "success")
     return redirect(url_for("main.index"))
 
 
@@ -278,13 +282,16 @@ def delete_sync(sync_id):
         # We only remove the configuration, as requested.
         sync_ref.delete()
         logger.info("Deleted sync %s for user %s", sync_id, user["uid"])
+        flash("Sync deleted successfully.", "success")
         return redirect(url_for("main.index"))
     except google.api_core.exceptions.GoogleAPICallError as e:
         logger.error("Firestore API error deleting sync %s: %s", sync_id, e)
-        return "Service unavailable. Please try again later.", 503
+        flash("Service unavailable. Please try again later.", "danger")
+        return redirect(url_for("main.index"))
     except Exception as e:
         logger.error("Error deleting sync %s: %s", sync_id, e)
-        return "An error occurred while deleting the sync.", 500
+        flash("An error occurred while deleting the sync.", "danger")
+        return redirect(url_for("main.index"))
 
 
 def _handle_create_sync_post(user):
@@ -347,6 +354,7 @@ def _handle_create_sync_post(user):
     except Exception as e:
         logger.warning("Auto-sync on create failed: %s", e)
 
+    flash("Sync created successfully!", "success")
     return redirect(url_for("main.index"))
 
 
@@ -391,6 +399,7 @@ def logout():
         return "Invalid CSRF token", 400
 
     session.clear()
+    flash("You have been signed out.", "info")
     return redirect(url_for("main.index"))
 
 
