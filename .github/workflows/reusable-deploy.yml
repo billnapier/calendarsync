@@ -23,13 +23,15 @@ on:
         required: false
         type: string
         description: "Custom URL to checking smoke test against"
-    secrets:
       wif_provider:
         required: true
+        type: string
         description: "Workload Identity Provider"
       wif_service_account:
         required: true
+        type: string
         description: "Workload Identity Service Account"
+
 
 jobs:
   deploy:
@@ -47,8 +49,8 @@ jobs:
         name: 'Authenticate to Google Cloud'
         uses: 'google-github-actions/auth@c200f3691d83b41bf9bbd8638997a462592937ed' # ratchet:google-github-actions/auth@v2
         with:
-          workload_identity_provider: '${{ secrets.wif_provider }}'
-          service_account: '${{ secrets.wif_service_account }}'
+          workload_identity_provider: '${{ inputs.wif_provider }}'
+          service_account: '${{ inputs.wif_service_account }}'
 
       - name: Set up Cloud SDK
         uses: google-github-actions/setup-gcloud@e427ad8a34f8676edf47cf7d7925499adf3eb74f # ratchet:google-github-actions/setup-gcloud@v2
