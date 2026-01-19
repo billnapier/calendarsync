@@ -50,6 +50,10 @@ on:
         type: string
         default: ""
         description: "Additional flags for gcloud run deploy"
+    outputs:
+      url:
+        description: "The URL of the deployed Cloud Run service"
+        value: ${{ jobs.deploy.outputs.url }}
 
 
 jobs:
