@@ -19,6 +19,5 @@ jobs:
       service_name: "calendarsync-dev"
       region: "us-central1"
       custom_url: "https://calendarsync-dev.billnapier.com"
-    secrets:
-      wif_provider: ${{ secrets.DEV_GCP_WIF_PROVIDER }}
-      wif_service_account: ${{ secrets.DEV_GCP_WIF_SA_EMAIL }}
+      wif_provider: "projects/61852959082/locations/global/workloadIdentityPools/github-pool/providers/github-provider"
+      wif_service_account: "github-actions-sa@calendarsync-napier-dev.iam.gserviceaccount.com"
