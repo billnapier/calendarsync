@@ -20,6 +20,7 @@ jobs:
       wif_provider: "projects/61852959082/locations/global/workloadIdentityPools/github-pool/providers/github-provider"
       wif_service_account: "github-actions-sa@calendarsync-napier-dev.iam.gserviceaccount.com"
       flags: "--allow-unauthenticated"
+      firebase_channel: "pr-${{ github.event.number }}"
       # Inject Dev Configuration directly
       env_vars: |-
         FIREBASE_PROJECT_ID=calendarsync-napier-dev
@@ -44,9 +45,10 @@ jobs:
         with:
           script: |
             const url = "${{ needs.deploy-pr.outputs.url }}";
+            const firebase_url = "${{ needs.deploy-pr.outputs.firebase_url }}";
             github.rest.issues.createComment({
               issue_number: context.issue.number,
               owner: context.repo.owner,
               repo: context.repo.repo,
-              body: `🚀 **PR Preview Deployed!**\n\nYour changes are live at: ${url}`
+              body: `🚀 **PR Preview Deployed!**\n\n- **App (Firebase)**: ${firebase_url}\n- **Service (Cloud Run)**: ${url}\n\n⚠️ **Action Required**: Add the **App (Firebase)** URL to the "Authorized JavaScript origins" in your [Google Cloud Console Credentials](https://console.cloud.google.com/apis/credentials?project=calendarsync-napier-dev) to likely fix OAuth origin errors.`
             })
