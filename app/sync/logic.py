@@ -349,7 +349,9 @@ def _get_google_service(db, user_id):
     return build("calendar", "v3", credentials=creds)
 
 
-def _fetch_google_source(source, user_id):  # pylint: disable=too-many-locals
+def _fetch_google_source(
+    source, user_id, window_start, window_end
+):  # pylint: disable=too-many-locals
     """
     Fetch events from a Google Calendar and convert to iCal components.
     """
@@ -362,10 +364,8 @@ def _fetch_google_source(source, user_id):  # pylint: disable=too-many-locals
         service = _get_google_service(db, user_id)
         calendar_id = source.get("id")
 
-        # Define sync window: 30 days past -> 365 days future
-        start, end = get_sync_window_dates()
-        time_min = start.isoformat()
-        time_max = end.isoformat()
+        time_min = window_start.isoformat()
+        time_max = window_end.isoformat()
 
         events, name = _fetch_all_google_events(
             service, calendar_id, url, time_min=time_min, time_max=time_max
@@ -385,13 +385,13 @@ def _fetch_google_source(source, user_id):  # pylint: disable=too-many-locals
         return [], url, f"{url} (Failed)"
 
 
-def _fetch_single_source(source, user_id):
+def _fetch_single_source(source, user_id, window_start, window_end):
     """
     Helper to fetch a single source.
     Returns (events_list, url, name) or ([], url, failed_name)
     """
     if source.get("type") == "google":
-        return _fetch_google_source(source, user_id)
+        return _fetch_google_source(source, user_id, window_start, window_end)
 
     url = source["url"]
     prefix = source.get("prefix", "")
@@ -407,7 +407,33 @@ def _fetch_single_source(source, user_id):
         name = str(cal_name) if cal_name else url
 
         for component in cal.walk():
-            if component.name == "VEVENT":
+            if component.name != "VEVENT":
+                continue
+
+            # FILTERING LOGIC
+            # We do filtering here to avoid accumulating huge lists of irrelevant events.
+            should_include = False
+
+            # Recurring events (RRULE) are always included to preserve the master series.
+            if component.get("RRULE"):
+                should_include = True
+            elif "dtstart" in component:
+                # Check start date against sync window
+                dt = component["dtstart"].dt
+                # Normalize to UTC for comparison
+                if isinstance(dt, datetime):
+                    if dt.tzinfo is None:
+                        dt = dt.replace(tzinfo=timezone.utc)
+                else:
+                    # Date object (all day) - convert to datetime at start of day
+                    dt = datetime.combine(dt, datetime.min.time()).replace(
+                        tzinfo=timezone.utc
+                    )
+
+                if window_start <= dt <= window_end:
+                    should_include = True
+
+            if should_include:
                 events_items.append(
                     {"component": component, "prefix": prefix, "source_title": name}
                 )
@@ -422,7 +448,7 @@ def _fetch_single_source(source, user_id):
         return [], url, f"{url} (Failed)"
 
 
-def _fetch_source_events(sources, user_id):
+def _fetch_source_events(sources, user_id, window_start, window_end):
     """
     Fetch and parse events from source iCal URLs in parallel.
     Returns:
@@ -437,7 +463,9 @@ def _fetch_source_events(sources, user_id):
     with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
         # Submit all tasks
         future_to_source = {
-            executor.submit(_fetch_single_source, source, user_id): source
+            executor.submit(
+                _fetch_single_source, source, user_id, window_start, window_end
+            ): source
             for source in sources
         }
 
@@ -690,8 +718,14 @@ def sync_calendar_logic(sync_id):  # pylint: disable=too-many-locals
     service = _get_google_service(db, user_id)
     base_url = get_base_url()
 
+    # Define sync window: 30 days past -> 365 days future
+    window_start, window_end = get_sync_window_dates()
+
     # 2. Fetch and Parse
-    all_events_items, source_names = _fetch_source_events(sources, user_id)
+    # Pass window dates to filter early and reduce memory/processing
+    all_events_items, source_names = _fetch_source_events(
+        sources, user_id, window_start, window_end
+    )
 
     # Update source names and last sync time
     sync_ref.update(
@@ -702,43 +736,13 @@ def sync_calendar_logic(sync_id):  # pylint: disable=too-many-locals
     )
 
     # 3. Process Events
-    # Define sync window: 30 days past -> 365 days future
-    window_start, window_end = get_sync_window_dates()
-
-    # Filter source events to ensure we only sync within the window
-    # This handles iCal sources that returned everything, and serves as a safety check
-    filtered_events = []
-    for item in all_events_items:
-        event = item["component"]
-        # Simple check on DTSTART. Recurring rules (RRULE) are complex,
-        # but for a basic sync, checking the start date is a good first approximation.
-        # Note: Google Source events are already filtered by the API call in _fetch_google_source
-        if "dtstart" in event:
-            dt = event["dtstart"].dt
-            # Normalize to UTC for comparison
-            if isinstance(dt, datetime):
-                if dt.tzinfo is None:
-                    dt = dt.replace(tzinfo=timezone.utc)
-            else:
-                # Date object (all day) - convert to datetime at start of day
-                dt = datetime.combine(dt, datetime.min.time()).replace(
-                    tzinfo=timezone.utc
-                )
-
-            # Check if event is within window OR if it is a recurring rule master (RRULE).
-            # We must preserve RRULE masters even if they started long ago,
-            # otherwise the entire series will disappear.
-            if (window_start <= dt <= window_end) or "rrule" in event:
-                filtered_events.append(item)
-        else:
-            # Event without start? Include just in case or skip.
-            # Safe to skip as it won't display anyway.
-            pass
+    # Events are now already filtered by _fetch_source_events, so we can skip
+    # the second filtering pass.
 
     # Fetch existing events map for reliable updates
     # Optimization: Only fetch events we plan to sync to avoid listing entire calendar history
     event_uids = []
-    for item in filtered_events:
+    for item in all_events_items:
         uid = item["component"].get("UID")
         if uid:
             event_uids.append(str(uid))
@@ -747,5 +751,5 @@ def sync_calendar_logic(sync_id):  # pylint: disable=too-many-locals
         service, destination_id, known_uids=event_uids
     )
     _batch_upsert_events(
-        service, destination_id, filtered_events, existing_map, base_url=base_url
+        service, destination_id, all_events_items, existing_map, base_url=base_url
     )
