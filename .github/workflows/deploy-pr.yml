@@ -15,6 +15,7 @@ jobs:
     with:
       project_id: ${{ vars.DEV_GCP_PROJECT_ID }}
       service_name: "calendarsync-pr-${{ github.event.number }}"
+      artifact_repo: "calendarsync-dev"
       region: "us-central1"
       wif_provider: "projects/61852959082/locations/global/workloadIdentityPools/github-pool/providers/github-provider"
       wif_service_account: "github-actions-sa@calendarsync-napier-dev.iam.gserviceaccount.com"

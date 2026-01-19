@@ -14,6 +14,10 @@ on:
         required: true
         type: string
         description: "Cloud Run Service Name"
+      artifact_repo:
+        required: false
+        type: string
+        description: "Artifact Registry Repository Name (defaults to service_name)"
       region:
         required: false
         type: string
@@ -72,12 +76,15 @@ jobs:
 
       - name: Build and Push Container
         env:
+      - name: Build and Push Container
+        env:
           PROJECT_ID: ${{ inputs.project_id }}
           SERVICE_NAME: ${{ inputs.service_name }}
+          ARTIFACT_REPO: ${{ inputs.artifact_repo || inputs.service_name }}
           REGION: ${{ inputs.region }}
         run: |
-          docker build -t ${REGION}-docker.pkg.dev/${PROJECT_ID}/${SERVICE_NAME}/${SERVICE_NAME}:${{ github.sha }} ./app
-          docker push ${REGION}-docker.pkg.dev/${PROJECT_ID}/${SERVICE_NAME}/${SERVICE_NAME}:${{ github.sha }}
+          docker build -t ${REGION}-docker.pkg.dev/${PROJECT_ID}/${ARTIFACT_REPO}/${SERVICE_NAME}:${{ github.sha }} ./app
+          docker push ${REGION}-docker.pkg.dev/${PROJECT_ID}/${ARTIFACT_REPO}/${SERVICE_NAME}:${{ github.sha }}
 
       - name: Deploy to Cloud Run
         id: deploy
@@ -85,7 +92,7 @@ jobs:
         with:
           service: ${{ inputs.service_name }}
           region: ${{ inputs.region }}
-          image: ${{ inputs.region }}-docker.pkg.dev/${{ inputs.project_id }}/${{ inputs.service_name }}/${{ inputs.service_name }}:${{ github.sha }}
+          image: ${{ inputs.region }}-docker.pkg.dev/${{ inputs.project_id }}/${{ inputs.artifact_repo || inputs.service_name }}/${{ inputs.service_name }}:${{ github.sha }}
           env_vars: ${{ inputs.env_vars }}
           secrets: ${{ inputs.secrets }}
 
