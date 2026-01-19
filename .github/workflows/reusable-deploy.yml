@@ -14,6 +14,10 @@ on:
         required: true
         type: string
         description: "Cloud Run Service Name"
+      artifact_repo:
+        required: false
+        type: string
+        description: "Artifact Registry Repository Name (defaults to service_name)"
       region:
         required: false
         type: string
@@ -23,6 +27,16 @@ on:
         required: false
         type: string
         description: "Custom URL to checking smoke test against"
+      env_vars:
+        required: false
+        type: string
+        default: ""
+        description: "Environment variables for Cloud Run service (KEY=VALUE)"
+      secrets:
+        required: false
+        type: string
+        default: ""
+        description: "Secrets for Cloud Run service (KEY=SECRET:VERSION)"
       wif_provider:
         required: true
         type: string
@@ -31,6 +45,23 @@ on:
         required: true
         type: string
         description: "Workload Identity Service Account"
+      flags:
+        required: false
+        type: string
+        default: ""
+        description: "Additional flags for gcloud run deploy"
+      firebase_channel:
+        required: false
+        type: string
+        default: ""
+        description: "Firebase Hosting Preview Channel (leave empty for live site)"
+    outputs:
+      url:
+        description: "The URL of the deployed Cloud Run service"
+        value: ${{ jobs.deploy.outputs.url }}
+      firebase_url:
+        description: "The URL of the deployed Firebase Hosting channel"
+        value: ${{ jobs.deploy.outputs.firebase_url }}
 
 
 jobs:
@@ -40,6 +71,9 @@ jobs:
     permissions:
       contents: 'read'
       id-token: 'write'
+    outputs:
+      url: ${{ steps.deploy.outputs.url }}
+      firebase_url: ${{ steps.firebase_deploy.outputs.FIREBASE_URL }}
 
     steps:
       - name: Checkout
@@ -62,10 +96,11 @@ jobs:
         env:
           PROJECT_ID: ${{ inputs.project_id }}
           SERVICE_NAME: ${{ inputs.service_name }}
+          ARTIFACT_REPO: ${{ inputs.artifact_repo || inputs.service_name }}
           REGION: ${{ inputs.region }}
         run: |
-          docker build -t ${REGION}-docker.pkg.dev/${PROJECT_ID}/${SERVICE_NAME}/${SERVICE_NAME}:${{ github.sha }} ./app
-          docker push ${REGION}-docker.pkg.dev/${PROJECT_ID}/${SERVICE_NAME}/${SERVICE_NAME}:${{ github.sha }}
+          docker build -t ${REGION}-docker.pkg.dev/${PROJECT_ID}/${ARTIFACT_REPO}/${SERVICE_NAME}:${{ github.sha }} ./app
+          docker push ${REGION}-docker.pkg.dev/${PROJECT_ID}/${ARTIFACT_REPO}/${SERVICE_NAME}:${{ github.sha }}
 
       - name: Deploy to Cloud Run
         id: deploy
@@ -73,11 +108,15 @@ jobs:
         with:
           service: ${{ inputs.service_name }}
           region: ${{ inputs.region }}
-          image: ${{ inputs.region }}-docker.pkg.dev/${{ inputs.project_id }}/${{ inputs.service_name }}/${{ inputs.service_name }}:${{ github.sha }}
+          image: ${{ inputs.region }}-docker.pkg.dev/${{ inputs.project_id }}/${{ inputs.artifact_repo || inputs.service_name }}/${{ inputs.service_name }}:${{ github.sha }}
+          env_vars: ${{ inputs.env_vars }}
+          secrets: ${{ inputs.secrets }}
+          flags: ${{ inputs.flags }}
 
       - name: Deploy to Firebase Hosting
         # Only run if firebase.json exists
         if: hashFiles('firebase.json') != ''
+        id: firebase_deploy
         run: |
           # 1. Install Firebase Tools
           npm install -g firebase-tools
@@ -93,8 +132,21 @@ jobs:
           sed -i 's/SERVICE_NAME/${{ inputs.service_name }}/g' firebase.json
 
           # 4. Deploy to Firebase
-          # We use the project_id from inputs
-          firebase deploy --only hosting --project ${{ inputs.project_id }} --non-interactive
+          if [ -n "${{ inputs.firebase_channel }}" ]; then
+            echo "Deploying to Preview Channel: ${{ inputs.firebase_channel }}"
+            # Deploy to channel and capture output to find the URL
+            # We explicitly set setting EXPIRES to 7d to match PR lifecycle roughly
+            OUTPUT=$(firebase hosting:channel:deploy ${{ inputs.firebase_channel }} --project ${{ inputs.project_id }} --expires 7d --non-interactive)
+            echo "$OUTPUT"
+            # Extract URL from output (usually "Channel URL: https://...")
+            URL=$(echo "$OUTPUT" | grep "Channel URL" | sed 's/.*: //')
+            echo "FIREBASE_URL=$URL" >> $GITHUB_OUTPUT
+          else
+            echo "Deploying to Live Channel"
+            firebase deploy --only hosting --project ${{ inputs.project_id }} --non-interactive
+            # Determine Live URL (default)
+            echo "FIREBASE_URL=https://${{ inputs.project_id }}.web.app" >> $GITHUB_OUTPUT
+          fi
         env:
           GOOGLE_APPLICATION_CREDENTIALS: ${{ steps.auth.outputs.credentials_file_path }}
 

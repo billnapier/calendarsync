@@ -1,0 +1,54 @@
+name: Deploy (PR)
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: 'read'
+  id-token: 'write'
+  pull-requests: 'write'
+
+jobs:
+  deploy-pr:
+    uses: ./.github/workflows/reusable-deploy.yml
+    with:
+      project_id: ${{ vars.DEV_GCP_PROJECT_ID }}
+      service_name: "calendarsync-pr-${{ github.event.number }}"
+      artifact_repo: "calendarsync-dev"
+      region: "us-central1"
+      wif_provider: "projects/61852959082/locations/global/workloadIdentityPools/github-pool/providers/github-provider"
+      wif_service_account: "github-actions-sa@calendarsync-napier-dev.iam.gserviceaccount.com"
+      flags: "--allow-unauthenticated"
+      firebase_channel: "pr-${{ github.event.number }}"
+      # Inject Dev Configuration directly
+      env_vars: |-
+        FIREBASE_PROJECT_ID=calendarsync-napier-dev
+        GCP_REGION=us-central1
+        SCHEDULER_INVOKER_EMAIL=scheduler-invoker@calendarsync-napier-dev.iam.gserviceaccount.com
+        FIREBASE_API_KEY=${{ vars.FIREBASE_API_KEY }}
+        FIREBASE_AUTH_DOMAIN=${{ vars.FIREBASE_AUTH_DOMAIN }}
+        FIREBASE_STORAGE_BUCKET=${{ vars.FIREBASE_STORAGE_BUCKET }}
+        FIREBASE_MESSAGING_SENDER_ID=${{ vars.FIREBASE_MESSAGING_SENDER_ID }}
+        FIREBASE_APP_ID=${{ vars.FIREBASE_APP_ID }}
+      secrets: |-
+        GOOGLE_CLIENT_ID=google_client_id:1
+        GOOGLE_CLIENT_SECRET=google_client_secret:1
+        SECRET_KEY=flask_secret_key:1
+
+  comment-url:
+    needs: deploy-pr
+    runs-on: ubuntu-latest
+    steps:
+      - name: Comment PR
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # ratchet:actions/github-script@v6
+        with:
+          script: |
+            const url = "${{ needs.deploy-pr.outputs.url }}";
+            const firebase_url = "${{ needs.deploy-pr.outputs.firebase_url }}";
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: `🚀 **PR Preview Deployed!**\n\n- **App (Firebase)**: ${firebase_url}\n- **Service (Cloud Run)**: ${url}\n\n⚠️ **Action Required**: Add the **App (Firebase)** URL to the "Authorized JavaScript origins" in your [Google Cloud Console Credentials](https://console.cloud.google.com/apis/credentials?project=calendarsync-napier-dev) to likely fix OAuth origin errors.`
+            })
