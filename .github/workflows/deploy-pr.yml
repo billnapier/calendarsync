@@ -19,6 +19,7 @@ jobs:
       region: "us-central1"
       wif_provider: "projects/61852959082/locations/global/workloadIdentityPools/github-pool/providers/github-provider"
       wif_service_account: "github-actions-sa@calendarsync-napier-dev.iam.gserviceaccount.com"
+      flags: "--allow-unauthenticated"
       # Inject Dev Configuration directly
       env_vars: |-
         FIREBASE_PROJECT_ID=calendarsync-napier-dev

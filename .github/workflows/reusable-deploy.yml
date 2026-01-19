@@ -45,6 +45,11 @@ on:
         required: true
         type: string
         description: "Workload Identity Service Account"
+      flags:
+        required: false
+        type: string
+        default: ""
+        description: "Additional flags for gcloud run deploy"
 
 
 jobs:
@@ -93,6 +98,7 @@ jobs:
           image: ${{ inputs.region }}-docker.pkg.dev/${{ inputs.project_id }}/${{ inputs.artifact_repo || inputs.service_name }}/${{ inputs.service_name }}:${{ github.sha }}
           env_vars: ${{ inputs.env_vars }}
           secrets: ${{ inputs.secrets }}
+          flags: ${{ inputs.flags }}
 
       - name: Deploy to Firebase Hosting
         # Only run if firebase.json exists
