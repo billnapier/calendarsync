@@ -108,11 +108,15 @@ def _get_sources_from_form(form):
         prefix = ""
         if i < len(prefixes):
             raw_prefix = prefixes[i].strip()
+            if len(raw_prefix) > 100:
+                raise ValueError("Prefix too long")
             prefix = re.sub(r"[^a-zA-Z0-9 \-_\[\]\(\)]", "", raw_prefix)
 
         if s_type == "google":
             if i < len(ids):
                 cal_id = ids[i].strip()
+                if len(cal_id) > 256:
+                    raise ValueError("Calendar ID too long")
                 if cal_id:
                     sources.append(
                         {
@@ -126,6 +130,8 @@ def _get_sources_from_form(form):
             # iCal
             if i < len(urls):
                 url = urls[i].strip()
+                if len(url) > 2048:
+                    raise ValueError("URL too long")
                 if url:
                     # Validate URL to prevent invalid data and SSRF at configuration time
                     validate_url(url)
