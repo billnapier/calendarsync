@@ -406,7 +406,9 @@ def _fetch_single_source(source, user_id, window_start, window_end):
         cal_name = cal.get("X-WR-CALNAME")
         name = str(cal_name) if cal_name else url
 
-        for component in cal.walk():
+        # Optimization: Use subcomponents instead of walk() to avoid recursive traversal
+        # of children (like VALARM) when we only need top-level VEVENTs.
+        for component in cal.subcomponents:
             if component.name != "VEVENT":
                 continue
 
