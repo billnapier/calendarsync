@@ -51,7 +51,10 @@
                     <div class="form-group">
                         <label for="destination_calendar_id">Destination Calendar</label>
                         {% if calendars %}
-                            <select id="destination_calendar_id" name="destination_calendar_id" required>
+                            <select id="destination_calendar_id"
+                                    name="destination_calendar_id"
+                                    required
+                                    autofocus>
                                 <option value="" disabled selected>Select a calendar</option>
                                 {% for cal in calendars %}
                                     <option value="{{ cal.id }}"
@@ -64,7 +67,8 @@
                                    id="destination_calendar_id"
                                    name="destination_calendar_id"
                                    placeholder="e.g., primary or calendar_id@group.calendar.google.com"
-                                   required>
+                                   required
+                                   autofocus>
                         {% endif %}
                         <div class="form-hint">Select the Google Calendar you want to sync events TO.</div>
                     </div>
