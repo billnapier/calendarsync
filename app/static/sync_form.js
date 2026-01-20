@@ -66,6 +66,17 @@
         const clone = template.content.cloneNode(true);
         container.appendChild(clone);
         updateRemoveButtons();
+
+        // Focus the first input of the new entry for better UX
+        const newEntry = container.lastElementChild;
+        if (newEntry) {
+            // Find the first visible/interactive input or select
+            // We skip hidden inputs to ensure we focus on the user-facing "Type" select
+            const firstInput = newEntry.querySelector('select, input:not([type="hidden"])');
+            if (firstInput) {
+                firstInput.focus();
+            }
+        }
     }
 
     // Remove source entry
