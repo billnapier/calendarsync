@@ -1,5 +1,6 @@
 import os
 import secrets
+from urllib.parse import urlparse, urlunparse
 from datetime import datetime, timedelta, timezone
 from flask import session, current_app
 from google.cloud import secretmanager
@@ -7,6 +8,41 @@ from google.cloud import secretmanager
 # Constants moved from app.py
 SYNC_WINDOW_PAST_DAYS = 30
 SYNC_WINDOW_FUTURE_DAYS = 365
+
+
+def clean_url_for_log(url):
+    """
+    Sanitizes a URL for logging by removing query parameters and credentials.
+    """
+    try:
+        parsed = urlparse(url)
+        # Reconstruct without query, params, fragment
+        # And strip auth from netloc (parsed.hostname excludes auth)
+        netloc = parsed.hostname
+        if parsed.port:
+            netloc = f"{netloc}:{parsed.port}"
+
+        # If hostname is None (e.g. invalid URL), fallback to original or safe subset
+        if not netloc:
+             # Try to salvage if it's just a path or something weird, but for safety return original
+             # if we can't parse it well. But we want to prevent leaking.
+             # If netloc is empty, it might be a relative path or 'not a url'.
+             return url
+
+        cleaned = urlunparse((
+            parsed.scheme,
+            netloc,
+            parsed.path,
+            '', # params
+            '', # query
+            ''  # fragment
+        ))
+        return cleaned
+    except Exception:
+        # On error, return the original URL but maybe truncate or genericize?
+        # Returning original might leak, but if we can't parse it, maybe it's not a URL.
+        # Let's return a safe placeholder if parsing fails totally.
+        return "invalid_url"
 
 
 def get_sync_window_dates():

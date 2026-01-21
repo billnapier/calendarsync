@@ -9,7 +9,12 @@ from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 import google.api_core.exceptions
 
-from app.utils import get_client_config, get_sync_window_dates, get_base_url
+from app.utils import (
+    get_client_config,
+    get_sync_window_dates,
+    get_base_url,
+    clean_url_for_log,
+)
 from app.security import safe_requests_get
 
 # Constants
@@ -110,9 +115,9 @@ def get_calendar_name_from_ical(url):
                         break
 
     except (requests.exceptions.RequestException, ValueError) as e:
-        logger.warning("Failed to extract name from %s: %s", url, e)
+        logger.warning("Failed to extract name from %s: %s", clean_url_for_log(url), e)
 
-    return url
+    return clean_url_for_log(url)
 
 
 def resolve_source_names(sources, calendars):
@@ -146,8 +151,8 @@ def resolve_source_names(sources, calendars):
                     try:
                         source_names[url] = future.result()
                     except Exception as e:  # pylint: disable=broad-exception-caught
-                        logger.warning("Error fetching name for %s: %s", url, e)
-                        source_names[url] = url
+                        logger.warning("Error fetching name for %s: %s", clean_url_for_log(url), e)
+                        source_names[url] = clean_url_for_log(url)
 
     except Exception as e:  # pylint: disable=broad-exception-caught
         logger.warning("Failed to resolve source names: %s", e)
@@ -381,8 +386,8 @@ def _fetch_google_source(
         return events_items, url, name
 
     except Exception as e:  # pylint: disable=broad-exception-caught
-        logger.error("Failed to fetch Google Calendar %s: %s", url, e)
-        return [], url, f"{url} (Failed)"
+        logger.error("Failed to fetch Google Calendar %s: %s", clean_url_for_log(url), e)
+        return [], url, f"{clean_url_for_log(url)} (Failed)"
 
 
 def _fetch_single_source(source, user_id, window_start, window_end):
@@ -404,7 +409,7 @@ def _fetch_single_source(source, user_id, window_start, window_end):
 
         # Extract name
         cal_name = cal.get("X-WR-CALNAME")
-        name = str(cal_name) if cal_name else url
+        name = str(cal_name) if cal_name else clean_url_for_log(url)
 
         # Optimization: Use subcomponents instead of walk() to avoid recursive traversal
         # of children (like VALARM) when we only need top-level VEVENTs.
@@ -446,8 +451,8 @@ def _fetch_single_source(source, user_id, window_start, window_end):
         requests.exceptions.RequestException,
         ValueError,
     ) as e:  # pylint: disable=broad-exception-caught
-        logger.error("Failed to fetch/parse %s: %s", url, e)
-        return [], url, f"{url} (Failed)"
+        logger.error("Failed to fetch/parse %s: %s", clean_url_for_log(url), e)
+        return [], url, f"{clean_url_for_log(url)} (Failed)"
 
 
 def _fetch_source_events(sources, user_id, window_start, window_end):
