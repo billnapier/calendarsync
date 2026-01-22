@@ -24,19 +24,21 @@ def clean_url_for_log(url):
 
         # If hostname is None (e.g. invalid URL), fallback to original or safe subset
         if not netloc:
-             # Try to salvage if it's just a path or something weird, but for safety return original
-             # if we can't parse it well. But we want to prevent leaking.
-             # If netloc is empty, it might be a relative path or 'not a url'.
-             return url
+            # Try to salvage if it's just a path or something weird, but for safety return original
+            # if we can't parse it well. But we want to prevent leaking.
+            # If netloc is empty, it might be a relative path or 'not a url'.
+            return url
 
-        cleaned = urlunparse((
-            parsed.scheme,
-            netloc,
-            parsed.path,
-            '', # params
-            '', # query
-            ''  # fragment
-        ))
+        cleaned = urlunparse(
+            (
+                parsed.scheme,
+                netloc,
+                parsed.path,
+                "",  # params
+                "",  # query
+                "",  # fragment
+            )
+        )
         return cleaned
     except Exception:
         # On error, return the original URL but maybe truncate or genericize?

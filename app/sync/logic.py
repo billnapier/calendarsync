@@ -151,7 +151,9 @@ def resolve_source_names(sources, calendars):
                     try:
                         source_names[url] = future.result()
                     except Exception as e:  # pylint: disable=broad-exception-caught
-                        logger.warning("Error fetching name for %s: %s", clean_url_for_log(url), e)
+                        logger.warning(
+                            "Error fetching name for %s: %s", clean_url_for_log(url), e
+                        )
                         source_names[url] = clean_url_for_log(url)
 
     except Exception as e:  # pylint: disable=broad-exception-caught
@@ -386,7 +388,9 @@ def _fetch_google_source(
         return events_items, url, name
 
     except Exception as e:  # pylint: disable=broad-exception-caught
-        logger.error("Failed to fetch Google Calendar %s: %s", clean_url_for_log(url), e)
+        logger.error(
+            "Failed to fetch Google Calendar %s: %s", clean_url_for_log(url), e
+        )
         return [], url, f"{clean_url_for_log(url)} (Failed)"
 
 
