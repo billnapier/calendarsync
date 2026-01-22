@@ -225,6 +225,42 @@ class TestSyncLogic(unittest.TestCase):
     @patch("app.sync.logic.Credentials")
     @patch("app.sync.logic.build")
     @patch("app.sync.logic.requests.get")
+    def test_sync_calendar_logic_deduplicate_sources(
+        self, mock_get, mock_build, mock_creds, mock_config, mock_firestore
+    ):
+        """Test that duplicate source URLs are only fetched once."""
+        sync_data = {
+            "user_id": "test_user_dedup",
+            "destination_calendar_id": "dest_cal_dedup",
+            "sources": [
+                {"url": "http://same.com/cal.ics", "prefix": "P1"},
+                {"url": "http://same.com/cal.ics", "prefix": "P2"},
+            ],
+        }
+        self._setup_common_mocks(mock_firestore, sync_data)
+
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.content = self._get_ical_content("dedup_uid", "Shared Event")
+        mock_get.return_value = mock_response
+
+        mock_service = MagicMock()
+        mock_build.return_value = mock_service
+
+        mock_batch = MagicMock()
+        mock_service.new_batch_http_request.return_value = mock_batch
+        self._mock_batch_setup(mock_batch)
+
+        logic.sync_calendar_logic("sync_dedup")
+
+        # Verify requests.get was called ONLY ONCE
+        self.assertEqual(mock_get.call_count, 1)
+
+    @patch("app.sync.logic.firestore.client")
+    @patch("app.sync.logic.get_client_config")
+    @patch("app.sync.logic.Credentials")
+    @patch("app.sync.logic.build")
+    @patch("app.sync.logic.requests.get")
     def test_sync_calendar_logic_failure(
         self, mock_get, mock_build, mock_creds, mock_config, mock_firestore
     ):

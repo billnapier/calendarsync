@@ -356,15 +356,15 @@ def _get_google_service(db, user_id):
     return build("calendar", "v3", credentials=creds)
 
 
-def _fetch_google_source(
+def _fetch_google_source_data(
     source, user_id, window_start, window_end
 ):  # pylint: disable=too-many-locals
     """
     Fetch events from a Google Calendar and convert to iCal components.
+    Returns (components, name)
     """
     url = source.get("url", source.get("id"))
-    prefix = source.get("prefix", "")
-    events_items = []
+    components = []
 
     try:
         db = firestore.client()
@@ -381,30 +381,27 @@ def _fetch_google_source(
         for gevent in events:
             # Optimization: Use Adapter instead of converting to icalendar object
             adapter = GoogleEventAdapter(gevent)
-            events_items.append(
-                {"component": adapter, "prefix": prefix, "source_title": name}
-            )
+            components.append(adapter)
 
-        return events_items, url, name
+        return components, name
 
     except Exception as e:  # pylint: disable=broad-exception-caught
         logger.error(
             "Failed to fetch Google Calendar %s: %s", clean_url_for_log(url), e
         )
-        return [], url, f"{clean_url_for_log(url)} (Failed)"
+        return [], f"{clean_url_for_log(url)} (Failed)"
 
 
-def _fetch_single_source(source, user_id, window_start, window_end):
+def _fetch_source_data(source, user_id, window_start, window_end):
     """
-    Helper to fetch a single source.
-    Returns (events_list, url, name) or ([], url, failed_name)
+    Helper to fetch a single source data (components only).
+    Returns (components, name)
     """
     if source.get("type") == "google":
-        return _fetch_google_source(source, user_id, window_start, window_end)
+        return _fetch_google_source_data(source, user_id, window_start, window_end)
 
     url = source["url"]
-    prefix = source.get("prefix", "")
-    events_items = []
+    components_list = []
 
     try:
         response = safe_requests_get(url, timeout=10)
@@ -445,21 +442,21 @@ def _fetch_single_source(source, user_id, window_start, window_end):
                     should_include = True
 
             if should_include:
-                events_items.append(
-                    {"component": component, "prefix": prefix, "source_title": name}
-                )
+                components_list.append(component)
 
-        return events_items, url, name
+        return components_list, name
 
     except (
         requests.exceptions.RequestException,
         ValueError,
     ) as e:  # pylint: disable=broad-exception-caught
         logger.error("Failed to fetch/parse %s: %s", clean_url_for_log(url), e)
-        return [], url, f"{clean_url_for_log(url)} (Failed)"
+        return [], f"{clean_url_for_log(url)} (Failed)"
 
 
-def _fetch_source_events(sources, user_id, window_start, window_end):
+def _fetch_source_events(
+    sources, user_id, window_start, window_end
+):  # pylint: disable=too-many-locals
     """
     Fetch and parse events from source iCal URLs in parallel.
     Returns:
@@ -469,25 +466,56 @@ def _fetch_source_events(sources, user_id, window_start, window_end):
     all_events_items = []
     source_names = {}
 
-    # Use ThreadPoolExecutor for parallel fetching
-    # Limit max_workers to avoid hitting system limits or DOSing the network
+    # 1. Deduplicate sources by (type, url) to avoid redundant fetching
+    unique_sources = {}  # (type, url) -> source
+    for source in sources:
+        # Use URL as key. For Google sources, url should be same as id usually.
+        # Fallback to id if url missing (legacy data?)
+        url_key = source.get("url", source.get("id"))
+        key = (source.get("type", "ical"), url_key)
+        if key not in unique_sources:
+            unique_sources[key] = source
+
+    # 2. Fetch unique sources in parallel
+    results_map = {}  # key -> (components, name)
+
     with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
-        # Submit all tasks
-        future_to_source = {
+        future_to_key = {
             executor.submit(
-                _fetch_single_source, source, user_id, window_start, window_end
-            ): source
-            for source in sources
+                _fetch_source_data, source, user_id, window_start, window_end
+            ): key
+            for key, source in unique_sources.items()
         }
 
-        # Process results as they complete
-        for future in concurrent.futures.as_completed(future_to_source):
+        for future in concurrent.futures.as_completed(future_to_key):
+            key = future_to_key[future]
             try:
-                events, url, name = future.result()
-                all_events_items.extend(events)
-                source_names[url] = name
+                components, name = future.result()
+                results_map[key] = (components, name)
             except Exception as exc:  # pylint: disable=broad-exception-caught
-                logger.error("Unexpected error in fetch thread: %s", exc)
+                logger.error("Unexpected error in fetch thread for %s: %s", key, exc)
+                results_map[key] = ([], "Error")
+
+    # 3. Reconstruct events with prefixes
+    for source in sources:
+        url_key = source.get("url", source.get("id"))
+        key = (source.get("type", "ical"), url_key)
+
+        if key in results_map:
+            components, name = results_map[key]
+            prefix = source.get("prefix", "")
+
+            # Map source name
+            # If multiple sources share URL, the name will be same (last write wins)
+            if source.get("url"):
+                source_names[source["url"]] = name
+            elif source.get("id"):
+                source_names[source["id"]] = name
+
+            for component in components:
+                all_events_items.append(
+                    {"component": component, "prefix": prefix, "source_title": name}
+                )
 
     return all_events_items, source_names
 
