@@ -76,5 +76,20 @@
         });
     });
 
-    document.addEventListener('DOMContentLoaded', initSubmitButtons);
+    // Handle alert dismissal
+    function initAlertDismissal() {
+        document.addEventListener('click', function (e) {
+            if (e.target.matches('.alert-close')) {
+                const alert = e.target.closest('.alert');
+                if (alert) {
+                    alert.remove();
+                }
+            }
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        initSubmitButtons();
+        initAlertDismissal();
+    });
 })();

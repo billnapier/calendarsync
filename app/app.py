@@ -44,7 +44,10 @@ def add_security_headers(response):
     response.headers["Content-Security-Policy"] = (
         "default-src 'self'; "
         "script-src 'self' https://accounts.google.com/gsi/client; "
-        "style-src 'self' 'unsafe-inline'; "
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+        "font-src 'self' https://fonts.gstatic.com; "
+        "frame-src 'self' https://accounts.google.com; "
+        "connect-src 'self' https://accounts.google.com; "
         "object-src 'none'; "
         "frame-ancestors 'self';"
     )
