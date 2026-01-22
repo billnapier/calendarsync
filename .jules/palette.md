@@ -25,3 +25,7 @@
 ## 2026-01-20 - Focus Management in Dynamic Forms
 **Learning:** In forms where users add items dynamically (like "Add Source"), the default browser behavior leaves focus on the "Add" button. This forces users to manually tab or click into the new fields, slowing down data entry and breaking flow.
 **Action:** Updated `app/static/sync_form.js` to programmatically move focus to the first interactive element of a newly added row. Additionally, added `autofocus` to the primary field on the Create page. This "invisible" UX improvement significantly speeds up repeated actions and supports power users/keyboard navigation. Note: When querying for focus targets, always exclude hidden inputs (`input:not([type="hidden"])`) to ensure focus lands on a visible control.
+
+## 2026-01-20 - List Item Animations
+**Learning:** Instantaneous removal or appearance of list items feels abrupt and can be jarring. It lacks "physicality" and makes the interface feel less polished.
+**Action:** Implemented CSS transitions and animations (`fade-in` and `fade-out`) for adding and removing dynamic rows. Used `setTimeout` (matching CSS duration) to ensure reliable DOM removal after the visual effect completes, avoiding potential issues with `transitionend` firing. This adds a sense of weight and quality to the interaction.

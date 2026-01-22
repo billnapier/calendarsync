@@ -70,6 +70,7 @@
         // Focus the first input of the new entry for better UX
         const newEntry = container.lastElementChild;
         if (newEntry) {
+            newEntry.classList.add('adding');
             // Find the first visible/interactive input or select
             // We skip hidden inputs to ensure we focus on the user-facing "Type" select
             const firstInput = newEntry.querySelector('select, input:not([type="hidden"])');
@@ -84,8 +85,12 @@
         const entry = btn.closest('.ical-entry');
         // Prevent removing the last entry
         if (document.querySelectorAll('.ical-entry').length > 1) {
-            entry.remove();
-            updateRemoveButtons();
+            entry.classList.add('removing');
+            // Wait for transition to finish (matches CSS 0.2s)
+            setTimeout(() => {
+                entry.remove();
+                updateRemoveButtons();
+            }, 200);
         }
     }
 
