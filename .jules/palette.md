@@ -29,3 +29,7 @@
 ## 2026-01-20 - List Item Animations
 **Learning:** Instantaneous removal or appearance of list items feels abrupt and can be jarring. It lacks "physicality" and makes the interface feel less polished.
 **Action:** Implemented CSS transitions and animations (`fade-in` and `fade-out`) for adding and removing dynamic rows. Used `setTimeout` (matching CSS duration) to ensure reliable DOM removal after the visual effect completes, avoiding potential issues with `transitionend` firing. This adds a sense of weight and quality to the interaction.
+
+## 2026-01-21 - Accessing Truncated Content
+**Learning:** Text truncation (ellipsis) is great for layout but makes content inaccessible for reading or copying. This is a common pattern for URLs or IDs.
+**Action:** Implemented a "Copy to Clipboard" button pattern next to truncated source URLs. This restores access to the data without breaking the layout. Always provide an alternative way to access truncated content.

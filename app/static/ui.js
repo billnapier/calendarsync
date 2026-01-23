@@ -6,6 +6,36 @@
 (function () {
     'use strict';
 
+    function initCopyButtons() {
+        document.addEventListener('click', async function (e) {
+            const btn = e.target.closest('.btn-copy');
+            if (!btn) return;
+
+            if (btn.classList.contains('copied')) return;
+
+            const text = btn.dataset.copy;
+            if (!text) return;
+
+            try {
+                await navigator.clipboard.writeText(text);
+
+                // Feedback
+                btn.classList.add('copied');
+                const originalHtml = btn.innerHTML;
+
+                // Check icon
+                btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"></polyline></svg>';
+
+                setTimeout(() => {
+                    btn.classList.remove('copied');
+                    btn.innerHTML = originalHtml;
+                }, 2000);
+            } catch (err) {
+                console.error('Failed to copy:', err);
+            }
+        });
+    }
+
     function initSubmitButtons() {
         const forms = document.querySelectorAll('form');
 
@@ -76,5 +106,8 @@
         });
     });
 
-    document.addEventListener('DOMContentLoaded', initSubmitButtons);
+    document.addEventListener('DOMContentLoaded', function () {
+        initSubmitButtons();
+        initCopyButtons();
+    });
 })();
