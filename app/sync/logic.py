@@ -6,6 +6,7 @@ import requests
 import icalendar
 from firebase_admin import firestore
 from google.oauth2.credentials import Credentials
+from google.auth.transport.requests import Request
 from googleapiclient.discovery import build
 import google.api_core.exceptions
 
@@ -346,7 +347,7 @@ def _get_google_service(db, user_id):
         client_secret=client_config["web"]["client_secret"],
         scopes=SCOPES,
     )
-    return build("calendar", "v3", credentials=creds)
+    return build("calendar", "v3", credentials=creds), creds
 
 
 def _fetch_google_source_data(
@@ -361,7 +362,7 @@ def _fetch_google_source_data(
 
     try:
         db = firestore.client()
-        service = _get_google_service(db, user_id)
+        service, _ = _get_google_service(db, user_id)
         calendar_id = source.get("id")
 
         time_min = window_start.isoformat()
@@ -511,13 +512,68 @@ def _fetch_source_events(
     return all_events_items, source_names
 
 
-def _get_existing_events_map(service, destination_id, known_uids=None):
+def _create_batch_callback(result_map):
+    """Creates a callback function for batch requests that populates result_map."""
+
+    def batch_callback(request_id, response, exception):
+        if exception:
+            logger.debug(
+                "Error fetching existing event UID %s: %s", request_id, exception
+            )
+            return
+
+        items = response.get("items", [])
+        if items:
+            event = items[0]
+            ical_uid = event.get("iCalUID")
+            event_id = event.get("id")
+            if ical_uid and event_id:
+                result_map[ical_uid] = event_id
+
+    return batch_callback
+
+
+def _execute_batch_request(service, uids, destination_id, callback):
+    """Executes a batch request for a list of UIDs."""
+    # pylint: disable=no-member
+    batch = service.new_batch_http_request()
+    for uid in uids:
+        batch.add(
+            service.events().list(
+                calendarId=destination_id,
+                iCalUID=uid,
+                fields="items(id,iCalUID)",
+            ),
+            request_id=uid,
+            callback=callback,
+        )
+    batch.execute()
+
+
+def _fetch_existing_events_chunk(uids, creds, destination_id):
+    """
+    Worker function to fetch a chunk of existing events using a dedicated service instance.
+    """
+    local_map = {}
+    try:
+        service = build("calendar", "v3", credentials=creds, cache_discovery=True)
+        callback = _create_batch_callback(local_map)
+        _execute_batch_request(service, uids, destination_id, callback)
+    except Exception as e:  # pylint: disable=broad-exception-caught
+        logger.error("Error in existing events chunk fetch: %s", e)
+
+    return local_map
+
+
+def _get_existing_events_map(
+    service, destination_id, known_uids=None, creds=None
+):  # pylint: disable=too-many-locals,too-many-branches
     """
     Fetch existing events from the destination calendar to support updates.
     Returns a dict mapping iCalUID -> eventId.
 
     Optimization: If known_uids is provided, fetches only those specific events
-    using batch requests, rather than listing the entire calendar.
+    using batch requests. If creds is provided, runs batches in parallel.
     """
     existing_map = {}
 
@@ -530,44 +586,38 @@ def _get_existing_events_map(service, destination_id, known_uids=None):
         # Batch limit is 50 for Google Calendar API
         batch_limit = 50
 
-        def batch_callback(request_id, response, exception):
-            if exception:
-                # 404 or empty results are handled gracefully (just not added to map)
-                logger.debug(
-                    "Error fetching existing event UID %s: %s", request_id, exception
-                )
-                return
+        if creds:
+            # Parallel Execution
+            chunks = [
+                uids_to_fetch[i : i + batch_limit]
+                for i in range(0, len(uids_to_fetch), batch_limit)
+            ]
+            with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+                future_to_chunk = {
+                    executor.submit(
+                        _fetch_existing_events_chunk, chunk, creds, destination_id
+                    ): chunk
+                    for chunk in chunks
+                }
 
-            items = response.get("items", [])
-            if items:
-                # Assuming uniqueness, take the first match
-                event = items[0]
-                ical_uid = event.get("iCalUID")
-                event_id = event.get("id")
-                if ical_uid and event_id:
-                    existing_map[ical_uid] = event_id
+                for future in concurrent.futures.as_completed(future_to_chunk):
+                    try:
+                        result_map = future.result()
+                        existing_map.update(result_map)
+                    except Exception as exc:  # pylint: disable=broad-exception-caught
+                        logger.error("Chunk fetch generated an exception: %s", exc)
+        else:
+            # Sequential Execution (Fallback)
+            callback = _create_batch_callback(existing_map)
 
-        for i in range(0, len(uids_to_fetch), batch_limit):
-            chunk = uids_to_fetch[i : i + batch_limit]
-            batch = service.new_batch_http_request()
-            for uid in chunk:
-                # Search specifically for this iCalUID
-                batch.add(
-                    service.events().list(
-                        calendarId=destination_id,
-                        iCalUID=uid,
-                        fields="items(id,iCalUID)",
-                    ),
-                    request_id=uid,
-                    callback=batch_callback,
-                )
-
-            try:
-                batch.execute()
-            except Exception as e:  # pylint: disable=broad-exception-caught
-                logger.error(
-                    "Batch execution failed in _get_existing_events_map: %s", e
-                )
+            for i in range(0, len(uids_to_fetch), batch_limit):
+                chunk = uids_to_fetch[i : i + batch_limit]
+                try:
+                    _execute_batch_request(service, chunk, destination_id, callback)
+                except Exception as e:  # pylint: disable=broad-exception-caught
+                    logger.error(
+                        "Batch execution failed in _get_existing_events_map: %s", e
+                    )
 
         return existing_map
 
@@ -745,7 +795,7 @@ def sync_calendar_logic(sync_id):  # pylint: disable=too-many-locals
             sources.append({"url": url, "prefix": old_prefix})
 
     # 1. Get User Credentials
-    service = _get_google_service(db, user_id)
+    service, creds = _get_google_service(db, user_id)
     base_url = get_base_url()
 
     # Define sync window: 30 days past -> 365 days future
@@ -777,8 +827,15 @@ def sync_calendar_logic(sync_id):  # pylint: disable=too-many-locals
         if uid:
             event_uids.append(str(uid))
 
+    # Ensure credentials are fresh before potentially using them in threads
+    if creds and creds.expired:
+        try:
+            creds.refresh(Request())
+        except Exception as e:  # pylint: disable=broad-exception-caught
+            logger.warning("Failed to refresh credentials: %s", e)
+
     existing_map = _get_existing_events_map(
-        service, destination_id, known_uids=event_uids
+        service, destination_id, known_uids=event_uids, creds=creds
     )
     _batch_upsert_events(
         service, destination_id, all_events_items, existing_map, base_url=base_url
