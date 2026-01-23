@@ -9,7 +9,7 @@ from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 import google.api_core.exceptions
 
-from app.utils import get_client_config, get_sync_window_dates, get_base_url
+from app.utils import get_client_config, get_sync_window_dates, get_base_url, clean_url_for_log
 from app.security import safe_requests_get
 
 # Constants
@@ -110,7 +110,7 @@ def get_calendar_name_from_ical(url):
                         break
 
     except (requests.exceptions.RequestException, ValueError) as e:
-        logger.warning("Failed to extract name from %s: %s", url, e)
+        logger.warning("Failed to extract name from %s: %s", clean_url_for_log(url), e)
 
     return url
 
@@ -146,7 +146,7 @@ def resolve_source_names(sources, calendars):
                     try:
                         source_names[url] = future.result()
                     except Exception as e:  # pylint: disable=broad-exception-caught
-                        logger.warning("Error fetching name for %s: %s", url, e)
+                        logger.warning("Error fetching name for %s: %s", clean_url_for_log(url), e)
                         source_names[url] = url
 
     except Exception as e:  # pylint: disable=broad-exception-caught
@@ -379,7 +379,7 @@ def _fetch_google_source_data(
         return components, name
 
     except Exception as e:  # pylint: disable=broad-exception-caught
-        logger.error("Failed to fetch Google Calendar %s: %s", url, e)
+        logger.error("Failed to fetch Google Calendar %s: %s", clean_url_for_log(url), e)
         return [], f"{url} (Failed)"
 
 
@@ -441,7 +441,7 @@ def _fetch_source_data(source, user_id, window_start, window_end):
         requests.exceptions.RequestException,
         ValueError,
     ) as e:  # pylint: disable=broad-exception-caught
-        logger.error("Failed to fetch/parse %s: %s", url, e)
+        logger.error("Failed to fetch/parse %s: %s", clean_url_for_log(url), e)
         return [], f"{url} (Failed)"
 
 
@@ -484,7 +484,11 @@ def _fetch_source_events(
                 components, name = future.result()
                 results_map[key] = (components, name)
             except Exception as exc:  # pylint: disable=broad-exception-caught
-                logger.error("Unexpected error in fetch thread for %s: %s", key, exc)
+                logger.error(
+                    "Unexpected error in fetch thread for %s: %s",
+                    (key[0], clean_url_for_log(key[1])),
+                    exc,
+                )
                 results_map[key] = ([], "Error")
 
     # 3. Reconstruct events with prefixes
