@@ -901,3 +901,20 @@ details[open] summary.help-summary::before {
         transform: rotate(360deg);
     }
 }
+
+/* Icon Button */
+.btn-icon {
+    padding: 0.5rem;
+    line-height: 0;
+    border-radius: 8px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 38px;
+    min-height: 38px;
+}
+
+.btn-icon svg {
+    width: 1.25em;
+    height: 1.25em;
+}

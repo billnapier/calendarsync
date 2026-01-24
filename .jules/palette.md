@@ -29,3 +29,7 @@
 ## 2026-01-20 - List Item Animations
 **Learning:** Instantaneous removal or appearance of list items feels abrupt and can be jarring. It lacks "physicality" and makes the interface feel less polished.
 **Action:** Implemented CSS transitions and animations (`fade-in` and `fade-out`) for adding and removing dynamic rows. Used `setTimeout` (matching CSS duration) to ensure reliable DOM removal after the visual effect completes, avoiding potential issues with `transitionend` firing. This adds a sense of weight and quality to the interaction.
+
+## 2026-01-24 - Icon-Only Buttons and Accessibility
+**Learning:** Text-heavy interfaces in repeated lists can feel cluttered. Replacing text buttons with icons (like a trash can for delete) saves space and reduces cognitive load, but often sacrifices accessibility if not done carefully.
+**Action:** Replaced text "Remove" buttons with icon-only buttons using inline SVGs. Crucially, I maintained accessibility by keeping `aria-label` and adding a `title` tooltip. This proves that we can have a clean, modern UI without excluding screen reader users. Always pair icon-only buttons with explicit accessibility labels.
