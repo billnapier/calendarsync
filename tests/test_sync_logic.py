@@ -127,13 +127,20 @@ class TestSyncLogic(unittest.TestCase):
         mock_service = MagicMock()
         mock_build.return_value = mock_service
 
-        mock_batch = MagicMock()
-        mock_service.new_batch_http_request.return_value = mock_batch
-        self._mock_batch_setup(mock_batch)  # Default empty response
+        # Mock batch creation to return new batch mocks each time
+        mock_batches = []
+        def create_batch():
+            batch = MagicMock()
+            self._mock_batch_setup(batch)
+            mock_batches.append(batch)
+            return batch
+
+        mock_service.new_batch_http_request.side_effect = create_batch
 
         logic.sync_calendar_logic("sync_123")
 
-        self.assertTrue(mock_batch.add.called, "Batch add was not called")
+        self.assertTrue(len(mock_batches) > 0, "No batches created")
+        self.assertTrue(mock_batches[0].add.called, "Batch add was not called")
         _, kwargs = mock_service.events.return_value.import_.call_args
         self.assertEqual(kwargs["body"]["summary"], "[TestPrefix] Meeting")
         self.assertEqual(kwargs["body"]["source"]["title"], "Test Calendar")
@@ -163,9 +170,6 @@ class TestSyncLogic(unittest.TestCase):
         mock_service = MagicMock()
         mock_build.return_value = mock_service
 
-        mock_batch = MagicMock()
-        mock_service.new_batch_http_request.return_value = mock_batch
-
         # Simulate finding the event
         response_map = {
             "12345": (
@@ -173,7 +177,13 @@ class TestSyncLogic(unittest.TestCase):
                 None,
             )
         }
-        self._mock_batch_setup(mock_batch, response_map=response_map)
+
+        def create_batch():
+            batch = MagicMock()
+            self._mock_batch_setup(batch, response_map=response_map)
+            return batch
+
+        mock_service.new_batch_http_request.side_effect = create_batch
 
         logic.sync_calendar_logic("sync_update")
 
@@ -212,13 +222,21 @@ class TestSyncLogic(unittest.TestCase):
         mock_service = MagicMock()
         mock_build.return_value = mock_service
 
-        mock_batch = MagicMock()
-        mock_service.new_batch_http_request.return_value = mock_batch
-        self._mock_batch_setup(mock_batch)
+        mock_batches = []
+        def create_batch():
+            batch = MagicMock()
+            self._mock_batch_setup(batch)
+            mock_batches.append(batch)
+            return batch
+
+        mock_service.new_batch_http_request.side_effect = create_batch
 
         logic.sync_calendar_logic("sync_multi")
+
+        # Verify calls. We can check number of add calls across all batches
+        total_adds = sum(batch.add.call_count for batch in mock_batches)
         # 2 fetches + 2 upserts = 4
-        self.assertEqual(mock_batch.add.call_count, 4)
+        self.assertEqual(total_adds, 4)
 
     @patch("app.sync.logic.firestore.client")
     @patch("app.sync.logic.get_client_config")
@@ -247,9 +265,12 @@ class TestSyncLogic(unittest.TestCase):
         mock_service = MagicMock()
         mock_build.return_value = mock_service
 
-        mock_batch = MagicMock()
-        mock_service.new_batch_http_request.return_value = mock_batch
-        self._mock_batch_setup(mock_batch)
+        def create_batch():
+            batch = MagicMock()
+            self._mock_batch_setup(batch)
+            return batch
+
+        mock_service.new_batch_http_request.side_effect = create_batch
 
         logic.sync_calendar_logic("sync_dedup")
 
@@ -275,9 +296,11 @@ class TestSyncLogic(unittest.TestCase):
 
         mock_service = MagicMock()
         mock_build.return_value = mock_service
-        mock_service.events.return_value.list.return_value.execute.return_value = {
-            "items": []
-        }
+        # For failure in fetch, _fetch_source_events returns empty, so no upserts
+        # But _get_existing_events_map is called with empty known_uids -> does nothing
+
+        # logic.sync_calendar_logic calls _get_existing_events_map
+        # _get_existing_events_map -> if known_uids is empty, returns {}
 
         logic.sync_calendar_logic("sync_fail")
 
@@ -313,16 +336,30 @@ class TestSyncLogic(unittest.TestCase):
 
         mock_service = MagicMock()
         mock_build.return_value = mock_service
-        mock_batch = MagicMock()
-        mock_service.new_batch_http_request.return_value = mock_batch
-        mock_service.events.return_value.list.return_value.execute.return_value = {
-            "items": []
-        }
+
+        mock_batches = []
+        def create_batch():
+            batch = MagicMock()
+            self._mock_batch_setup(batch)
+            mock_batches.append(batch)
+            return batch
+        mock_service.new_batch_http_request.side_effect = create_batch
 
         logic.sync_calendar_logic("sync_filter")
 
-        # Verify NO batch add calls (filtered out)
-        self.assertFalse(mock_batch.add.called)
+        # Verify NO batch add calls (filtered out) - except for maybe existing events check?
+        # But here known_uids will be empty if filtered.
+        # Wait, _fetch_source_events filters.
+        # If filtered, it's not in all_events_items.
+        # So event_uids is empty.
+        # So _get_existing_events_map returns {}.
+        # So _batch_upsert_events has empty list.
+        # So no batches created for upsert.
+        # Batches might be created for _get_existing_events_map if we had UIDs.
+
+        # We need to check if any batch was created/added to.
+        total_adds = sum(batch.add.call_count for batch in mock_batches)
+        self.assertEqual(total_adds, 0)
 
     @patch("app.sync.logic.firestore.client")
     @patch("app.sync.logic.get_client_config")
@@ -350,25 +387,32 @@ class TestSyncLogic(unittest.TestCase):
 
         mock_service = MagicMock()
         mock_build.return_value = mock_service
-        mock_batch = MagicMock()
-        mock_service.new_batch_http_request.return_value = mock_batch
-        mock_service.events.return_value.list.return_value.execute.return_value = {
-            "items": []
-        }
+
+        mock_batches = []
+        def create_batch():
+            batch = MagicMock()
+            self._mock_batch_setup(batch)
+            mock_batches.append(batch)
+            return batch
+        mock_service.new_batch_http_request.side_effect = create_batch
 
         logic.sync_calendar_logic("sync_recurring_keep")
 
         # Verify batch add WAS called (kept)
-        self.assertTrue(mock_batch.add.called)
+        total_adds = sum(batch.add.call_count for batch in mock_batches)
+        self.assertTrue(total_adds > 0)
 
-    def test_get_existing_events_map_uses_max_results(self):
+    @patch("app.sync.logic.build")
+    def test_get_existing_events_map_uses_max_results(self, mock_build):
         """Test that _get_existing_events_map uses maxResults=2500 for optimization."""
         mock_service = MagicMock()
+        mock_build.return_value = mock_service
         mock_events = mock_service.events.return_value
         mock_list = mock_events.list
         mock_list.return_value.execute.return_value = {"items": []}
 
-        logic._get_existing_events_map(mock_service, "dest_cal")
+        mock_creds = MagicMock()
+        logic._get_existing_events_map(mock_creds, "dest_cal")
 
         # Verify call args
         _, kwargs = mock_list.call_args
