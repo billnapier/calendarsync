@@ -1,5 +1,6 @@
 import os
 import secrets
+from urllib.parse import urlparse
 from datetime import datetime, timedelta, timezone
 from flask import session, current_app
 from google.cloud import secretmanager
@@ -131,3 +132,29 @@ def get_base_url():
         "calendarsync-napier": "https://calendarsync.billnapier.com",
     }
     return url_mapping.get(project_id, "https://calendarsync.billnapier.com")
+
+
+def clean_url_for_log(url):
+    """
+    Sanitizes a URL for logging by removing the password.
+    """
+    if not url:
+        return url
+    try:
+        parsed = urlparse(url)
+        if parsed.password:
+            # Use _replace to update the netloc
+            # We construct a new netloc from components, omitting password
+            auth = parsed.username if parsed.username else ""
+            host = parsed.hostname if parsed.hostname else ""
+            port = f":{parsed.port}" if parsed.port else ""
+
+            if auth:
+                new_netloc = f"{auth}@{host}{port}"
+            else:
+                new_netloc = f"{host}{port}"
+
+            return parsed._replace(netloc=new_netloc).geturl()
+        return url
+    except Exception:
+        return "[Invalid URL]"
