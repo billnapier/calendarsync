@@ -129,6 +129,7 @@ class TestSyncLogic(unittest.TestCase):
 
         # Mock batch creation to return new batch mocks each time
         mock_batches = []
+
         def create_batch():
             batch = MagicMock()
             self._mock_batch_setup(batch)
@@ -223,6 +224,7 @@ class TestSyncLogic(unittest.TestCase):
         mock_build.return_value = mock_service
 
         mock_batches = []
+
         def create_batch():
             batch = MagicMock()
             self._mock_batch_setup(batch)
@@ -338,11 +340,13 @@ class TestSyncLogic(unittest.TestCase):
         mock_build.return_value = mock_service
 
         mock_batches = []
+
         def create_batch():
             batch = MagicMock()
             self._mock_batch_setup(batch)
             mock_batches.append(batch)
             return batch
+
         mock_service.new_batch_http_request.side_effect = create_batch
 
         logic.sync_calendar_logic("sync_filter")
@@ -389,11 +393,13 @@ class TestSyncLogic(unittest.TestCase):
         mock_build.return_value = mock_service
 
         mock_batches = []
+
         def create_batch():
             batch = MagicMock()
             self._mock_batch_setup(batch)
             mock_batches.append(batch)
             return batch
+
         mock_service.new_batch_http_request.side_effect = create_batch
 
         logic.sync_calendar_logic("sync_recurring_keep")
