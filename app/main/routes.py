@@ -26,6 +26,7 @@ from . import main_bp
 logger = logging.getLogger(__name__)
 
 MAX_SOURCES_LIMIT = 50
+MAX_SYNCS_PER_USER = 10
 
 
 @main_bp.route("/")
@@ -349,6 +350,17 @@ def _handle_create_sync_post(user):
                 break
 
     db = firestore.client()
+
+    # Check limit of syncs per user
+    existing_syncs = db.collection("syncs").where("user_id", "==", user["uid"]).get()
+    if len(existing_syncs) >= MAX_SYNCS_PER_USER:
+        logger.warning("User %s exceeded max syncs limit", user["uid"])
+        flash(
+            f"You have reached the maximum number of syncs ({MAX_SYNCS_PER_USER}).",
+            "danger",
+        )
+        return redirect(url_for("main.index"))
+
     new_sync_ref = db.collection("syncs").document()
     new_sync_ref.set(
         {
