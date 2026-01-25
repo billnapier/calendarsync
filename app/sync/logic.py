@@ -810,16 +810,6 @@ def _batch_upsert_events(
     if existing_map is None:
         existing_map = {}
 
-    # Optimization: Deduplicate events by UID to prevent redundant API calls
-    # If multiple sources contain the same event (same UID), the last one processed wins.
-    unique_events_map = {}
-    for item in events_items:
-        uid = item["component"].get("UID")
-        if uid:
-            unique_events_map[str(uid)] = item
-
-    events_items = list(unique_events_map.values())
-
     batch_limit = 50
 
     # Parallel execution if creds provided and enough items

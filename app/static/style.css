@@ -287,6 +287,12 @@ footer {
     border-color: #137333;
 }
 
+.btn-copy-icon {
+    margin-left: 0.5rem;
+    vertical-align: middle;
+    font-weight: normal;
+}
+
 /* Form & Card Styles */
 .form-card {
     background: var(--white);
