@@ -4,6 +4,7 @@ import requests
 from datetime import datetime
 from app.sync import logic
 
+
 class TestLogLeak(unittest.TestCase):
     @patch("app.sync.logic.logger")
     @patch("app.sync.logic.safe_requests_get")
@@ -52,6 +53,7 @@ class TestLogLeak(unittest.TestCase):
 
         # Verify sanitized URL IS present
         self.assertIn("user@example.com", args[1])
+
 
 if __name__ == "__main__":
     unittest.main()

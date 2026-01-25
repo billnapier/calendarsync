@@ -386,7 +386,9 @@ def _fetch_google_source_data(
         return components, name
 
     except Exception as e:  # pylint: disable=broad-exception-caught
-        logger.error("Failed to fetch Google Calendar %s: %s", clean_url_for_log(url), e)
+        logger.error(
+            "Failed to fetch Google Calendar %s: %s", clean_url_for_log(url), e
+        )
         return [], f"{clean_url_for_log(url)} (Failed)"
 
 
