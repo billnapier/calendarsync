@@ -1,6 +1,7 @@
 import unittest
 from app.utils import clean_url_for_log
 
+
 class TestUtilsSecurity(unittest.TestCase):
     def test_clean_url_simple(self):
         url = "https://example.com/calendar.ics"

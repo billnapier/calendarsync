@@ -9,7 +9,12 @@ from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 import google.api_core.exceptions
 
-from app.utils import get_client_config, get_sync_window_dates, get_base_url, clean_url_for_log
+from app.utils import (
+    get_client_config,
+    get_sync_window_dates,
+    get_base_url,
+    clean_url_for_log,
+)
 from app.security import safe_requests_get
 
 # Constants
@@ -146,7 +151,9 @@ def resolve_source_names(sources, calendars):
                     try:
                         source_names[url] = future.result()
                     except Exception as e:  # pylint: disable=broad-exception-caught
-                        logger.warning("Error fetching name for %s: %s", clean_url_for_log(url), e)
+                        logger.warning(
+                            "Error fetching name for %s: %s", clean_url_for_log(url), e
+                        )
                         source_names[url] = url
 
     except Exception as e:  # pylint: disable=broad-exception-caught
@@ -379,7 +386,9 @@ def _fetch_google_source_data(
         return components, name
 
     except Exception as e:  # pylint: disable=broad-exception-caught
-        logger.error("Failed to fetch Google Calendar %s: %s", clean_url_for_log(url), e)
+        logger.error(
+            "Failed to fetch Google Calendar %s: %s", clean_url_for_log(url), e
+        )
         return [], f"{url} (Failed)"
 
 
