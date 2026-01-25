@@ -76,7 +76,7 @@
         });
     });
 
-    // Handle alert dismissal
+    // Handle alert dismissal (Manual click)
     function initAlertDismissal() {
         document.addEventListener('click', function (e) {
             if (e.target.matches('.alert-close')) {
@@ -88,8 +88,23 @@
         });
     }
 
+    // Auto-dismiss success/info alerts (Automatic)
+    function initAutoDismissAlerts() {
+        const alerts = document.querySelectorAll('.alert-success, .alert-info');
+        alerts.forEach(alert => {
+            setTimeout(() => {
+                alert.classList.add('fade-out');
+                // Remove from DOM after transition matches CSS duration (0.5s)
+                setTimeout(() => {
+                    alert.remove();
+                }, 500);
+            }, 5000); // 5 seconds delay
+        });
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
         initSubmitButtons();
         initAlertDismissal();
+        initAutoDismissAlerts();
     });
 })();

@@ -29,3 +29,7 @@
 ## 2026-01-20 - List Item Animations
 **Learning:** Instantaneous removal or appearance of list items feels abrupt and can be jarring. It lacks "physicality" and makes the interface feel less polished.
 **Action:** Implemented CSS transitions and animations (`fade-in` and `fade-out`) for adding and removing dynamic rows. Used `setTimeout` (matching CSS duration) to ensure reliable DOM removal after the visual effect completes, avoiding potential issues with `transitionend` firing. This adds a sense of weight and quality to the interaction.
+
+## 2026-01-21 - Auto-dismiss Alerts
+**Learning:** Success and info messages (toasts) should be transient to keep the interface clean, while errors must remain until dismissed by the user to ensure they are seen.
+**Action:** Implemented auto-dismiss logic in `ui.js` for `.alert-success` and `.alert-info` with a 5-second delay and smooth fade-out transition. Ensure error alerts (`.alert-danger`) are excluded from auto-dismiss.
