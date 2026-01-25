@@ -90,8 +90,44 @@
         });
     }
 
+    // Initialize Copy to Clipboard buttons
+    function initCopyButtons() {
+        document.addEventListener('click', function(e) {
+            const btn = e.target.closest('.btn-copy');
+            if (!btn) return;
+
+            const textToCopy = btn.dataset.copyText;
+            if (!textToCopy) return;
+
+            e.preventDefault();
+
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                const originalText = btn.textContent;
+                // Store original text if not already stored (to handle rapid clicks)
+                if (!btn.dataset.originalText) {
+                    btn.dataset.originalText = originalText;
+                }
+
+                btn.textContent = 'Copied!';
+                btn.classList.add('btn-copy-success');
+
+                setTimeout(() => {
+                    // Restore original text
+                    if (btn.dataset.originalText) {
+                        btn.textContent = btn.dataset.originalText;
+                        delete btn.dataset.originalText;
+                    }
+                    btn.classList.remove('btn-copy-success');
+                }, 2000);
+            }).catch(err => {
+                console.error('Failed to copy: ', err);
+            });
+        });
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
         initSubmitButtons();
         initAutoDismissAlerts();
+        initCopyButtons();
     });
 })();

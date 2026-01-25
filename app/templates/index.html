@@ -50,7 +50,7 @@
                             <button type="button"
                                     class="alert-close"
                                     onclick="this.parentElement.remove()"
-                                    aria-label="Close">&times;</button>
+                                    aria-label="Close">×</button>
                         </div>
                     {% endfor %}
                 </div>
@@ -145,6 +145,11 @@
                                     <h3 class="sync-destination">
                                         To: {{ sync.destination_calendar_summary or
                                         sync.destination_calendar_id }}
+                                        <button type="button"
+                                                class="btn btn-outline btn-sm btn-copy btn-copy-icon"
+                                                data-copy-text="{{ sync.destination_calendar_id }}"
+                                                title="Copy Calendar ID"
+                                                aria-label="Copy Destination Calendar ID">Copy ID</button>
                                     </h3>
                                     <div class="sync-actions">
                                         <form action="{{ url_for('main.run_sync', sync_id=sync.id) }}"

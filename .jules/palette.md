@@ -33,3 +33,7 @@
 ## 2026-01-21 - Auto-dismiss Alerts
 **Learning:** Success and info messages (toasts) should be transient to keep the interface clean, while errors must remain until dismissed by the user to ensure they are seen.
 **Action:** Implemented auto-dismiss logic in `ui.js` for `.alert-success` and `.alert-info` with a 5-second delay and smooth fade-out transition. Ensure error alerts (`.alert-danger`) are excluded from auto-dismiss.
+
+## 2026-01-21 - Copy to Clipboard
+**Learning:** Users often need to copy IDs (like Calendar IDs) to share or use elsewhere, but selecting and copying text manually is error-prone and tedious. A dedicated copy button significantly reduces friction for these common "utility" actions.
+**Action:** Implemented a reusable `initCopyButtons` function in `ui.js` that enhances any element with `.btn-copy` class. It uses the Clipboard API and provides immediate visual feedback (changing text to "Copied!" and color to green) to confirm the action, handling the interaction lifecycle gracefully.

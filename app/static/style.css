@@ -271,6 +271,28 @@ footer {
     border-color: var(--danger-color);
 }
 
+.btn-sm {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.85rem;
+}
+
+.btn-copy-success {
+    background-color: var(--success-color);
+    color: white;
+    border-color: var(--success-color);
+}
+
+.btn-copy-success:hover {
+    background-color: #137333; /* Darker green */
+    border-color: #137333;
+}
+
+.btn-copy-icon {
+    margin-left: 0.5rem;
+    vertical-align: middle;
+    font-weight: normal;
+}
+
 /* Form & Card Styles */
 .form-card {
     background: var(--white);
