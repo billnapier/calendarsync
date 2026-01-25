@@ -145,6 +145,14 @@
                                     <h3 class="sync-destination">
                                         To: {{ sync.destination_calendar_summary or
                                         sync.destination_calendar_id }}
+                                        <button type="button"
+                                                class="btn btn-outline btn-sm btn-copy"
+                                                data-copy-text="{{ sync.destination_calendar_id }}"
+                                                title="Copy Calendar ID"
+                                                aria-label="Copy Destination Calendar ID"
+                                                style="margin-left: 0.5rem; vertical-align: middle; font-weight: normal;">
+                                            Copy ID
+                                        </button>
                                     </h3>
                                     <div class="sync-actions">
                                         <form action="{{ url_for('main.run_sync', sync_id=sync.id) }}"
