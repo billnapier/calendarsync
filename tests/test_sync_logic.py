@@ -450,12 +450,11 @@ class TestSyncLogic(unittest.TestCase):
             )
 
         logic._batch_upsert_events(
-            mock_service,
+            mock_creds,
             "dest_cal",
             events_items,
             existing_map={},
             base_url="http://test",
-            creds=mock_creds,
         )
 
         # Verify build was called multiple times (once per thread + maybe more)
