@@ -7,3 +7,7 @@
 ## 2024-05-23 - Early Filtering in Parallel Data Processing
 **Learning:** When processing large external datasets in parallel (e.g., iCal feeds), filtering data as early as possible—inside the worker threads—significantly reduces memory overhead and serialization costs compared to filtering the aggregated results later.
 **Action:** Push filtering logic down into individual data fetch/parse functions, especially when using `ThreadPoolExecutor` or `ProcessPoolExecutor`.
+
+## 2024-05-24 - Deduplication in Batch Upsert
+**Learning:** When aggregating data from multiple sources that might share underlying entities (same UID), explicitly deduplicating before processing prevents redundant API calls and improves performance.
+**Action:** Always check for duplicates in aggregated lists before expensive batch operations.
