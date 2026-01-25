@@ -9,7 +9,12 @@ from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
 import google.api_core.exceptions
 
-from app.utils import get_client_config, get_sync_window_dates, get_base_url
+from app.utils import (
+    get_client_config,
+    get_sync_window_dates,
+    get_base_url,
+    clean_url_for_log,
+)
 from app.security import safe_requests_get
 
 # Constants
@@ -110,7 +115,7 @@ def get_calendar_name_from_ical(url):
                         break
 
     except (requests.exceptions.RequestException, ValueError) as e:
-        logger.warning("Failed to extract name from %s: %s", url, e)
+        logger.warning("Failed to extract name from %s: %s", clean_url_for_log(url), e)
 
     return url
 
@@ -146,7 +151,9 @@ def resolve_source_names(sources, calendars):
                     try:
                         source_names[url] = future.result()
                     except Exception as e:  # pylint: disable=broad-exception-caught
-                        logger.warning("Error fetching name for %s: %s", url, e)
+                        logger.warning(
+                            "Error fetching name for %s: %s", clean_url_for_log(url), e
+                        )
                         source_names[url] = url
 
     except Exception as e:  # pylint: disable=broad-exception-caught
@@ -355,7 +362,7 @@ def _get_google_service(db, user_id):
 
 
 def _fetch_google_source_data(
-    source, user_id, window_start, window_end
+    source, user_id, window_start, window_end, creds=None
 ):  # pylint: disable=too-many-locals
     """
     Fetch events from a Google Calendar and convert to iCal components.
@@ -365,8 +372,11 @@ def _fetch_google_source_data(
     components = []
 
     try:
-        db = firestore.client()
-        service = _get_google_service(db, user_id)
+        if creds:
+            service = build("calendar", "v3", credentials=creds)
+        else:
+            db = firestore.client()
+            service = _get_google_service(db, user_id)
         calendar_id = source.get("id")
 
         time_min = window_start.isoformat()
@@ -384,17 +394,21 @@ def _fetch_google_source_data(
         return components, name
 
     except Exception as e:  # pylint: disable=broad-exception-caught
-        logger.error("Failed to fetch Google Calendar %s: %s", url, e)
-        return [], f"{url} (Failed)"
+        logger.error(
+            "Failed to fetch Google Calendar %s: %s", clean_url_for_log(url), e
+        )
+        return [], f"{clean_url_for_log(url)} (Failed)"
 
 
-def _fetch_source_data(source, user_id, window_start, window_end):
+def _fetch_source_data(source, user_id, window_start, window_end, creds=None):
     """
     Helper to fetch a single source data (components only).
     Returns (components, name)
     """
     if source.get("type") == "google":
-        return _fetch_google_source_data(source, user_id, window_start, window_end)
+        return _fetch_google_source_data(
+            source, user_id, window_start, window_end, creds=creds
+        )
 
     url = source["url"]
     components_list = []
@@ -446,12 +460,12 @@ def _fetch_source_data(source, user_id, window_start, window_end):
         requests.exceptions.RequestException,
         ValueError,
     ) as e:  # pylint: disable=broad-exception-caught
-        logger.error("Failed to fetch/parse %s: %s", url, e)
-        return [], f"{url} (Failed)"
+        logger.error("Failed to fetch/parse %s: %s", clean_url_for_log(url), e)
+        return [], f"{clean_url_for_log(url)} (Failed)"
 
 
 def _fetch_source_events(
-    sources, user_id, window_start, window_end
+    sources, user_id, window_start, window_end, creds=None
 ):  # pylint: disable=too-many-locals
     """
     Fetch and parse events from source iCal URLs in parallel.
@@ -478,7 +492,12 @@ def _fetch_source_events(
     with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
         future_to_key = {
             executor.submit(
-                _fetch_source_data, source, user_id, window_start, window_end
+                _fetch_source_data,
+                source,
+                user_id,
+                window_start,
+                window_end,
+                creds=creds,
             ): key
             for key, source in unique_sources.items()
         }
@@ -781,7 +800,7 @@ def sync_calendar_logic(sync_id):  # pylint: disable=too-many-locals
     # 2. Fetch and Parse
     # Pass window dates to filter early and reduce memory/processing
     all_events_items, source_names = _fetch_source_events(
-        sources, user_id, window_start, window_end
+        sources, user_id, window_start, window_end, creds=creds
     )
 
     # Update source names and last sync time

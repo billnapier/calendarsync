@@ -1,7 +1,7 @@
 # pylint: disable=too-many-locals,too-many-arguments,too-many-positional-arguments,unused-argument,wrong-import-position
 import unittest
 import os
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 os.environ["TESTING"] = "1"
 from unittest.mock import patch, MagicMock
@@ -423,6 +423,48 @@ class TestSyncLogic(unittest.TestCase):
         # Verify call args
         _, kwargs = mock_list.call_args
         self.assertEqual(kwargs.get("maxResults"), 2500, "maxResults should be 2500")
+
+    @patch("app.sync.logic.build")
+    def test_batch_upsert_parallel(self, mock_build):
+        """Test parallel execution of batch upsert when events > 50."""
+        # Setup mocks
+        mock_creds = MagicMock()
+        mock_service = MagicMock()
+        mock_build.return_value = mock_service
+
+        mock_batch = MagicMock()
+        mock_service.new_batch_http_request.return_value = mock_batch
+        self._mock_batch_setup(mock_batch)
+
+        # Generate 60 events
+        events_items = []
+        for i in range(60):
+            event = {
+                "UID": f"uid_{i}",
+                "DTSTART": MagicMock(dt=datetime(2024, 1, 1, tzinfo=timezone.utc)),
+                "DTEND": MagicMock(dt=datetime(2024, 1, 1, 1, tzinfo=timezone.utc)),
+                "SUMMARY": f"Event {i}",
+            }
+            events_items.append(
+                {"component": event, "prefix": "", "source_title": "Test"}
+            )
+
+        logic._batch_upsert_events(
+            mock_service,
+            "dest_cal",
+            events_items,
+            existing_map={},
+            base_url="http://test",
+            creds=mock_creds,
+        )
+
+        # Verify build was called multiple times (once per thread + maybe more)
+        # We expect at least 2 chunks (60 items / 50 batch size = 2 chunks).
+        # Note: logic._build_google_service calls build().
+        self.assertGreater(mock_build.call_count, 1)
+
+        # Verify batch.add count = 60
+        self.assertEqual(mock_batch.add.call_count, 60)
 
 
 if __name__ == "__main__":
