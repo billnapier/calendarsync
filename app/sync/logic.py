@@ -1,5 +1,6 @@
 import logging
 import concurrent.futures
+import threading
 from datetime import datetime, timezone
 import contextlib
 import requests
@@ -31,6 +32,8 @@ EVENT_LIST_FIELDS = (
 )
 
 logger = logging.getLogger(__name__)
+
+_thread_local = threading.local()
 
 
 def fetch_user_calendars(user_uid):
@@ -361,6 +364,24 @@ def _build_google_service(creds):
     return build("calendar", "v3", credentials=creds)
 
 
+def _get_cached_service(creds):
+    """
+    Returns a thread-local cached service instance if credentials match.
+    Prevents rebuilding the service (and re-discovering API) for every batch chunk.
+    """
+    if (
+        hasattr(_thread_local, "service")
+        and hasattr(_thread_local, "creds")
+        and _thread_local.creds is creds
+    ):
+        return _thread_local.service
+
+    service = _build_google_service(creds)
+    _thread_local.service = service
+    _thread_local.creds = creds
+    return service
+
+
 def _get_google_service(db, user_id):
     """Refreshes credentials and returns a Google Calendar service."""
     creds = _create_creds_from_user(db, user_id)
@@ -379,7 +400,7 @@ def _fetch_google_source_data(
 
     try:
         if creds:
-            service = _build_google_service(creds)
+            service = _get_cached_service(creds)
         else:
             db = firestore.client()
             service = _get_google_service(db, user_id)
@@ -543,7 +564,7 @@ def _fetch_source_events(
 
 def _fetch_existing_batch_chunk(creds, destination_id, uids):
     """Worker for parallel fetching of existing events."""
-    service = _build_google_service(creds)
+    service = _get_cached_service(creds)
     local_map = {}
 
     # pylint: disable=no-member
@@ -741,7 +762,7 @@ def _upsert_batch_chunk(
     creds, destination_id, items, existing_map, base_url
 ):  # pylint: disable=too-many-arguments
     """Worker for parallel upserting of events."""
-    service = _build_google_service(creds)
+    service = _get_cached_service(creds)
     # pylint: disable=no-member
     batch = service.new_batch_http_request()
 
