@@ -207,7 +207,11 @@
                     </div>
                     <div class="form-actions">
                         <a href="{{ url_for('main.index') }}" class="btn btn-secondary">Cancel</a>
-                        <button type="submit" class="btn btn-primary" data-loading-text="Saving...">Save Changes</button>
+                        <button type="submit"
+                                class="btn btn-primary"
+                                data-loading-text="Saving..."
+                                title="Save Changes (Ctrl+Enter)"
+                                aria-keyshortcuts="Control+Enter">Save Changes</button>
                     </div>
                 </form>
                 <hr class="form-divider">
