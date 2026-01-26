@@ -150,7 +150,11 @@
                     </div>
                     <div class="form-actions">
                         <a href="{{ url_for('main.index') }}" class="btn btn-secondary">Cancel</a>
-                        <button type="submit" class="btn btn-primary" data-loading-text="Creating...">Create Sync</button>
+                        <button type="submit"
+                                class="btn btn-primary"
+                                data-loading-text="Creating..."
+                                title="Create Sync (Ctrl+Enter)"
+                                aria-keyshortcuts="Control+Enter">Create Sync</button>
                     </div>
                 </form>
             </div>
