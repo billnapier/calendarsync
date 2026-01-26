@@ -1,5 +1,6 @@
 import logging
 import time
+from datetime import datetime, timedelta, timezone
 import os
 import re
 import json
@@ -79,14 +80,26 @@ def run_sync(sync_id):
     if sync_data["user_id"] != user["uid"]:
         return "Unauthorized", 403
 
+    # Rate Limiting: Prevent syncing more than once every 5 minutes
+    last_synced_at = sync_data.get("last_synced_at")
+    if last_synced_at:
+        # Ensure last_synced_at is timezone-aware (UTC)
+        if last_synced_at.tzinfo is None:
+            last_synced_at = last_synced_at.replace(tzinfo=timezone.utc)
+
+        elapsed = datetime.now(timezone.utc) - last_synced_at
+        if elapsed < timedelta(minutes=5):
+            flash("Please wait a few minutes before syncing again.", "danger")
+            return redirect(url_for("main.index"))
+
     try:
         sync_calendar_logic(sync_id)
         flash("Sync completed successfully!", "success")
-        return redirect(url_for("main.index"))
     except Exception as e:
         logger.error("Sync failed: %s", e)
         flash("Sync failed. Please check logs for details.", "danger")
-        return redirect(url_for("main.index"))
+
+    return redirect(url_for("main.index"))
 
 
 def _get_sources_from_form(form):
