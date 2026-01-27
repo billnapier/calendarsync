@@ -1,5 +1,6 @@
 import sys
 import os
+from datetime import datetime, timedelta, timezone
 from unittest.mock import MagicMock, patch
 import pytest
 
@@ -80,3 +81,52 @@ def test_create_sync_excessive_sources_dos(
         flashed = dict(sess["_flashes"])
         assert "danger" in flashed
         assert "Too many sources" in flashed["danger"]
+
+
+def test_run_sync_rate_limit(
+    _client, _mock_firestore, _mock_sync_logic
+):
+    """
+    Test that triggering a sync is rate-limited if last sync was recent.
+    """
+    with _client.session_transaction() as sess:
+        sess["user"] = {"uid": "test_uid"}
+        sess["csrf_token"] = "valid_token"
+
+    # Mock Firestore
+    mock_db = MagicMock()
+    mock_collection = MagicMock()
+    mock_doc_ref = MagicMock()
+    mock_doc = MagicMock()
+
+    mock_db.collection.return_value = mock_collection
+    mock_collection.document.return_value = mock_doc_ref
+    mock_doc_ref.get.return_value = mock_doc
+    mock_doc.exists = True
+
+    # Set last_synced_at to 1 minute ago
+    recent_time = datetime.now(timezone.utc) - timedelta(minutes=1)
+    mock_doc.to_dict.return_value = {
+        "user_id": "test_uid",
+        "last_synced_at": recent_time
+    }
+
+    _mock_firestore.client.return_value = mock_db
+
+    resp = _client.post("/sync/test_sync_id", data={"csrf_token": "valid_token"})
+
+    # Should redirect (either success or failure, checking flash message for failure)
+    assert resp.status_code == 302
+
+    # Verify flash message
+    with _client.session_transaction() as sess:
+        flashed = dict(sess["_flashes"])
+        # If rate limiting is implemented, it should be a danger or warning message
+        # If not, it will be success (which proves the bug/missing feature)
+        # We expect this assertion to FAIL initially if the feature is missing.
+        # But for the test-first approach, I will assert "danger" is present.
+        assert "danger" in flashed, "Expected rate limit warning not found"
+        assert "wait" in flashed["danger"].lower()
+
+    # Verify sync logic was NOT called
+    assert _mock_sync_logic.call_count == 0
