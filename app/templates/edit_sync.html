@@ -14,6 +14,7 @@
         <script src="{{ url_for('static', filename='sync_form.js') }}" defer></script>
     </head>
     <body>
+        <a href="#main-content" class="skip-link">Skip to main content</a>
         <header class="header">
             <a href="{{ url_for('main.index') }}" class="logo-container">
                 <img src="{{ url_for('static', filename='images/logo.png') }}"
@@ -40,7 +41,7 @@
                 {% endif %}
             </div>
         </header>
-        <main class="dashboard-container">
+        <main class="dashboard-container" id="main-content">
             <div class="form-card">
                 <div class="form-header-group">
                     <h1>Edit Sync</h1>
@@ -114,7 +115,8 @@
                                         <div class="input-row google-input
                                                     {% if source.type != 'google' %}hidden{% endif %}">
                                             {% if calendars %}
-                                                <select name="source_ids_visible" aria-label="Google Calendar Source">
+                                                <select name="source_ids_visible" aria-label="Google Calendar Source"
+                                                        {% if source.type == 'google' %}required{% endif %}>
                                                     <option value="" disabled {% if not source.id %}selected{% endif %}>
                                                         Select
                                                         Calendar
@@ -138,7 +140,8 @@
                                                    value="{{ source.url }}"
                                                    placeholder="https://example.com/calendar.ics"
                                                    aria-label="Source Calendar URL"
-                                                   inputmode="url">
+                                                   inputmode="url"
+                                                   {% if (source.type or 'ical') == 'ical' %}required{% endif %}>
                                         </div>
                                     </div>
                                     <!-- Prefix Input -->
@@ -186,7 +189,8 @@
                                                    name="source_urls"
                                                    placeholder="https://example.com/calendar.ics"
                                                    aria-label="Source Calendar URL"
-                                                   inputmode="url">
+                                                   inputmode="url"
+                                                   required>
                                         </div>
                                     </div>
                                     <label class="source-prefix-group">
@@ -257,7 +261,8 @@
                                name="source_urls"
                                placeholder="https://example.com/calendar.ics"
                                aria-label="Source Calendar URL"
-                               inputmode="url">
+                               inputmode="url"
+                               required>
                     </div>
                 </div>
                 <label class="source-prefix-group">

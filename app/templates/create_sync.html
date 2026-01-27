@@ -13,6 +13,7 @@
         <script src="{{ url_for('static', filename='sync_form.js') }}" defer></script>
     </head>
     <body>
+        <a href="#main-content" class="skip-link">Skip to main content</a>
         <header class="header">
             <a href="{{ url_for('main.index') }}" class="logo-container">
                 <img src="{{ url_for('static', filename='images/logo.png') }}"
@@ -39,7 +40,7 @@
                 {% endif %}
             </div>
         </header>
-        <main class="dashboard-container">
+        <main class="dashboard-container" id="main-content">
             <div class="form-card">
                 <div class="form-header-group">
                     <h1>Create New Sync</h1>
@@ -128,7 +129,8 @@
                                                name="source_urls"
                                                placeholder="https://example.com/calendar.ics"
                                                aria-label="Source Calendar URL"
-                                               inputmode="url">
+                                               inputmode="url"
+                                               required>
                                     </div>
                                 </div>
                                 <!-- Prefix Input -->
@@ -187,7 +189,8 @@
                                name="source_urls"
                                placeholder="https://example.com/calendar.ics"
                                aria-label="Source Calendar URL"
-                               inputmode="url">
+                               inputmode="url"
+                               required>
                     </div>
                 </div>
                 <label class="source-prefix-group">
