@@ -18,6 +18,7 @@
         <script src="{{ url_for('static', filename='ui.js') }}" defer></script>
     </head>
     <body>
+        <a href="#main-content" class="skip-link">Skip to main content</a>
         <header class="header">
             <a href="{{ url_for('main.index') }}" class="logo-container">
                 <img src="{{ url_for('static', filename='images/logo.png') }}"
@@ -57,78 +58,80 @@
             {% endif %}
         {% endwith %}
         {% if not user %}
-            <section class="hero-section">
-                <div class="hero-content">
-                    <h1 class="hero-headline">
-                        Sync Your Life,
-                        <br>
-                        Simplified.
-                    </h1>
-                    <p class="hero-subheadline">
-                        Seamlessly merge multiple iCal calendars into a single master calendar.
-                        Keep track of work, personal, and shared events all in one place.
-                    </p>
-                    <div class="auth-wrapper">
-                        <!-- djlint:off H037 -->
-                        <div id="g_id_onload"
-                             data-client_id="{{ google_client_id }}"
-                             data-login_uri="{{ url_for('auth.google_auth_callback', _external=True) }}"
-                             data-auto_prompt="false"></div>
-                        <!-- djlint:on -->
-                        <div class="g_id_signin"
-                             data-type="standard"
-                             data-size="large"
-                             data-theme="filled_blue"
-                             data-text="sign_in_with"
-                             data-shape="pill"
-                             data-logo_alignment="left"
-                             data-width="300"></div>
-                    </div>
-                </div>
-                <div class="hero-image-container">
-                    <img src="{{ url_for('static', filename='images/hero.png') }}"
-                         alt="Calendar Synchronization Visual"
-                         class="hero-image"
-                         width="600"
-                         height="400">
-                </div>
-            </section>
-            <section class="features-section">
-                <div class="features-grid">
-                    <div class="feature-card">
-                        <div class="feature-icon">
-                            <span role="img" aria-label="Universal Sync">🔄</span>
-                        </div>
-                        <h3 class="feature-title">Universal Sync</h3>
-                        <p class="feature-description">
-                            Works perfectly with any calendar that supports iCal format. Google,
-                            Outlook, iCloud, and more.
+            <main id="main-content">
+                <section class="hero-section">
+                    <div class="hero-content">
+                        <h1 class="hero-headline">
+                            Sync Your Life,
+                            <br>
+                            Simplified.
+                        </h1>
+                        <p class="hero-subheadline">
+                            Seamlessly merge multiple iCal calendars into a single master calendar.
+                            Keep track of work, personal, and shared events all in one place.
                         </p>
-                    </div>
-                    <div class="feature-card">
-                        <div class="feature-icon">
-                            <span role="img" aria-label="Real-time Updates">⚡</span>
+                        <div class="auth-wrapper">
+                            <!-- djlint:off H037 -->
+                            <div id="g_id_onload"
+                                 data-client_id="{{ google_client_id }}"
+                                 data-login_uri="{{ url_for('auth.google_auth_callback', _external=True) }}"
+                                 data-auto_prompt="false"></div>
+                            <!-- djlint:on -->
+                            <div class="g_id_signin"
+                                 data-type="standard"
+                                 data-size="large"
+                                 data-theme="filled_blue"
+                                 data-text="sign_in_with"
+                                 data-shape="pill"
+                                 data-logo_alignment="left"
+                                 data-width="300"></div>
                         </div>
-                        <h3 class="feature-title">Real-time Updates</h3>
-                        <p class="feature-description">
-                            Changes in your source calendars are automatically reflected in your
-                            destination calendar.
-                        </p>
                     </div>
-                    <div class="feature-card">
-                        <div class="feature-icon">
-                            <span role="img" aria-label="Privacy First">🛡️</span>
+                    <div class="hero-image-container">
+                        <img src="{{ url_for('static', filename='images/hero.png') }}"
+                             alt="Calendar Synchronization Visual"
+                             class="hero-image"
+                             width="600"
+                             height="400">
+                    </div>
+                </section>
+                <section class="features-section">
+                    <div class="features-grid">
+                        <div class="feature-card">
+                            <div class="feature-icon">
+                                <span role="img" aria-label="Universal Sync">🔄</span>
+                            </div>
+                            <h3 class="feature-title">Universal Sync</h3>
+                            <p class="feature-description">
+                                Works perfectly with any calendar that supports iCal format. Google,
+                                Outlook, iCloud, and more.
+                            </p>
                         </div>
-                        <h3 class="feature-title">Privacy First</h3>
-                        <p class="feature-description">
-                            Your data belongs to you. We just help you move it where you need it
-                            securely.
-                        </p>
+                        <div class="feature-card">
+                            <div class="feature-icon">
+                                <span role="img" aria-label="Real-time Updates">⚡</span>
+                            </div>
+                            <h3 class="feature-title">Real-time Updates</h3>
+                            <p class="feature-description">
+                                Changes in your source calendars are automatically reflected in your
+                                destination calendar.
+                            </p>
+                        </div>
+                        <div class="feature-card">
+                            <div class="feature-icon">
+                                <span role="img" aria-label="Privacy First">🛡️</span>
+                            </div>
+                            <h3 class="feature-title">Privacy First</h3>
+                            <p class="feature-description">
+                                Your data belongs to you. We just help you move it where you need it
+                                securely.
+                            </p>
+                        </div>
                     </div>
-                </div>
-            </section>
+                </section>
+            </main>
         {% else %}
-            <div class="dashboard-container">
+            <main class="dashboard-container" id="main-content">
                 <div class="dashboard-header">
                     <h2>Your Syncs</h2>
                     <p>Manage your calendar synchronizations.</p>
@@ -211,7 +214,7 @@
                            class="btn btn-primary dashboard-cta">Get Started</a>
                     </div>
                 {% endif %}
-            </div>
+            </main>
         {% endif %}
         <footer>
             Powered by antigravity and Google Deepmind

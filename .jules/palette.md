@@ -37,3 +37,11 @@
 ## 2026-01-21 - Copy to Clipboard
 **Learning:** Users often need to copy IDs (like Calendar IDs) to share or use elsewhere, but selecting and copying text manually is error-prone and tedious. A dedicated copy button significantly reduces friction for these common "utility" actions.
 **Action:** Implemented a reusable `initCopyButtons` function in `ui.js` that enhances any element with `.btn-copy` class. It uses the Clipboard API and provides immediate visual feedback (changing text to "Copied!" and color to green) to confirm the action, handling the interaction lifecycle gracefully.
+
+## 2026-01-27 - Skip to Content & Semantic Structure
+**Learning:** The application lacked a mechanism to bypass repeated header content, forcing keyboard users to tab through navigation on every page load. Additionally, the lack of a semantic `<main>` tag reduced the effectiveness of assistive technologies.
+**Action:** Implemented a "Skip to main content" link as the first focusable element, visually hidden until focused via `.skip-link` class. Converted the main container to a semantic `<main>` tag with `id="main-content"` to provide a clear target. Always verify structure with semantic HTML to support screen readers and keyboard navigation.
+
+## 2026-01-27 - Dynamic Required Attributes
+**Learning:** In forms with togglable input types (e.g., URL vs Select), leaving hidden inputs as `required` prevents submission, while removing `required` from everything allows empty submissions. This creates a confusing "silent failure" or blocking state.
+**Action:** Implemented dynamic attribute toggling in `sync_form.js`. When the source type changes, the script programmatically adds `required` to the visible input and removes it from the hidden one. This ensures robust client-side validation that matches the user's visible intent, preventing empty submissions without server round-trips.

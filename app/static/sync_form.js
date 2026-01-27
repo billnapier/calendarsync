@@ -35,18 +35,27 @@
         // Update hidden type input
         if (typeInput) typeInput.value = select.value;
 
+        const visibleSelect = entry.querySelector('select[name="source_ids_visible"]');
+
         if (select.value === 'google') {
             googleInput.classList.remove('hidden');
             icalInput.classList.add('hidden');
             // Clear iCal URL when switching to Google
-            if (urlInput) urlInput.value = '';
+            if (urlInput) {
+                urlInput.value = '';
+                urlInput.required = false;
+            }
+            if (visibleSelect) visibleSelect.required = true;
         } else {
             googleInput.classList.add('hidden');
             icalInput.classList.remove('hidden');
             // Clear Google ID when switching to iCal
             if (idInput) idInput.value = '';
-            const visibleSelect = entry.querySelector('select[name="source_ids_visible"]');
-            if (visibleSelect) visibleSelect.value = "";
+            if (visibleSelect) {
+                visibleSelect.value = "";
+                visibleSelect.required = false;
+            }
+            if (urlInput) urlInput.required = true;
         }
     }
 
@@ -100,6 +109,24 @@
 
         // Initial update in case of page reload or edit mode
         updateRemoveButtons();
+
+        // Initialize validation state for existing entries
+        // This ensures the correct 'required' attributes are set on load
+        if (container) {
+            container.querySelectorAll('.ical-entry').forEach(entry => {
+                const typeSelect = entry.querySelector('.source-type-group select');
+                const urlInput = entry.querySelector('input[name="source_urls"]');
+                const visibleSelect = entry.querySelector('select[name="source_ids_visible"]');
+
+                if (typeSelect && typeSelect.value === 'google') {
+                    if (urlInput) urlInput.required = false;
+                    if (visibleSelect) visibleSelect.required = true;
+                } else {
+                    if (urlInput) urlInput.required = true;
+                    if (visibleSelect) visibleSelect.required = false;
+                }
+            });
+        }
 
         // Event listener for Add button
         if (addBtn) {
