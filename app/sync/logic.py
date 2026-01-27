@@ -120,11 +120,12 @@ def get_calendar_name_from_ical(url):
     return url
 
 
-def resolve_source_names(sources, calendars):
+def resolve_source_names(sources, calendars, fetch_remote=True):
     """
     Efficiently resolve friendly names for sources.
     - sources: list of source dicts
     - calendars: list of Google Calendar dicts (id, summary)
+    - fetch_remote: if False, skip fetching names for iCal URLs (saves time)
     """
     source_names = {}
     cal_map = {cal["id"]: cal["summary"] for cal in calendars} if calendars else {}
@@ -137,7 +138,7 @@ def resolve_source_names(sources, calendars):
             if source.get("type") == "google":
                 # Use map for O(1) lookup
                 source_names[url] = cal_map.get(source["id"], source["id"])
-            else:
+            elif fetch_remote:
                 ical_sources.append(url)
 
         if ical_sources:
