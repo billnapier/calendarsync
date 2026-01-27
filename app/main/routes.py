@@ -163,8 +163,8 @@ def _handle_edit_sync_post(req, sync_ref, calendars):
                 destination_summary = cal["summary"]
                 break
 
-    # Re-fetch source names
-    source_names = resolve_source_names(sources, calendars)
+    # Re-fetch source names (skip remote fetch to avoid redundancy with sync logic)
+    source_names = resolve_source_names(sources, calendars, fetch_remote=False)
 
     sync_ref.update(
         {
@@ -350,18 +350,20 @@ def _handle_create_sync_post(user):
 
     db = firestore.client()
     new_sync_ref = db.collection("syncs").document()
+
+    # Resolve source names (skip remote fetch)
+    source_names = resolve_source_names(sources, user_calendars, fetch_remote=False)
+
     new_sync_ref.set(
         {
             "user_id": user["uid"],
             "destination_calendar_id": destination_id,
             "destination_calendar_summary": destination_summary,
             "sources": sources,
+            "source_names": source_names,
             "created_at": firestore.SERVER_TIMESTAMP,
         }
     )
-
-    source_names = resolve_source_names(sources, user_calendars)
-    new_sync_ref.update({"source_names": source_names})
 
     # Auto-sync immediately after creation
     try:
