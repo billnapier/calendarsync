@@ -90,6 +90,18 @@
         });
     }
 
+    // Manual alert dismissal (replaces inline onclick)
+    function initDismissButtons() {
+        document.addEventListener('click', function(e) {
+            if (e.target.closest('.alert-close')) {
+                const alert = e.target.closest('.alert');
+                if (alert) {
+                    alert.remove();
+                }
+            }
+        });
+    }
+
     // Initialize Copy to Clipboard buttons
     function initCopyButtons() {
         document.addEventListener('click', function(e) {
@@ -128,6 +140,7 @@
     document.addEventListener('DOMContentLoaded', function() {
         initSubmitButtons();
         initAutoDismissAlerts();
+        initDismissButtons();
         initCopyButtons();
     });
 })();
