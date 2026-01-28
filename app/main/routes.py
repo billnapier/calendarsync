@@ -228,9 +228,6 @@ def edit_sync(sync_id):
     if not user:
         return redirect(url_for("auth.login"))
 
-    if not verify_csrf_token(request.form.get("csrf_token")):
-        return "Invalid CSRF token", 403
-
     db = firestore.client()
     sync_ref = db.collection("syncs").document(sync_id)
     sync_doc = sync_ref.get()
