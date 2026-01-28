@@ -411,7 +411,8 @@ class TestSyncLogic(unittest.TestCase):
         # Verify build was called multiple times (once per thread + maybe more)
         # We expect at least 2 chunks (60 items / 50 batch size = 2 chunks).
         # Note: logic._build_google_service calls build().
-        self.assertGreater(mock_build.call_count, 1)
+        # With thread-local caching, if threads are reused, build() might be called fewer times.
+        self.assertGreaterEqual(mock_build.call_count, 1)
 
         # Verify batch.add count = 60
         self.assertEqual(mock_batch.add.call_count, 60)

@@ -1,4 +1,5 @@
 import logging
+import threading
 import concurrent.futures
 from datetime import datetime, timezone
 import contextlib
@@ -29,6 +30,8 @@ CALENDAR_LIST_FIELDS = "items(id,summary)"
 EVENT_LIST_FIELDS = (
     "summary,nextPageToken,items(id,summary,description,location,start,end)"
 )
+
+_thread_local = threading.local()
 
 logger = logging.getLogger(__name__)
 
@@ -357,8 +360,14 @@ def _create_creds_from_user(db, user_id):
 
 
 def _build_google_service(creds):
-    """Builds a Google Calendar service from credentials."""
-    return build("calendar", "v3", credentials=creds)
+    """Builds a Google Calendar service from credentials, using thread-local cache."""
+    if getattr(_thread_local, "creds", None) is creds and hasattr(_thread_local, "service"):
+        return _thread_local.service
+
+    service = build("calendar", "v3", credentials=creds)
+    _thread_local.creds = creds
+    _thread_local.service = service
+    return service
 
 
 def _get_google_service(db, user_id):
