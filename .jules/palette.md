@@ -37,3 +37,7 @@
 ## 2026-01-21 - Copy to Clipboard
 **Learning:** Users often need to copy IDs (like Calendar IDs) to share or use elsewhere, but selecting and copying text manually is error-prone and tedious. A dedicated copy button significantly reduces friction for these common "utility" actions.
 **Action:** Implemented a reusable `initCopyButtons` function in `ui.js` that enhances any element with `.btn-copy` class. It uses the Clipboard API and provides immediate visual feedback (changing text to "Copied!" and color to green) to confirm the action, handling the interaction lifecycle gracefully.
+
+## 2026-01-29 - Icon-only Buttons for Repetitive Actions
+**Learning:** In lists or grids where every item has the same secondary action (like "Remove"), repeating the text button creates visual clutter and consumes valuable horizontal space.
+**Action:** Replaced "Remove" text buttons with a standardized `.btn-icon` class and a trash icon. This improves the signal-to-noise ratio and works better on mobile. Always ensure icon-only buttons have an `aria-label` and `title` for accessibility and clarity.

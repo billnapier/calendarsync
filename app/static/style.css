@@ -276,6 +276,22 @@ footer {
     font-size: 0.85rem;
 }
 
+.btn-icon {
+    padding: 0.5rem;
+    line-height: 0;
+    width: 2.25rem;
+    height: 2.25rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 6px;
+}
+
+.btn-icon svg {
+    width: 1.2em;
+    height: 1.2em;
+}
+
 .btn-copy-success {
     background-color: var(--success-color);
     color: white;
