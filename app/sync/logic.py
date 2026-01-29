@@ -1,5 +1,6 @@
 import logging
 import concurrent.futures
+import threading
 from datetime import datetime, timezone
 import contextlib
 import requests
@@ -31,6 +32,31 @@ EVENT_LIST_FIELDS = (
 )
 
 logger = logging.getLogger(__name__)
+
+_thread_local = threading.local()
+
+
+def _get_cached_service(creds):
+    """
+    Returns a cached Google Calendar service for the current thread.
+    Validates that the cached service matches the provided credentials using refresh_token.
+    """
+    # Initialize cache if not present
+    if not hasattr(_thread_local, "cache"):
+        _thread_local.cache = None
+
+    current_token = getattr(creds, "refresh_token", None)
+
+    # Check cache hit
+    if _thread_local.cache:
+        cached_service, cached_token = _thread_local.cache
+        if cached_token == current_token and current_token is not None:
+            return cached_service
+
+    # Cache miss or mismatch: build new service
+    service = _build_google_service(creds)
+    _thread_local.cache = (service, current_token)
+    return service
 
 
 def fetch_user_calendars(user_uid):
@@ -379,7 +405,7 @@ def _fetch_google_source_data(
 
     try:
         if creds:
-            service = _build_google_service(creds)
+            service = _get_cached_service(creds)
         else:
             db = firestore.client()
             service = _get_google_service(db, user_id)
@@ -543,7 +569,7 @@ def _fetch_source_events(
 
 def _fetch_existing_batch_chunk(creds, destination_id, uids):
     """Worker for parallel fetching of existing events."""
-    service = _build_google_service(creds)
+    service = _get_cached_service(creds)
     local_map = {}
 
     # pylint: disable=no-member
@@ -741,7 +767,7 @@ def _upsert_batch_chunk(
     creds, destination_id, items, existing_map, base_url
 ):  # pylint: disable=too-many-arguments
     """Worker for parallel upserting of events."""
-    service = _build_google_service(creds)
+    service = _get_cached_service(creds)
     # pylint: disable=no-member
     batch = service.new_batch_http_request()
 
