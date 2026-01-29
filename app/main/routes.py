@@ -3,6 +3,7 @@ import time
 import os
 import re
 import json
+from datetime import datetime, timedelta, timezone
 from flask import (
     Blueprint,
     render_template,
@@ -78,6 +79,18 @@ def run_sync(sync_id):
     sync_data = sync_doc.to_dict()
     if sync_data["user_id"] != user["uid"]:
         return "Unauthorized", 403
+
+    last_synced_at = sync_data.get("last_synced_at")
+    if last_synced_at:
+        # Firestore returns a datetime object with timezone info
+        now = datetime.now(timezone.utc)
+        # Ensure last_synced_at is comparable (aware)
+        if last_synced_at.tzinfo is None:
+            last_synced_at = last_synced_at.replace(tzinfo=timezone.utc)
+
+        if now - last_synced_at < timedelta(minutes=5):
+            flash("Please wait 5 minutes between syncs.", "warning")
+            return redirect(url_for("main.index"))
 
     try:
         sync_calendar_logic(sync_id)
