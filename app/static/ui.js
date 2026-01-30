@@ -125,9 +125,24 @@
         });
     }
 
+    // Handle manual dismissal of alerts
+    function initDismissButtons() {
+        document.addEventListener('click', function(e) {
+            const btn = e.target.closest('.alert-close');
+            if (btn) {
+                const alert = btn.closest('.alert');
+                if (alert) {
+                    alert.classList.add('fade-out');
+                    setTimeout(() => alert.remove(), 500);
+                }
+            }
+        });
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
         initSubmitButtons();
         initAutoDismissAlerts();
         initCopyButtons();
+        initDismissButtons();
     });
 })();
