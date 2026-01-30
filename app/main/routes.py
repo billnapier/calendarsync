@@ -163,8 +163,8 @@ def _handle_edit_sync_post(req, sync_ref, calendars):
                 destination_summary = cal["summary"]
                 break
 
-    # Re-fetch source names
-    source_names = resolve_source_names(sources, calendars)
+    # Optimization: Resolve names from local cache only (skip remote fetch)
+    source_names = resolve_source_names(sources, calendars, fetch_remote=False)
 
     sync_ref.update(
         {
@@ -360,7 +360,9 @@ def _handle_create_sync_post(user):
         }
     )
 
-    source_names = resolve_source_names(sources, user_calendars)
+    # Optimization: Resolve names from local cache only (skip remote fetch)
+    # to keep UI responsive. Remote fetch happens during sync.
+    source_names = resolve_source_names(sources, user_calendars, fetch_remote=False)
     new_sync_ref.update({"source_names": source_names})
 
     # Auto-sync immediately after creation

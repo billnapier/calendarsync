@@ -120,11 +120,12 @@ def get_calendar_name_from_ical(url):
     return url
 
 
-def resolve_source_names(sources, calendars):
+def resolve_source_names(sources, calendars, fetch_remote=True):
     """
     Efficiently resolve friendly names for sources.
     - sources: list of source dicts
     - calendars: list of Google Calendar dicts (id, summary)
+    - fetch_remote: if True, fetch iCal URLs to get friendly names (network I/O)
     """
     source_names = {}
     cal_map = {cal["id"]: cal["summary"] for cal in calendars} if calendars else {}
@@ -141,20 +142,27 @@ def resolve_source_names(sources, calendars):
                 ical_sources.append(url)
 
         if ical_sources:
-            with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
-                future_to_url = {
-                    executor.submit(get_calendar_name_from_ical, url): url
-                    for url in ical_sources
-                }
-                for future in concurrent.futures.as_completed(future_to_url):
-                    url = future_to_url[future]
-                    try:
-                        source_names[url] = future.result()
-                    except Exception as e:  # pylint: disable=broad-exception-caught
-                        logger.warning(
-                            "Error fetching name for %s: %s", clean_url_for_log(url), e
-                        )
-                        source_names[url] = url
+            if fetch_remote:
+                with concurrent.futures.ThreadPoolExecutor(max_workers=5) as executor:
+                    future_to_url = {
+                        executor.submit(get_calendar_name_from_ical, url): url
+                        for url in ical_sources
+                    }
+                    for future in concurrent.futures.as_completed(future_to_url):
+                        url = future_to_url[future]
+                        try:
+                            source_names[url] = future.result()
+                        except Exception as e:  # pylint: disable=broad-exception-caught
+                            logger.warning(
+                                "Error fetching name for %s: %s",
+                                clean_url_for_log(url),
+                                e,
+                            )
+                            source_names[url] = url
+            else:
+                # Use URL as name if not fetching
+                for url in ical_sources:
+                    source_names[url] = url
 
     except Exception as e:  # pylint: disable=broad-exception-caught
         logger.warning("Failed to resolve source names: %s", e)
