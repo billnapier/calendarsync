@@ -12,7 +12,7 @@
     function updateRemoveButtons() {
         const entries = document.querySelectorAll('.ical-entry');
         entries.forEach((entry) => {
-            const btn = entry.querySelector('.btn-danger'); // Remove button
+            const btn = entry.querySelector('.btn-remove'); // Remove button
             if (!btn) return;
 
             if (entries.length === 1) {
@@ -110,8 +110,8 @@
         if (container) {
             container.addEventListener('click', function(e) {
                 // Handle Remove Button
-                // We check for .btn-danger or closest .btn-danger
-                const removeBtn = e.target.closest('.btn-danger');
+                // We check for .btn-remove or closest .btn-remove
+                const removeBtn = e.target.closest('.btn-remove');
                 if (removeBtn && container.contains(removeBtn)) {
                     removeSourceEntry(removeBtn);
                 }
