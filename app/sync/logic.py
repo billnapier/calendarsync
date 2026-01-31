@@ -1,5 +1,6 @@
 import logging
 import concurrent.futures
+import threading
 from datetime import datetime, timezone
 import contextlib
 import requests
@@ -31,6 +32,8 @@ EVENT_LIST_FIELDS = (
 )
 
 logger = logging.getLogger(__name__)
+
+_thread_local = threading.local()
 
 
 def fetch_user_calendars(user_uid):
@@ -361,10 +364,31 @@ def _build_google_service(creds):
     return build("calendar", "v3", credentials=creds)
 
 
+def _get_cached_service(creds):
+    """
+    Returns a cached Google Service if credentials match the thread-local cache.
+    Otherwise builds a new one and caches it.
+    """
+    cached_service = getattr(_thread_local, "service", None)
+    cached_creds = getattr(_thread_local, "creds", None)
+
+    if (
+        cached_service
+        and cached_creds
+        and cached_creds.refresh_token == creds.refresh_token
+    ):
+        return cached_service
+
+    service = _build_google_service(creds)
+    _thread_local.service = service
+    _thread_local.creds = creds
+    return service
+
+
 def _get_google_service(db, user_id):
     """Refreshes credentials and returns a Google Calendar service."""
     creds = _create_creds_from_user(db, user_id)
-    return _build_google_service(creds)
+    return _get_cached_service(creds)
 
 
 def _fetch_google_source_data(
@@ -379,7 +403,7 @@ def _fetch_google_source_data(
 
     try:
         if creds:
-            service = _build_google_service(creds)
+            service = _get_cached_service(creds)
         else:
             db = firestore.client()
             service = _get_google_service(db, user_id)
@@ -543,7 +567,7 @@ def _fetch_source_events(
 
 def _fetch_existing_batch_chunk(creds, destination_id, uids):
     """Worker for parallel fetching of existing events."""
-    service = _build_google_service(creds)
+    service = _get_cached_service(creds)
     local_map = {}
 
     # pylint: disable=no-member
@@ -741,7 +765,7 @@ def _upsert_batch_chunk(
     creds, destination_id, items, existing_map, base_url
 ):  # pylint: disable=too-many-arguments
     """Worker for parallel upserting of events."""
-    service = _build_google_service(creds)
+    service = _get_cached_service(creds)
     # pylint: disable=no-member
     batch = service.new_batch_http_request()
 
