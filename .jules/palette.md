@@ -37,3 +37,7 @@
 ## 2026-01-21 - Copy to Clipboard
 **Learning:** Users often need to copy IDs (like Calendar IDs) to share or use elsewhere, but selecting and copying text manually is error-prone and tedious. A dedicated copy button significantly reduces friction for these common "utility" actions.
 **Action:** Implemented a reusable `initCopyButtons` function in `ui.js` that enhances any element with `.btn-copy` class. It uses the Clipboard API and provides immediate visual feedback (changing text to "Copied!" and color to green) to confirm the action, handling the interaction lifecycle gracefully.
+
+## 2026-01-21 - Keyboard Shortcuts for Forms
+**Learning:** Power users often reach for `Ctrl+Enter` to save forms, especially after typing in text fields. Adding this shortcut significantly speeds up the workflow.
+**Action:** Implemented a global `keydown` listener in `ui.js` that triggers the primary submit button of the focused form. Added `title="... (Ctrl+Enter)"` and `aria-keyshortcuts` to buttons to aid discoverability. Always consider keyboard accelerators for primary actions.
