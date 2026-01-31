@@ -83,9 +83,7 @@ def test_create_sync_excessive_sources_dos(
         assert "Too many sources" in flashed["danger"]
 
 
-def test_run_sync_rate_limit(
-    _client, _mock_firestore, _mock_sync_logic
-):
+def test_run_sync_rate_limit(_client, _mock_firestore, _mock_sync_logic):
     """
     Test that triggering a sync is rate-limited if last sync was recent.
     """
@@ -108,7 +106,7 @@ def test_run_sync_rate_limit(
     recent_time = datetime.now(timezone.utc) - timedelta(minutes=1)
     mock_doc.to_dict.return_value = {
         "user_id": "test_uid",
-        "last_synced_at": recent_time
+        "last_synced_at": recent_time,
     }
 
     _mock_firestore.client.return_value = mock_db
