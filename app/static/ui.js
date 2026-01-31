@@ -125,9 +125,33 @@
         });
     }
 
+    // Initialize Keyboard Shortcuts (Ctrl+Enter to submit)
+    function initKeyboardShortcuts() {
+        document.addEventListener('keydown', function(e) {
+            if ((e.metaKey || e.ctrlKey) && e.key === 'Enter') {
+                const activeElement = document.activeElement;
+                if (!activeElement) return;
+
+                const form = activeElement.closest('form');
+                if (!form) return;
+
+                // Find the primary submit button
+                // We prioritize buttons with type="submit" that are NOT hidden
+                const submitBtn = Array.from(form.querySelectorAll('button[type="submit"]'))
+                    .find(btn => btn.offsetParent !== null && !btn.disabled);
+
+                if (submitBtn) {
+                    e.preventDefault(); // Prevent default browser behavior (if any)
+                    submitBtn.click();
+                }
+            }
+        });
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
         initSubmitButtons();
         initAutoDismissAlerts();
         initCopyButtons();
+        initKeyboardShortcuts();
     });
 })();
