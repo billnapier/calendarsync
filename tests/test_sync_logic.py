@@ -28,6 +28,14 @@ class TestSyncLogic(unittest.TestCase):
         content += "DESCRIPTION:Desc\r\nLOCATION:Loc\r\nEND:VEVENT\r\nEND:VCALENDAR"
         return content.encode("utf-8")
 
+    def _setup_mock_response(self, mock_response, content):
+        """Helper to setup mock response for streaming."""
+        mock_response.content = content
+        mock_response.status_code = 200
+        mock_response.iter_content.return_value = iter([content])
+        mock_response.__enter__.return_value = mock_response
+        mock_response.__exit__.return_value = None
+
     def _setup_common_mocks(self, mock_firestore, sync_data, user_data=None):
         """Helper to setup reliable firestore mocks."""
         if user_data is None:
@@ -120,8 +128,8 @@ class TestSyncLogic(unittest.TestCase):
         self._setup_common_mocks(mock_firestore, sync_data)
 
         mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.content = self._get_ical_content("12345", "Meeting")
+        content = self._get_ical_content("12345", "Meeting")
+        self._setup_mock_response(mock_response, content)
         mock_get.return_value = mock_response
 
         mock_service = MagicMock()
@@ -156,8 +164,8 @@ class TestSyncLogic(unittest.TestCase):
         self._setup_common_mocks(mock_firestore, sync_data)
 
         mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.content = self._get_ical_content("12345", "New Summary")
+        content = self._get_ical_content("12345", "New Summary")
+        self._setup_mock_response(mock_response, content)
         mock_get.return_value = mock_response
 
         mock_service = MagicMock()
@@ -200,11 +208,12 @@ class TestSyncLogic(unittest.TestCase):
 
         def get_side_effect(url, **kwargs):
             resp = MagicMock()
-            resp.status_code = 200
+            content = b""
             if "site1" in url:
-                resp.content = self._get_ical_content("one", "Event One")
+                content = self._get_ical_content("one", "Event One")
             else:
-                resp.content = self._get_ical_content("two", "Event Two")
+                content = self._get_ical_content("two", "Event Two")
+            self._setup_mock_response(resp, content)
             return resp
 
         mock_get.side_effect = get_side_effect
@@ -240,8 +249,8 @@ class TestSyncLogic(unittest.TestCase):
         self._setup_common_mocks(mock_firestore, sync_data)
 
         mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.content = self._get_ical_content("dedup_uid", "Shared Event")
+        content = self._get_ical_content("dedup_uid", "Shared Event")
+        self._setup_mock_response(mock_response, content)
         mock_get.return_value = mock_response
 
         mock_service = MagicMock()
@@ -305,10 +314,8 @@ class TestSyncLogic(unittest.TestCase):
 
         # Generate event 40 days in the past
         mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.content = self._get_ical_content(
-            "old_event", "Old Event", days_offset=-40
-        )
+        content = self._get_ical_content("old_event", "Old Event", days_offset=-40)
+        self._setup_mock_response(mock_response, content)
         mock_get.return_value = mock_response
 
         mock_service = MagicMock()
@@ -342,10 +349,10 @@ class TestSyncLogic(unittest.TestCase):
 
         # Generate event 100 days in the past BUT with RRULE
         mock_response = MagicMock()
-        mock_response.status_code = 200
-        mock_response.content = self._get_ical_content(
+        content = self._get_ical_content(
             "recurring_event", "Recurring Event", days_offset=-100, rrule="FREQ=WEEKLY"
         )
+        self._setup_mock_response(mock_response, content)
         mock_get.return_value = mock_response
 
         mock_service = MagicMock()

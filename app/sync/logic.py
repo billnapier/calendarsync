@@ -420,9 +420,23 @@ def _fetch_source_data(source, user_id, window_start, window_end, creds=None):
     components_list = []
 
     try:
-        response = safe_requests_get(url, timeout=10)
-        response.raise_for_status()
-        cal = icalendar.Calendar.from_ical(response.content)
+        with safe_requests_get(url, timeout=10, stream=True) as response:
+            response.raise_for_status()
+
+            # Enforce max size (e.g. 10MB) to prevent DoS
+            max_size = 10 * 1024 * 1024
+            chunks = []
+            current_size = 0
+            for chunk in response.iter_content(chunk_size=8192):
+                current_size += len(chunk)
+                if current_size > max_size:
+                    raise ValueError(
+                        f"Source file exceeds size limit of {max_size / 1024 / 1024}MB"
+                    )
+                chunks.append(chunk)
+
+            content = b"".join(chunks)
+            cal = icalendar.Calendar.from_ical(content)
 
         # Extract name
         cal_name = cal.get("X-WR-CALNAME")
