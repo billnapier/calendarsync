@@ -1,5 +1,9 @@
+import os
 import time
+from datetime import datetime, timezone
 from unittest.mock import patch
+
+os.environ["TESTING"] = "1"
 from app.sync.logic import _fetch_source_events
 
 
@@ -28,13 +32,14 @@ def test_sequential_fetch_performance():
         {"url": "http://example.com/4", "prefix": "4"},
     ]
 
-    with patch("app.app.safe_requests_get", side_effect=mock_delayed_get):
+    with patch("app.sync.logic.safe_requests_get", side_effect=mock_delayed_get):
         start_time = time.time()
-        _fetch_source_events(sources, "test_user")
+        now = datetime.now(timezone.utc)
+        _fetch_source_events(sources, "test_user", now, now)
         end_time = time.time()
 
         duration = end_time - start_time
-        print(f"\nTime taken for 4 sources (sequential): {duration:.2f}s")
+        print(f"\nTime taken for 4 sources (parallel): {duration:.2f}s")
 
-        # Expect ~2.0s (4 * 0.5s)
-        assert duration >= 2.0
+        # Expect ~0.5s (parallel execution)
+        assert duration < 2.0
