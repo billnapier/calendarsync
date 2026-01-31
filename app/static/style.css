@@ -928,3 +928,21 @@ details[open] summary.help-summary::before {
         transform: rotate(360deg);
     }
 }
+
+/* Icon Buttons */
+.btn-icon {
+    padding: 0.5rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.5rem;
+    height: 2.5rem;
+    border-radius: 50%;
+    line-height: 0;
+}
+
+.btn-icon svg {
+    width: 1.25rem;
+    height: 1.25rem;
+    fill: currentcolor;
+}
