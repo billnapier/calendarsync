@@ -83,9 +83,7 @@ def test_create_sync_excessive_sources_dos(
         assert "Too many sources" in flashed["danger"]
 
 
-def test_run_sync_rate_limit(
-    _client, _mock_firestore, _mock_sync_logic
-):
+def test_run_sync_rate_limit(_client, _mock_firestore, _mock_sync_logic):
     """
     Test that running a sync too frequently is rejected (Rate Limiting).
     """
@@ -112,7 +110,7 @@ def test_run_sync_rate_limit(
     mock_doc_snapshot.to_dict.return_value = {
         "user_id": "test_uid",
         "destination_calendar_id": "dest_cal",
-        "last_synced_at": last_synced
+        "last_synced_at": last_synced,
     }
     _mock_firestore.client.return_value = mock_db
 
@@ -132,9 +130,7 @@ def test_run_sync_rate_limit(
         assert "wait a few minutes" in flashed["danger"]
 
 
-def test_run_sync_allowed(
-    _client, _mock_firestore, _mock_sync_logic
-):
+def test_run_sync_allowed(_client, _mock_firestore, _mock_sync_logic):
     """
     Test that running a sync after cooldown is allowed.
     """
@@ -161,7 +157,7 @@ def test_run_sync_allowed(
     mock_doc_snapshot.to_dict.return_value = {
         "user_id": "test_uid",
         "destination_calendar_id": "dest_cal",
-        "last_synced_at": last_synced
+        "last_synced_at": last_synced,
     }
     _mock_firestore.client.return_value = mock_db
 
