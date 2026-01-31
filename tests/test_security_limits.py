@@ -1,6 +1,7 @@
 import sys
 import os
 from unittest.mock import MagicMock, patch
+from datetime import datetime, timezone, timedelta
 import pytest
 
 os.environ["TESTING"] = "1"
@@ -80,3 +81,96 @@ def test_create_sync_excessive_sources_dos(
         flashed = dict(sess["_flashes"])
         assert "danger" in flashed
         assert "Too many sources" in flashed["danger"]
+
+
+def test_run_sync_rate_limit(_client, _mock_firestore, _mock_sync_logic):
+    """
+    Test that running a sync too frequently is rejected (Rate Limiting).
+    """
+    with _client.session_transaction() as sess:
+        sess["user"] = {"uid": "test_uid"}
+        sess["csrf_token"] = "valid_token"
+
+    # Mock Firestore
+    mock_db = MagicMock()
+    mock_collection = MagicMock()
+    mock_doc_ref = MagicMock()
+    mock_doc_snapshot = MagicMock()
+
+    mock_db.collection.return_value = mock_collection
+    mock_collection.document.return_value = mock_doc_ref
+    mock_doc_ref.get.return_value = mock_doc_snapshot
+
+    # Setup sync doc
+    mock_doc_snapshot.exists = True
+
+    # Simulates a sync that happened 1 minute ago
+    last_synced = datetime.now(timezone.utc) - timedelta(minutes=1)
+
+    mock_doc_snapshot.to_dict.return_value = {
+        "user_id": "test_uid",
+        "destination_calendar_id": "dest_cal",
+        "last_synced_at": last_synced,
+    }
+    _mock_firestore.client.return_value = mock_db
+
+    resp = _client.post("/sync/sync_123", data={"csrf_token": "valid_token"})
+
+    # Should redirect back to index
+    assert resp.status_code == 302
+    assert "/" in resp.headers["Location"]
+
+    # sync_logic should NOT be called
+    assert _mock_sync_logic.call_count == 0
+
+    # Verify flash message
+    with _client.session_transaction() as sess:
+        flashed = dict(sess["_flashes"])
+        assert "danger" in flashed
+        assert "wait a few minutes" in flashed["danger"]
+
+
+def test_run_sync_allowed(_client, _mock_firestore, _mock_sync_logic):
+    """
+    Test that running a sync after cooldown is allowed.
+    """
+    with _client.session_transaction() as sess:
+        sess["user"] = {"uid": "test_uid"}
+        sess["csrf_token"] = "valid_token"
+
+    # Mock Firestore
+    mock_db = MagicMock()
+    mock_collection = MagicMock()
+    mock_doc_ref = MagicMock()
+    mock_doc_snapshot = MagicMock()
+
+    mock_db.collection.return_value = mock_collection
+    mock_collection.document.return_value = mock_doc_ref
+    mock_doc_ref.get.return_value = mock_doc_snapshot
+
+    # Setup sync doc
+    mock_doc_snapshot.exists = True
+
+    # Simulates a sync that happened 10 minutes ago (Allowed)
+    last_synced = datetime.now(timezone.utc) - timedelta(minutes=10)
+
+    mock_doc_snapshot.to_dict.return_value = {
+        "user_id": "test_uid",
+        "destination_calendar_id": "dest_cal",
+        "last_synced_at": last_synced,
+    }
+    _mock_firestore.client.return_value = mock_db
+
+    resp = _client.post("/sync/sync_123", data={"csrf_token": "valid_token"})
+
+    # Should redirect back to index (success)
+    assert resp.status_code == 302
+    assert "/" in resp.headers["Location"]
+
+    # sync_logic SHOULD be called
+    assert _mock_sync_logic.call_count == 1
+
+    # Verify flash message
+    with _client.session_transaction() as sess:
+        flashed = dict(sess["_flashes"])
+        assert "success" in flashed
