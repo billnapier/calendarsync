@@ -45,3 +45,10 @@ resource "google_project_service" "cloudscheduler_api" {
   service            = "cloudscheduler.googleapis.com"
   disable_on_destroy = false
 }
+
+# Grant the Cloud Run service account permission to impersonate the invoker SA
+resource "google_service_account_iam_member" "scheduler_impersonation_runner" {
+  service_account_id = google_service_account.scheduler_invoker.name
+  role               = "roles/iam.serviceAccountUser"
+  member             = "serviceAccount:${google_service_account.app_runner.email}"
+}
