@@ -135,7 +135,7 @@
                                                     {% if (source.type or 'ical') != 'ical' %}hidden{% endif %}">
                                             <input type="url"
                                                    name="source_urls"
-                                                   value="{{ source.url }}"
+                                                   value="{% if source.type != 'google' %}{{ source.url }}{% endif %}"
                                                    placeholder="https://example.com/calendar.ics"
                                                    aria-label="Source Calendar URL"
                                                    inputmode="url">

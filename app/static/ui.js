@@ -53,7 +53,9 @@
                 submitBtn.appendChild(spinner);
                 submitBtn.appendChild(document.createTextNode(' ' + loadingText));
 
-                submitBtn.disabled = true;
+                setTimeout(() => {
+                    submitBtn.disabled = true;
+                }, 0);
                 submitBtn.classList.add('btn-loading');
             });
         });
