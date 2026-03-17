@@ -59,6 +59,12 @@ python main.py --config config.yaml
 - **Service Name**: `python-cloudrun-app`
 - **Deploy**: GitHub Actions triggers on push to `main` branch. Deploys application and applies Terraform changes.
 
+## Observability & Monitoring
+CalendarSync is instrumented with Google Cloud Monitoring.
+- **Dashboards**: A custom dashboard named `CalendarSync Observability` is available in the GCP Console under **Monitoring > Dashboards**. It tracks UI errors, sync task successes vs. failures, and displays structured JSON logs.
+- **Alerts**: Email alerts are configured for high 5xx error rates, broken cron jobs, and sync task failures.
+  > **Note**: You must configure the `ALERT_EMAIL` secret in your GitHub repository's **Settings > Secrets and variables > Actions** for the alerting terraform to apply successfully.
+
 ## Local Development (With Google OAuth)
 
 To run the Flask application locally using the **Development** environment resources:

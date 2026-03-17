@@ -452,10 +452,19 @@ def sync_one_user():
         sync_id = payload["sync_id"]
         logger.info("Worker starting sync for sync_id: %s", sync_id)
 
+        start_time = time.time()
         sync_calendar_logic(sync_id)
 
         return "Sync successful", 200
     except Exception as e:
+        duration = time.time() - start_time if 'start_time' in locals() else 0.0
+        error_payload = {
+            "event": "sync_failed",
+            "sync_id": sync_id,
+            "error": str(e),
+            "duration_seconds": round(duration, 2)
+        }
+        logger.error("SYNC_ERROR: %s", json.dumps(error_payload))
         logger.error("Worker failed for sync_id %s: %s", sync_id, e)
         # Return 500 to trigger Cloud Tasks retry
         return "Worker failed. Please check logs for details.", 500

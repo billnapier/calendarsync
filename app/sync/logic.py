@@ -4,6 +4,8 @@ from datetime import datetime, timezone
 import contextlib
 import requests
 import icalendar
+import time
+import json
 from firebase_admin import firestore
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
@@ -909,6 +911,9 @@ def sync_calendar_logic(sync_id):  # pylint: disable=too-many-locals
     """
     Core logic to sync events from source iFals to destination Google Calendar.
     """
+    start_time = time.time()
+    user_id = "unknown"
+    destination_id = "unknown"
     db = firestore.client()
     sync_ref = db.collection("syncs").document(sync_id)
     sync_doc = sync_ref.get()
@@ -974,3 +979,16 @@ def sync_calendar_logic(sync_id):  # pylint: disable=too-many-locals
         base_url=base_url,
         creds=creds,
     )
+
+    duration = time.time() - start_time
+    stats_payload = {
+        "event": "sync_completed",
+        "sync_id": sync_id,
+        "user_id": user_id,
+        "destination_id": destination_id,
+        "sources_count": len(sources),
+        "events_fetched": len(all_events_items),
+        "existing_events_found": len(existing_map),
+        "duration_seconds": round(duration, 2)
+    }
+    logger.info("SYNC_STATS: %s", json.dumps(stats_payload))
