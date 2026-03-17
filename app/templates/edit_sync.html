@@ -57,7 +57,7 @@
                                 <option value="" disabled>Select a calendar</option>
                                 {% for cal in calendars %}
                                     <option value="{{ cal.id }}"
-                                            {% if cal.id==sync.destination_calendar_id %}selected{% endif %}>
+                                            {% if cal.id == sync.destination_calendar_id %}selected{% endif %}>
                                         {{
                                         cal.summary }}
                                     </option>
@@ -65,7 +65,7 @@
                             </select>
                         {% else %}
                             <input type="text"
-                                   id="destination_calendar_id"
+                                   id="destination_calendar_id_manual"
                                    name="destination_calendar_id"
                                    value="{{ sync.destination_calendar_id }}"
                                    required>
@@ -103,8 +103,8 @@
                                         <span class="field-label">Type</span>
                                         <select>
                                             <option value="ical"
-                                                    {% if (source.type or 'ical' )=='ical' %}selected{% endif %}>iCal URL</option>
-                                            <option value="google" {% if source.type=='google' %}selected{% endif %}>Google Cal</option>
+                                                    {% if (source.type or 'ical' ) == 'ical' %}selected{% endif %}>iCal URL</option>
+                                            <option value="google" {% if source.type == 'google' %}selected{% endif %}>Google Cal</option>
                                         </select>
                                     </label>
                                     <!-- Source Input (Google/URL) -->
@@ -120,7 +120,7 @@
                                                         Calendar
                                                     </option>
                                                     {% for cal in calendars %}
-                                                        <option value="{{ cal.id }}" {% if cal.id==source.id %}selected{% endif %}>
+                                                        <option value="{{ cal.id }}" {% if cal.id == source.id %}selected{% endif %}>
                                                             {{
                                                             cal.summary }}
                                                         </option>
@@ -135,7 +135,9 @@
                                                     {% if (source.type or 'ical') != 'ical' %}hidden{% endif %}">
                                             <input type="url"
                                                    name="source_urls"
-                                                   value="{% if source.type != 'google' %}{{ source.url }}{% endif %}"
+                                                   value="{% if source.type != 'google' %}
+                                                              {{ source.url }}
+                                                          {% endif %}"
                                                    placeholder="https://example.com/calendar.ics"
                                                    aria-label="Source Calendar URL"
                                                    inputmode="url">
