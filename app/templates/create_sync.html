@@ -58,13 +58,13 @@
                                 <option value="" disabled selected>Select a calendar</option>
                                 {% for cal in calendars %}
                                     <option value="{{ cal.id }}"
-                                            {% if cal.summary=='Family' %}selected{% endif %}>{{ cal.summary }}</option>
+                                            {% if cal.summary == 'Family' %}selected{% endif %}>{{ cal.summary }}</option>
                                 {% endfor %}
                             </select>
                         {% else %}
                             <!-- Fallback if no calendars found or error -->
                             <input type="text"
-                                   id="destination_calendar_id"
+                                   id="destination_calendar_id_manual"
                                    name="destination_calendar_id"
                                    placeholder="e.g., primary or calendar_id@group.calendar.google.com"
                                    required
