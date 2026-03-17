@@ -53,6 +53,8 @@
                 submitBtn.appendChild(spinner);
                 submitBtn.appendChild(document.createTextNode(' ' + loadingText));
 
+                // Defer disabling to prevent a race condition in WebKit browsers where
+                // synchronous disabling can cancel the form submission.
                 setTimeout(() => {
                     submitBtn.disabled = true;
                 }, 0);
