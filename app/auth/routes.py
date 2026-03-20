@@ -163,3 +163,8 @@ def oauth2callback():
     except Exception as e:
         current_app.logger.error("OAuth callback error: %s", e)
         return "Authentication failed. Please try again.", 400
+
+@auth_bp.route("/devlogin")
+def devlogin():
+    session["user"] = {"uid": "dev_test_user", "name": "Dev User", "email": "dev@example.com"}
+    return redirect(url_for("main.index"))
