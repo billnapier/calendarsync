@@ -33,6 +33,7 @@ MAX_SOURCES_LIMIT = 50
 def index():
     user = session.get("user")
     syncs = []
+    easycloud_cals = []
     if user:
         db = firestore.client()
         # Fetch user's syncs
@@ -45,6 +46,16 @@ def index():
         except Exception as e:
             logger.error("Error fetching syncs: %s", e)
 
+        # Fetch user's easycloud calendars
+        try:
+            cal_docs = db.collection("easycloud_calendars").where("user_id", "==", user["uid"]).stream()
+            for doc in cal_docs:
+                data = doc.to_dict()
+                data["id"] = doc.id
+                easycloud_cals.append(data)
+        except Exception as e:
+            logger.error("Error fetching easycloud cals: %s", e)
+
     try:
         client_config = get_client_config()
         google_client_id = client_config["web"]["client_id"]
@@ -53,7 +64,7 @@ def index():
         google_client_id = None
 
     return render_template(
-        "index.html", user=user, syncs=syncs, google_client_id=google_client_id
+        "index.html", user=user, syncs=syncs, easycloud_cals=easycloud_cals, google_client_id=google_client_id
     )
 
 
@@ -139,6 +150,20 @@ def _get_sources_from_form(form):
                             "prefix": prefix,
                         }
                     )
+        elif s_type == "easycloud":
+            if i < len(ids) and i < len(urls):
+                cal_id = ids[i].strip()
+                url = urls[i].strip()
+                if len(url) > 2048:
+                    raise ValueError("URL too long")
+                if cal_id and url:
+                    validate_url(url)
+                    sources.append({
+                        "type": "easycloud",
+                        "id": cal_id,
+                        "url": url,
+                        "prefix": prefix,
+                    })
         else:
             # iCal
             if i < len(urls):
@@ -225,12 +250,24 @@ def _handle_edit_sync_get(user, sync_data):
             sources.append({"url": url, "prefix": old_prefix})
         sync_data["sources"] = sources
 
+    easycloud_cals = []
+    try:
+        db = firestore.client()
+        cal_docs = db.collection("easycloud_calendars").where("user_id", "==", user["uid"]).stream()
+        for doc in cal_docs:
+            data = doc.to_dict()
+            data["id"] = doc.id
+            easycloud_cals.append(data)
+    except Exception as e:
+        logger.error("Failed to fetch easycloud cals on edit GET: %s", e)
+
     csrf_token = generate_csrf_token()
     return render_template(
         "edit_sync.html",
         user=user,
         sync=sync_data,
         calendars=calendars,
+        easycloud_cals=easycloud_cals,
         csrf_token=csrf_token,
     )
 
@@ -405,9 +442,24 @@ def create_sync():
             logger.info("Using cached calendars")
             calendars = session.get("calendars")
 
+        easycloud_cals = []
+        try:
+            db = firestore.client()
+            cal_docs = db.collection("easycloud_calendars").where("user_id", "==", user["uid"]).stream()
+            for doc in cal_docs:
+                data = doc.to_dict()
+                data["id"] = doc.id
+                easycloud_cals.append(data)
+        except Exception as e:
+            logger.error("Failed to fetch easycloud cals on create: %s", e)
+
         csrf_token = generate_csrf_token()
         return render_template(
-            "create_sync.html", user=user, calendars=calendars, csrf_token=csrf_token
+            "create_sync.html", 
+            user=user, 
+            calendars=calendars, 
+            easycloud_cals=easycloud_cals,
+            csrf_token=csrf_token
         )
 
     if request.method == "POST":
