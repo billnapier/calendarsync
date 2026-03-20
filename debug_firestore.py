@@ -8,12 +8,15 @@ import sys
 # Initialize Firebase app
 # We use ADC (Application Default Credentials)
 if not firebase_admin._apps:
-    project_id = sys.argv[1] if len(sys.argv) > 1 else 'calendarsync-napier-dev'
+    project_id = sys.argv[1] if len(sys.argv) > 1 else "calendarsync-napier-dev"
     print(f"Initializing for project: {project_id}")
     cred = credentials.ApplicationDefault()
-    firebase_admin.initialize_app(cred, {
-        'projectId': project_id,
-    })
+    firebase_admin.initialize_app(
+        cred,
+        {
+            "projectId": project_id,
+        },
+    )
 
 db = firestore.client()
 

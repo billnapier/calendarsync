@@ -1,9 +1,9 @@
+import json
 import logging
-import time
-from datetime import datetime, timedelta, timezone
 import os
 import re
-import json
+import time
+from datetime import datetime, timedelta, timezone
 from flask import (
     Blueprint,
     render_template,
@@ -457,12 +457,12 @@ def sync_one_user():
 
         return "Sync successful", 200
     except Exception as e:
-        duration = time.time() - start_time if 'start_time' in locals() else 0.0
+        duration = time.time() - start_time if "start_time" in locals() else 0.0
         error_payload = {
             "event": "sync_failed",
             "sync_id": sync_id,
             "error": str(e),
-            "duration_seconds": round(duration, 2)
+            "duration_seconds": round(duration, 2),
         }
         logger.error("SYNC_ERROR: %s", json.dumps(error_payload))
         logger.error("Worker failed for sync_id %s: %s", sync_id, e)

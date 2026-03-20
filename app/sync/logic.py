@@ -1,11 +1,12 @@
-import logging
 import concurrent.futures
-from datetime import datetime, timezone
 import contextlib
-import requests
-import icalendar
-import time
 import json
+import logging
+import time
+from datetime import datetime, timezone
+
+import icalendar
+import requests
 from firebase_admin import firestore
 from google.oauth2.credentials import Credentials
 from googleapiclient.discovery import build
@@ -989,6 +990,6 @@ def sync_calendar_logic(sync_id):  # pylint: disable=too-many-locals
         "sources_count": len(sources),
         "events_fetched": len(all_events_items),
         "existing_events_found": len(existing_map),
-        "duration_seconds": round(duration, 2)
+        "duration_seconds": round(duration, 2),
     }
     logger.info("SYNC_STATS: %s", json.dumps(stats_payload))
