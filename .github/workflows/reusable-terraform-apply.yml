@@ -37,6 +37,9 @@ on:
       wif_service_account:
         required: true
         description: "Workload Identity Service Account"
+      alert_email:
+        required: true
+        description: "Email address for monitoring alerts"
 
 env:
   TF_VAR_github_owner: ${{ github.repository_owner }}
@@ -46,6 +49,7 @@ env:
   TF_VAR_project_id: ${{ inputs.project_id }}
   TF_VAR_service_name: ${{ inputs.service_name }}
   TF_VAR_domain_name: ${{ inputs.domain_name }}
+  TF_VAR_alert_email: ${{ secrets.alert_email }}
 
 jobs:
   apply:

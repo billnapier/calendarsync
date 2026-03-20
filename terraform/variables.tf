@@ -41,3 +41,8 @@ variable "sync_schedule" {
   type        = string
   default     = "0 * * * *"
 }
+
+variable "alert_email" {
+  description = "Email address for monitoring alerts"
+  type        = string
+}

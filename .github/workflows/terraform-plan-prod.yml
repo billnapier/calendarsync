@@ -16,6 +16,7 @@ env:
   TF_VAR_project_id: ${{ vars.GCP_PROJECT_ID }}
   TF_VAR_service_name: "python-cloudrun-app"
   TF_VAR_domain_name: ${{ vars.DOMAIN_NAME }}
+  TF_VAR_alert_email: ${{ secrets.ALERT_EMAIL }}
 
 jobs:
   plan-prod:

@@ -1,9 +1,9 @@
+import json
 import logging
-import time
-from datetime import datetime, timedelta, timezone
 import os
 import re
-import json
+import time
+from datetime import datetime, timedelta, timezone
 from flask import (
     Blueprint,
     render_template,
@@ -443,6 +443,7 @@ def sync_one_user():
         return "Unauthorized", 403
 
     sync_id = None
+    start_time = time.time()
     try:
         payload = request.get_json()
         if not payload or "sync_id" not in payload:
@@ -456,6 +457,14 @@ def sync_one_user():
 
         return "Sync successful", 200
     except Exception as e:
+        duration = time.time() - start_time
+        error_payload = {
+            "event": "sync_failed",
+            "sync_id": sync_id,
+            "error": str(e),
+            "duration_seconds": round(duration, 2),
+        }
+        logger.error("SYNC_ERROR: %s", json.dumps(error_payload))
         logger.error("Worker failed for sync_id %s: %s", sync_id, e)
         # Return 500 to trigger Cloud Tasks retry
         return "Worker failed. Please check logs for details.", 500
