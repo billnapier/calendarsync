@@ -77,7 +77,7 @@ resource "google_monitoring_alert_policy" "cron_absence" {
   conditions {
     display_name = "No trigger from Cloud Scheduler in 2 hours"
     condition_absent {
-      filter   = "resource.type = \"cloud_scheduler_job\" AND resource.labels.job_id = \"${google_cloud_scheduler_job.sync_all.name}\" AND metric.type = \"cloudscheduler.googleapis.com/job/attempt_execution_count\""
+      filter   = "resource.type = \"cloud_tasks_queue\" AND resource.labels.queue_id = \"sync-queue\" AND metric.type = \"cloudtasks.googleapis.com/queue/task_attempt_count\""
       duration = "7200s" # 2 hours
       aggregations {
         alignment_period     = "3600s" # Check hourly alignment
