@@ -443,6 +443,7 @@ def sync_one_user():
         return "Unauthorized", 403
 
     sync_id = None
+    start_time = time.time()
     try:
         payload = request.get_json()
         if not payload or "sync_id" not in payload:
@@ -452,12 +453,11 @@ def sync_one_user():
         sync_id = payload["sync_id"]
         logger.info("Worker starting sync for sync_id: %s", sync_id)
 
-        start_time = time.time()
         sync_calendar_logic(sync_id)
 
         return "Sync successful", 200
     except Exception as e:
-        duration = time.time() - start_time if "start_time" in locals() else 0.0
+        duration = time.time() - start_time
         error_payload = {
             "event": "sync_failed",
             "sync_id": sync_id,

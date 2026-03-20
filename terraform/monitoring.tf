@@ -21,15 +21,15 @@ resource "google_monitoring_alert_policy" "ui_errors" {
   combiner     = "OR"
 
   conditions {
-    display_name = "Cloud Run 5xx Errors > 5%"
+    display_name = "Cloud Run 5xx Errors > 5 in 5 minutes"
     condition_threshold {
       filter          = "resource.type = \"cloud_run_revision\" AND resource.labels.service_name = \"${var.service_name}\" AND metric.type = \"run.googleapis.com/request_count\" AND metric.labels.response_code_class = \"5xx\" AND resource.labels.configuration_name != \"SYNC_ONE\""
       duration        = "300s"
       comparison      = "COMPARISON_GT"
       threshold_value = 5.0
       aggregations {
-        alignment_period     = "60s"
-        per_series_aligner   = "ALIGN_RATE"
+        alignment_period     = "300s"
+        per_series_aligner   = "ALIGN_COUNT"
         cross_series_reducer = "REDUCE_SUM"
       }
     }
@@ -48,7 +48,7 @@ resource "google_monitoring_alert_policy" "cron_errors" {
   combiner     = "OR"
 
   conditions {
-    display_name = "High failed sync tasks"
+    display_name = "High failed sync tasks (> 5 in 5 minutes)"
     condition_threshold {
       filter          = "resource.type = \"cloud_tasks_queue\" AND resource.labels.queue_id = \"sync-queue\" AND metric.type = \"cloudtasks.googleapis.com/queue/task_attempt_count\" AND metric.labels.response_code != \"OK\""
       duration        = "300s"
@@ -56,7 +56,7 @@ resource "google_monitoring_alert_policy" "cron_errors" {
       threshold_value = 5.0
       aggregations {
         alignment_period     = "300s"
-        per_series_aligner   = "ALIGN_RATE"
+        per_series_aligner   = "ALIGN_COUNT"
         cross_series_reducer = "REDUCE_SUM"
       }
     }
