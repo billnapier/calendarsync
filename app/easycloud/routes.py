@@ -44,8 +44,14 @@ def create_calendar():
     cal.add("X-WR-CALNAME", name)
     ics_str = cal.to_ical().decode("utf-8")
     
-    public_url = upload_ics_to_storage(user["uid"], new_cal_ref.id, ics_str)
-    new_cal_ref.update({"public_url": public_url})
+    try:
+        public_url = upload_ics_to_storage(user["uid"], new_cal_ref.id, ics_str)
+        new_cal_ref.update({"public_url": public_url})
+    except Exception as e:
+        logger.error("Failed to upload ICS to storage: %s", e)
+        new_cal_ref.delete()
+        flash(f"Error creating EasyCloud calendar storage. Please ensure Firebase Storage is initialized. Error: {e}", "danger")
+        return redirect(url_for("main.index"))
 
     flash(f"EasyCloud Calendar '{name}' created successfully!", "success")
     return redirect(url_for("main.index"))
@@ -127,7 +133,12 @@ def upload_ics(calendar_id):
         event_count += 1
 
     ics_str = master_cal.to_ical().decode("utf-8")
-    public_url = upload_ics_to_storage(user["uid"], calendar_id, ics_str)
+    try:
+        public_url = upload_ics_to_storage(user["uid"], calendar_id, ics_str)
+    except Exception as e:
+        logger.error("Failed to upload ICS during update: %s", e)
+        flash(f"Storage upload failed. Please ensure Firebase storage is configured. Error: {e}", "danger")
+        return redirect(url_for("main.index"))
 
     cal_ref.update({
         "updated_at": firestore.SERVER_TIMESTAMP,
