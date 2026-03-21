@@ -53,11 +53,8 @@
                 submitBtn.appendChild(spinner);
                 submitBtn.appendChild(document.createTextNode(' ' + loadingText));
 
-                // Defer disabling to prevent a race condition in WebKit browsers where
-                // synchronous disabling can cancel the form submission.
-                setTimeout(() => {
-                    submitBtn.disabled = true;
-                }, 0);
+                // Disable interactions via pointer-events (handled by .btn-loading CSS usually)
+                // We rely on the dataset.submitting flag to prevent double submissions.
                 submitBtn.classList.add('btn-loading');
             });
         });
@@ -69,9 +66,8 @@
         forms.forEach(form => {
             delete form.dataset.submitting;
             form.querySelectorAll('button[type="submit"]').forEach(submitBtn => {
-                if (submitBtn.disabled && submitBtn.dataset.originalContent) {
+                if (submitBtn.dataset.originalContent) {
                     submitBtn.innerHTML = submitBtn.dataset.originalContent;
-                    submitBtn.disabled = false;
                     submitBtn.style.width = '';
                     submitBtn.classList.remove('btn-loading');
                     delete submitBtn.dataset.originalContent;

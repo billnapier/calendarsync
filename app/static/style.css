@@ -928,3 +928,31 @@ details[open] summary.help-summary::before {
         transform: rotate(360deg);
     }
 }
+
+/* EasyCloud Classes */
+.create-easycloud-card {
+    border: 2px dashed var(--border-color);
+    background: transparent;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 2rem 1rem;
+}
+
+.create-easycloud-card h3 {
+    margin-bottom: 1rem;
+}
+
+.create-easycloud-form {
+    width: 100%;
+    text-align: center;
+}
+
+.create-easycloud-input {
+    width: 100%;
+    margin-bottom: 0.5rem;
+    padding: 0.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+}

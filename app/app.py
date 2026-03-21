@@ -7,6 +7,7 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 # Blueprints
 from app.auth import auth_bp
 from app.main import main_bp
+from app.easycloud import easycloud_bp
 
 # Utils
 from app.utils import generate_csrf_token, time_ago_filter
@@ -80,6 +81,7 @@ else:
 # Register Blueprints
 app.register_blueprint(auth_bp)
 app.register_blueprint(main_bp)
+app.register_blueprint(easycloud_bp)
 
 # Register Context Processors and Filters
 app.context_processor(lambda: {"csrf_token": generate_csrf_token()})

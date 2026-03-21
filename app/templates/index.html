@@ -67,6 +67,9 @@
                     <p class="hero-subheadline">
                         Seamlessly merge multiple iCal calendars into a single master calendar.
                         Keep track of work, personal, and shared events all in one place.
+                        <br>
+                        <br>
+                        <strong>New!</strong> EasyCloud Calendars: create and merge your own ICS files directly in the cloud.
                     </p>
                     <div class="auth-wrapper">
                         <!-- djlint:off H037 -->
@@ -123,6 +126,15 @@
                         <p class="feature-description">
                             Your data belongs to you. We just help you move it where you need it
                             securely.
+                        </p>
+                    </div>
+                    <div class="feature-card">
+                        <div class="feature-icon">
+                            <span role="img" aria-label="EasyCloud">☁️</span>
+                        </div>
+                        <h3 class="feature-title">EasyCloud Calendars</h3>
+                        <p class="feature-description">
+                            Upload and merge your .ics files to create hosted calendars that you can share or sync anywhere.
                         </p>
                     </div>
                 </div>
@@ -211,11 +223,94 @@
                            class="btn btn-primary dashboard-cta">Get Started</a>
                     </div>
                 {% endif %}
+                <div class="dashboard-header" style="margin-top: 3rem;">
+                    <h2>Your EasyCloud Calendars</h2>
+                    <p>Manage your custom calendars created from ICS file uploads.</p>
+                </div>
+                <div class="sync-grid">
+                    {% if easycloud_cals %}
+                        {% for cal in easycloud_cals %}
+                            <div class="sync-card">
+                                <div class="sync-card-header">
+                                    <h3 class="sync-destination">{{ cal.name }}</h3>
+                                    <form action="{{ url_for('easycloud.delete_calendar', calendar_id=cal.id) }}"
+                                          method="post"
+                                          style="display:inline">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                                        <button type="submit"
+                                                class="btn btn-outline btn-sm"
+                                                data-confirm="Are you sure you want to delete this calendar?">
+                                            Delete
+                                        </button>
+                                    </form>
+                                </div>
+                                <div class="sync-body">
+                                    <p>
+                                        <strong>Events:</strong> {{ cal.event_count }}
+                                    </p>
+                                    {% if cal.public_url %}
+                                        <div style="margin-top: 0.5rem;
+                                                    margin-bottom: 0.5rem;
+                                                    display: flex;
+                                                    gap: 0.5rem">
+                                            <a href="{{ cal.public_url }}"
+                                               target="_blank"
+                                               class="btn btn-outline btn-sm">Download Calendar</a>
+                                            <button type="button"
+                                                    class="btn btn-outline btn-sm btn-copy"
+                                                    data-copy-text="{{ cal.public_url }}"
+                                                    title="Copy Calendar URL"
+                                                    aria-label="Copy Calendar URL">Copy URL</button>
+                                        </div>
+                                    {% endif %}
+                                    <hr style="margin: 1rem 0;
+                                               border: 0;
+                                               border-top: 1px solid var(--border-color)">
+                                    <form action="{{ url_for('easycloud.upload_ics', calendar_id=cal.id) }}"
+                                          method="post"
+                                          enctype="multipart/form-data">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                                        <div style="margin-bottom: 0.5rem;">
+                                            <input type="file"
+                                                   name="ics_file"
+                                                   accept=".ics"
+                                                   required
+                                                   class="create-easycloud-input">
+                                        </div>
+                                        <div class="sync-actions-group">
+                                            <select name="upload_action"
+                                                    class="btn btn-outline btn-sm"
+                                                    style="flex: 1;
+                                                           padding: 0.25rem">
+                                                <option value="add" selected>Add Events</option>
+                                                <option value="replace">Replace Events</option>
+                                            </select>
+                                            <button type="submit" class="btn btn-primary btn-sm">Upload</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                    <div class="sync-card create-easycloud-card">
+                        <h3>Create New</h3>
+                        <form action="{{ url_for('easycloud.create_calendar') }}"
+                              method="post"
+                              class="create-easycloud-form">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                            <input type="text"
+                                   name="name"
+                                   placeholder="Calendar Name"
+                                   required
+                                   class="create-easycloud-input">
+                            <button type="submit" class="btn btn-primary">+ Create EasyCloud</button>
+                        </form>
+                    </div>
+                </div>
             </div>
         {% endif %}
         <footer>
             Powered by antigravity and Google Deepmind
         </footer>
-        <script src="{{ url_for('static', filename='ui.js') }}"></script>
     </body>
 </html>

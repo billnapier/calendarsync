@@ -23,30 +23,37 @@
         });
     }
 
-    // Helper to handle source type change (iCal vs Google)
+    // Helper to handle source type change (iCal vs Google vs EasyCloud)
     function handleSourceTypeChange(select) {
         const entry = select.closest('.ical-entry');
         const typeInput = entry.querySelector('input[name="source_types"]');
         const googleInput = entry.querySelector('.google-input');
         const icalInput = entry.querySelector('.ical-input');
+        const easycloudInput = entry.querySelector('.easycloud-input');
         const idInput = entry.querySelector('input[name="source_ids"]');
         const urlInput = entry.querySelector('input[name="source_urls"]');
 
         // Update hidden type input
         if (typeInput) typeInput.value = select.value;
 
+        if (googleInput) googleInput.classList.add('hidden');
+        if (icalInput) icalInput.classList.add('hidden');
+        if (easycloudInput) easycloudInput.classList.add('hidden');
+
         if (select.value === 'google') {
-            googleInput.classList.remove('hidden');
-            icalInput.classList.add('hidden');
-            // Clear iCal URL when switching to Google
+            if (googleInput) googleInput.classList.remove('hidden');
+            if (urlInput) urlInput.value = '';
+        } else if (select.value === 'easycloud') {
+            if (easycloudInput) easycloudInput.classList.remove('hidden');
+            if (idInput) idInput.value = '';
             if (urlInput) urlInput.value = '';
         } else {
-            googleInput.classList.add('hidden');
-            icalInput.classList.remove('hidden');
-            // Clear Google ID when switching to iCal
+            if (icalInput) icalInput.classList.remove('hidden');
             if (idInput) idInput.value = '';
             const visibleSelect = entry.querySelector('select[name="source_ids_visible"]');
             if (visibleSelect) visibleSelect.value = "";
+            const easycloudSelect = entry.querySelector('select[name="easycloud_ids_visible"]');
+            if (easycloudSelect) easycloudSelect.value = "";
         }
     }
 
@@ -55,6 +62,18 @@
         const entry = select.closest('.ical-entry');
         const idInput = entry.querySelector('input[name="source_ids"]');
         if (idInput) idInput.value = select.value;
+    }
+
+    // Helper to handle easycloud calendar selection
+    function handleEasyCloudChange(select) {
+        const entry = select.closest('.ical-entry');
+        const idInput = entry.querySelector('input[name="source_ids"]');
+        const urlInput = entry.querySelector('input[name="source_urls"]');
+        if (idInput) idInput.value = select.value;
+        const selectedOption = select.options[select.selectedIndex];
+        if (urlInput && selectedOption) {
+            urlInput.value = selectedOption.dataset.url || "";
+        }
     }
 
     // Add new source entry
@@ -128,6 +147,11 @@
                 // This select has name="source_ids_visible"
                 if (e.target.name === 'source_ids_visible') {
                     handleGoogleCalChange(e.target);
+                }
+                
+                // Handle EasyCloud Change
+                if (e.target.name === 'easycloud_ids_visible') {
+                    handleEasyCloudChange(e.target);
                 }
             });
         }
