@@ -67,7 +67,8 @@
                     <p class="hero-subheadline">
                         Seamlessly merge multiple iCal calendars into a single master calendar.
                         Keep track of work, personal, and shared events all in one place.
-                        <br><br>
+                        <br>
+                        <br>
                         <strong>New!</strong> EasyCloud Calendars: create and merge your own ICS files directly in the cloud.
                     </p>
                     <div class="auth-wrapper">
@@ -128,9 +129,13 @@
                         </p>
                     </div>
                     <div class="feature-card">
-                        <div class="feature-icon"><span role="img" aria-label="EasyCloud">☁️</span></div>
+                        <div class="feature-icon">
+                            <span role="img" aria-label="EasyCloud">☁️</span>
+                        </div>
                         <h3 class="feature-title">EasyCloud Calendars</h3>
-                        <p class="feature-description">Upload and merge your .ics files to create hosted calendars that you can share or sync anywhere.</p>
+                        <p class="feature-description">
+                            Upload and merge your .ics files to create hosted calendars that you can share or sync anywhere.
+                        </p>
                     </div>
                 </div>
             </section>
@@ -218,7 +223,6 @@
                            class="btn btn-primary dashboard-cta">Get Started</a>
                     </div>
                 {% endif %}
-
                 <div class="dashboard-header" style="margin-top: 3rem;">
                     <h2>Your EasyCloud Calendars</h2>
                     <p>Manage your custom calendars created from ICS file uploads.</p>
@@ -229,24 +233,44 @@
                             <div class="sync-card">
                                 <div class="sync-card-header">
                                     <h3 class="sync-destination">{{ cal.name }}</h3>
-                                    <form action="{{ url_for('easycloud.delete_calendar', calendar_id=cal.id) }}" method="post" style="display:inline;">
+                                    <form action="{{ url_for('easycloud.delete_calendar', calendar_id=cal.id) }}"
+                                          method="post"
+                                          style="display:inline">
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                                        <button type="submit" class="btn btn-outline btn-sm" onclick="return confirm('Delete this calendar?')">Delete</button>
+                                        <button type="submit"
+                                                class="btn btn-outline btn-sm"
+                                                onclick="return confirm('Delete this calendar?')">Delete</button>
                                     </form>
                                 </div>
                                 <div class="sync-body">
-                                    <p><strong>Events:</strong> {{ cal.event_count }}</p>
+                                    <p>
+                                        <strong>Events:</strong> {{ cal.event_count }}
+                                    </p>
                                     {% if cal.public_url %}
-                                        <p><a href="{{ cal.public_url }}" target="_blank">View Calendar</a></p>
+                                        <p>
+                                            <a href="{{ cal.public_url }}" target="_blank">View Calendar</a>
+                                        </p>
                                     {% endif %}
-                                    <hr style="margin: 1rem 0; border: 0; border-top: 1px solid var(--border-color);">
-                                    <form action="{{ url_for('easycloud.upload_ics', calendar_id=cal.id) }}" method="post" enctype="multipart/form-data">
+                                    <hr style="margin: 1rem 0;
+                                               border: 0;
+                                               border-top: 1px solid var(--border-color)">
+                                    <form action="{{ url_for('easycloud.upload_ics', calendar_id=cal.id) }}"
+                                          method="post"
+                                          enctype="multipart/form-data">
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                                         <div style="margin-bottom: 0.5rem;">
-                                            <input type="file" name="ics_file" accept=".ics" required style="width: 100%; font-size: 0.85rem;">
+                                            <input type="file"
+                                                   name="ics_file"
+                                                   accept=".ics"
+                                                   required
+                                                   style="width: 100%;
+                                                          font-size: 0.85rem">
                                         </div>
                                         <div style="display: flex; gap: 0.5rem; align-items: center;">
-                                            <select name="upload_action" class="btn btn-outline btn-sm" style="flex: 1; padding: 0.25rem;">
+                                            <select name="upload_action"
+                                                    class="btn btn-outline btn-sm"
+                                                    style="flex: 1;
+                                                           padding: 0.25rem">
                                                 <option value="replace">Replace Events</option>
                                                 <option value="add">Add Events</option>
                                             </select>
@@ -257,11 +281,29 @@
                             </div>
                         {% endfor %}
                     {% endif %}
-                    <div class="sync-card" style="border: 2px dashed var(--border-color); background: transparent; display: flex; flex-direction: column; justify-content: center; align-items: center; padding: 2rem 1rem;">
+                    <div class="sync-card"
+                         style="border: 2px dashed var(--border-color);
+                                background: transparent;
+                                display: flex;
+                                flex-direction: column;
+                                justify-content: center;
+                                align-items: center;
+                                padding: 2rem 1rem">
                         <h3 style="margin-bottom: 1rem;">Create New</h3>
-                        <form action="{{ url_for('easycloud.create_calendar') }}" method="post" style="width: 100%; text-align: center;">
+                        <form action="{{ url_for('easycloud.create_calendar') }}"
+                              method="post"
+                              style="width: 100%;
+                                     text-align: center">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                            <input type="text" name="name" placeholder="Calendar Name" required style="width: 100%; margin-bottom: 0.5rem; padding: 0.5rem; border: 1px solid var(--border-color); border-radius: 4px;">
+                            <input type="text"
+                                   name="name"
+                                   placeholder="Calendar Name"
+                                   required
+                                   style="width: 100%;
+                                          margin-bottom: 0.5rem;
+                                          padding: 0.5rem;
+                                          border: 1px solid var(--border-color);
+                                          border-radius: 4px">
                             <button type="submit" class="btn btn-primary">+ Create EasyCloud</button>
                         </form>
                     </div>
