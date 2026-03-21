@@ -31,6 +31,7 @@ MAX_SOURCES_LIMIT = 50
 
 @main_bp.route("/")
 def index():
+    logger.info("INSIDE INDEX ROUTE")
     user = session.get("user")
     syncs = []
     easycloud_cals = []

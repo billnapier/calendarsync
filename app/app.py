@@ -34,6 +34,11 @@ app.config["SESSION_COOKIE_SECURE"] = True
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 
+@app.before_request
+def before_request_logger():
+    from flask import request
+    app.logger.info(f"STARTING REQUEST: {request.method} {request.path}")
+
 
 @app.after_request
 def add_security_headers(response):
