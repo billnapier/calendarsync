@@ -105,7 +105,8 @@
                                             <option value="ical"
                                                     {% if (source.type or 'ical' ) == 'ical' %}selected{% endif %}>iCal URL</option>
                                             <option value="google" {% if source.type == 'google' %}selected{% endif %}>Google Cal</option>
-                                            <option value="easycloud" {% if source.type == 'easycloud' %}selected{% endif %}>EasyCloud Calendar</option>
+                                            <option value="easycloud"
+                                                    {% if source.type == 'easycloud' %}selected{% endif %}>EasyCloud Calendar</option>
                                         </select>
                                     </label>
                                     <!-- Source Input (Google/URL) -->
@@ -138,7 +139,9 @@
                                                 <select name="easycloud_ids_visible" aria-label="EasyCloud Source">
                                                     <option value="" disabled selected>Select Calendar</option>
                                                     {% for cal in easycloud_cals %}
-                                                        <option value="{{ cal.id }}" data-url="{{ cal.public_url }}" {% if cal.id == source.id %}selected{% endif %}>{{ cal.name }}</option>
+                                                        <option value="{{ cal.id }}"
+                                                                data-url="{{ cal.public_url }}"
+                                                                {% if cal.id == source.id %}selected{% endif %}>{{ cal.name }}</option>
                                                     {% endfor %}
                                                 </select>
                                             {% else %}
@@ -203,7 +206,9 @@
                                             {% if easycloud_cals %}
                                                 <select name="easycloud_ids_visible" aria-label="EasyCloud Source">
                                                     <option value="" disabled selected>Select Calendar</option>
-                                                    {% for cal in easycloud_cals %}<option value="{{ cal.id }}" data-url="{{ cal.public_url }}">{{ cal.name }}</option>{% endfor %}
+                                                    {% for cal in easycloud_cals %}
+                                                        <option value="{{ cal.id }}" data-url="{{ cal.public_url }}">{{ cal.name }}</option>
+                                                    {% endfor %}
                                                 </select>
                                             {% else %}
                                                 <p class="form-hint">No EasyCloud Calendars available.</p>
@@ -289,7 +294,9 @@
                         {% if easycloud_cals %}
                             <select name="easycloud_ids_visible" aria-label="EasyCloud Source">
                                 <option value="" disabled selected>Select Calendar</option>
-                                {% for cal in easycloud_cals %}<option value="{{ cal.id }}" data-url="{{ cal.public_url }}">{{ cal.name }}</option>{% endfor %}
+                                {% for cal in easycloud_cals %}
+                                    <option value="{{ cal.id }}" data-url="{{ cal.public_url }}">{{ cal.name }}</option>
+                                {% endfor %}
                             </select>
                         {% else %}
                             <p class="form-hint">No EasyCloud Calendars available.</p>

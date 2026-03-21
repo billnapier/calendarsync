@@ -128,7 +128,9 @@
                                         {% if easycloud_cals %}
                                             <select name="easycloud_ids_visible" aria-label="EasyCloud Source">
                                                 <option value="" disabled selected>Select Calendar</option>
-                                                {% for cal in easycloud_cals %}<option value="{{ cal.id }}" data-url="{{ cal.public_url }}">{{ cal.name }}</option>{% endfor %}
+                                                {% for cal in easycloud_cals %}
+                                                    <option value="{{ cal.id }}" data-url="{{ cal.public_url }}">{{ cal.name }}</option>
+                                                {% endfor %}
                                             </select>
                                         {% else %}
                                             <p class="form-hint">No EasyCloud Calendars available.</p>
@@ -203,7 +205,9 @@
                         {% if easycloud_cals %}
                             <select name="easycloud_ids_visible" aria-label="EasyCloud Source">
                                 <option value="" disabled selected>Select Calendar</option>
-                                {% for cal in easycloud_cals %}<option value="{{ cal.id }}" data-url="{{ cal.public_url }}">{{ cal.name }}</option>{% endfor %}
+                                {% for cal in easycloud_cals %}
+                                    <option value="{{ cal.id }}" data-url="{{ cal.public_url }}">{{ cal.name }}</option>
+                                {% endfor %}
                             </select>
                         {% else %}
                             <p class="form-hint">No EasyCloud Calendars available.</p>
