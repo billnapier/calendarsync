@@ -5,7 +5,11 @@ from firebase_admin import firestore
 import icalendar
 
 from app.utils import verify_csrf_token
-from app.storage import upload_ics_to_storage, get_ics_from_storage, delete_ics_from_storage
+from app.storage import (
+    upload_ics_to_storage,
+    get_ics_from_storage,
+    delete_ics_from_storage,
+)
 
 logger = logging.getLogger(__name__)
 

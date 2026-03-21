@@ -15,10 +15,13 @@ def get_bucket_name():
         "GOOGLE_CLOUD_PROJECT"
     )
     if not project_id:
-        logger.error("FIREBASE_PROJECT_ID or GOOGLE_CLOUD_PROJECT environment variable not set.")
+        logger.error(
+            "FIREBASE_PROJECT_ID or GOOGLE_CLOUD_PROJECT environment variable not set."
+        )
         raise ValueError("Could not determine Firebase Project ID.")
 
     return f"{project_id}.appspot.com"
+
 
 def delete_ics_from_storage(user_id, calendar_id):
     """Deletes the ICS file from Firebase Storage."""
