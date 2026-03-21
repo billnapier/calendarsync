@@ -239,7 +239,7 @@
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                                         <button type="submit"
                                                 class="btn btn-outline btn-sm"
-                                                onclick="return confirm('Delete this calendar?')">Delete</button>
+                                                data-confirm="Are you sure you want to delete this calendar?">Delete</button>
                                     </form>
                                 </div>
                                 <div class="sync-body">
@@ -273,10 +273,9 @@
                                                    name="ics_file"
                                                    accept=".ics"
                                                    required
-                                                   style="width: 100%;
-                                                          font-size: 0.85rem">
+                                                   class="create-easycloud-input">
                                         </div>
-                                        <div style="display: flex; gap: 0.5rem; align-items: center;">
+                                        <div class="sync-actions-group">
                                             <select name="upload_action"
                                                     class="btn btn-outline btn-sm"
                                                     style="flex: 1;
@@ -291,29 +290,17 @@
                             </div>
                         {% endfor %}
                     {% endif %}
-                    <div class="sync-card"
-                         style="border: 2px dashed var(--border-color);
-                                background: transparent;
-                                display: flex;
-                                flex-direction: column;
-                                justify-content: center;
-                                align-items: center;
-                                padding: 2rem 1rem">
-                        <h3 style="margin-bottom: 1rem;">Create New</h3>
+                    <div class="sync-card sync-card--create-new">
+                        <h3>Create New</h3>
                         <form action="{{ url_for('easycloud.create_calendar') }}"
                               method="post"
-                              style="width: 100%;
-                                     text-align: center">
+                              class="create-easycloud-form">
                             <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                             <input type="text"
                                    name="name"
                                    placeholder="Calendar Name"
                                    required
-                                   style="width: 100%;
-                                          margin-bottom: 0.5rem;
-                                          padding: 0.5rem;
-                                          border: 1px solid var(--border-color);
-                                          border-radius: 4px">
+                                   class="create-easycloud-input">
                             <button type="submit" class="btn btn-primary">+ Create EasyCloud</button>
                         </form>
                     </div>

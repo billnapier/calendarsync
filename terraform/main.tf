@@ -91,6 +91,36 @@ resource "google_project_iam_member" "app_runner_logging" {
   member  = "serviceAccount:${google_service_account.app_runner.email}"
 }
 
+# --- EasyCloud Storage Configuration ---
+resource "google_storage_bucket" "easycloud_storage" {
+  name                        = "${var.project_id}-easycloud"
+  location                    = var.region
+  force_destroy               = true
+  uniform_bucket_level_access = true
+
+  cors {
+    origin          = ["*"]
+    method          = ["GET", "HEAD", "OPTIONS"]
+    response_header = ["*"]
+    max_age_seconds = 3600
+  }
+}
+
+# Grant app-runner access to manage objects in the bucket
+resource "google_storage_bucket_iam_member" "app_runner_storage" {
+  bucket = google_storage_bucket.easycloud_storage.name
+  role   = "roles/storage.objectAdmin"
+  member = "serviceAccount:${google_service_account.app_runner.email}"
+}
+
+# Make all objects publicly readable (since these are public calendars)
+resource "google_storage_bucket_iam_member" "public_storage" {
+  bucket = google_storage_bucket.easycloud_storage.name
+  role   = "roles/storage.objectViewer"
+  member = "allUsers"
+}
+
+
 # Cloud Run Service
 resource "google_cloud_run_service" "default" {
   name     = var.service_name
@@ -116,7 +146,7 @@ resource "google_cloud_run_service" "default" {
         }
         env {
           name  = "FIREBASE_STORAGE_BUCKET"
-          value = data.google_firebase_web_app_config.default.storage_bucket
+          value = google_storage_bucket.easycloud_storage.name
         }
         env {
           name  = "FIREBASE_MESSAGING_SENDER_ID"

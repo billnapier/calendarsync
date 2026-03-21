@@ -29,6 +29,25 @@ logger = logging.getLogger(__name__)
 MAX_SOURCES_LIMIT = 50
 
 
+def _get_user_easycloud_calendars(user_id):
+    """Fetches a user's EasyCloud calendars from Firestore."""
+    db = firestore.client()
+    easycloud_cals = []
+    try:
+        cal_docs = (
+            db.collection("easycloud_calendars")
+            .where("user_id", "==", user_id)
+            .stream()
+        )
+        for doc in cal_docs:
+            data = doc.to_dict()
+            data["id"] = doc.id
+            easycloud_cals.append(data)
+    except Exception as e:
+        logger.error("Error fetching easycloud cals for user %s: %s", user_id, e)
+    return easycloud_cals
+
+
 @main_bp.route("/")
 def index():
     user = session.get("user")
@@ -46,19 +65,7 @@ def index():
         except Exception as e:
             logger.error("Error fetching syncs: %s", e)
 
-        # Fetch user's easycloud calendars
-        try:
-            cal_docs = (
-                db.collection("easycloud_calendars")
-                .where("user_id", "==", user["uid"])
-                .stream()
-            )
-            for doc in cal_docs:
-                data = doc.to_dict()
-                data["id"] = doc.id
-                easycloud_cals.append(data)
-        except Exception as e:
-            logger.error("Error fetching easycloud cals: %s", e)
+        easycloud_cals = _get_user_easycloud_calendars(user["uid"])
 
     try:
         client_config = get_client_config()
@@ -260,20 +267,7 @@ def _handle_edit_sync_get(user, sync_data):
             sources.append({"url": url, "prefix": old_prefix})
         sync_data["sources"] = sources
 
-    easycloud_cals = []
-    try:
-        db = firestore.client()
-        cal_docs = (
-            db.collection("easycloud_calendars")
-            .where("user_id", "==", user["uid"])
-            .stream()
-        )
-        for doc in cal_docs:
-            data = doc.to_dict()
-            data["id"] = doc.id
-            easycloud_cals.append(data)
-    except Exception as e:
-        logger.error("Failed to fetch easycloud cals on edit GET: %s", e)
+    easycloud_cals = _get_user_easycloud_calendars(user["uid"])
 
     csrf_token = generate_csrf_token()
     return render_template(
@@ -456,20 +450,7 @@ def create_sync():
             logger.info("Using cached calendars")
             calendars = session.get("calendars")
 
-        easycloud_cals = []
-        try:
-            db = firestore.client()
-            cal_docs = (
-                db.collection("easycloud_calendars")
-                .where("user_id", "==", user["uid"])
-                .stream()
-            )
-            for doc in cal_docs:
-                data = doc.to_dict()
-                data["id"] = doc.id
-                easycloud_cals.append(data)
-        except Exception as e:
-            logger.error("Failed to fetch easycloud cals on create: %s", e)
+        easycloud_cals = _get_user_easycloud_calendars(user["uid"])
 
         csrf_token = generate_csrf_token()
         return render_template(

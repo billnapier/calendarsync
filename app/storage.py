@@ -15,10 +15,23 @@ def get_bucket_name():
         "GOOGLE_CLOUD_PROJECT"
     )
     if not project_id:
-        logger.warning("No project ID found, defaulting to calendarsync-napier-dev")
-        project_id = "calendarsync-napier-dev"  # Fallback
+        logger.error("FIREBASE_PROJECT_ID or GOOGLE_CLOUD_PROJECT environment variable not set.")
+        raise ValueError("Could not determine Firebase Project ID.")
 
     return f"{project_id}.appspot.com"
+
+def delete_ics_from_storage(user_id, calendar_id):
+    """Deletes the ICS file from Firebase Storage."""
+    bucket_name = get_bucket_name()
+    path = generate_easycloud_path(user_id, calendar_id)
+    try:
+        bucket = storage.bucket(bucket_name)
+        blob = bucket.blob(path)
+        if blob.exists():
+            blob.delete()
+            logger.info("Deleted ICS from storage: %s", path)
+    except Exception as e:
+        logger.error("Failed to delete ICS from storage for path %s: %s", path, e)
 
 
 def generate_easycloud_path(user_id, calendar_id):

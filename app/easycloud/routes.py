@@ -5,7 +5,7 @@ from firebase_admin import firestore
 import icalendar
 
 from app.utils import verify_csrf_token
-from app.storage import upload_ics_to_storage, get_ics_from_storage
+from app.storage import upload_ics_to_storage, get_ics_from_storage, delete_ics_from_storage
 
 logger = logging.getLogger(__name__)
 
@@ -54,7 +54,7 @@ def create_calendar():
         logger.error("Failed to upload ICS to storage: %s", e)
         new_cal_ref.delete()
         flash(
-            f"Error creating EasyCloud calendar storage. Please ensure Firebase Storage is initialized. Error: {e}",
+            "Error creating EasyCloud calendar storage. Please ensure Firebase Storage is initialized and try again.",
             "danger",
         )
         return redirect(url_for("main.index"))
@@ -148,7 +148,7 @@ def upload_ics(calendar_id):
     except Exception as e:
         logger.error("Failed to upload ICS during update: %s", e)
         flash(
-            f"Storage upload failed. Please ensure Firebase storage is configured. Error: {e}",
+            "Storage upload failed. Please ensure Firebase storage is configured and try again.",
             "danger",
         )
         return redirect(url_for("main.index"))
@@ -190,9 +190,10 @@ def delete_calendar(calendar_id):
         flash("Unauthorized", "danger")
         return redirect(url_for("main.index"))
 
+    # Delete the associated file from storage to prevent orphans
+    delete_ics_from_storage(user["uid"], calendar_id)
+
     cal_ref.delete()
-    # Note: we are not deleting the file from storage to keep code simple,
-    # but could easily do it if required. Since we are just dropping the reference, it's fine.
 
     flash("EasyCloud Calendar deleted.", "success")
     return redirect(url_for("main.index"))
