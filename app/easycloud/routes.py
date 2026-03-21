@@ -11,12 +11,13 @@ logger = logging.getLogger(__name__)
 
 easycloud_bp = Blueprint("easycloud", __name__, url_prefix="/easycloud")
 
+
 @easycloud_bp.route("/create", methods=["POST"])
 def create_calendar():
     user = session.get("user")
     if not user:
         return redirect(url_for("auth.login"))
-        
+
     if not verify_csrf_token(request.form.get("csrf_token")):
         return "Invalid CSRF token", 403
 
@@ -27,15 +28,17 @@ def create_calendar():
 
     db = firestore.client()
     new_cal_ref = db.collection("easycloud_calendars").document()
-    
-    new_cal_ref.set({
-        "user_id": user["uid"],
-        "name": name,
-        "public_url": "", # Will be populated on first upload
-        "created_at": firestore.SERVER_TIMESTAMP,
-        "updated_at": firestore.SERVER_TIMESTAMP,
-        "event_count": 0
-    })
+
+    new_cal_ref.set(
+        {
+            "user_id": user["uid"],
+            "name": name,
+            "public_url": "",  # Will be populated on first upload
+            "created_at": firestore.SERVER_TIMESTAMP,
+            "updated_at": firestore.SERVER_TIMESTAMP,
+            "event_count": 0,
+        }
+    )
 
     # Create an empty ICS to initialize it
     cal = icalendar.Calendar()
@@ -43,18 +46,22 @@ def create_calendar():
     cal.add("version", "2.0")
     cal.add("X-WR-CALNAME", name)
     ics_str = cal.to_ical().decode("utf-8")
-    
+
     try:
         public_url = upload_ics_to_storage(user["uid"], new_cal_ref.id, ics_str)
         new_cal_ref.update({"public_url": public_url})
     except Exception as e:
         logger.error("Failed to upload ICS to storage: %s", e)
         new_cal_ref.delete()
-        flash(f"Error creating EasyCloud calendar storage. Please ensure Firebase Storage is initialized. Error: {e}", "danger")
+        flash(
+            f"Error creating EasyCloud calendar storage. Please ensure Firebase Storage is initialized. Error: {e}",
+            "danger",
+        )
         return redirect(url_for("main.index"))
 
     flash(f"EasyCloud Calendar '{name}' created successfully!", "success")
     return redirect(url_for("main.index"))
+
 
 @easycloud_bp.route("/<calendar_id>/upload", methods=["POST"])
 def upload_ics(calendar_id):
@@ -87,7 +94,7 @@ def upload_ics(calendar_id):
         flash("File must be an .ics calendar file", "danger")
         return redirect(url_for("main.index"))
 
-    action = request.form.get("upload_action", "replace") # "add" or "replace"
+    action = request.form.get("upload_action", "replace")  # "add" or "replace"
 
     # Parse the uploaded file
     try:
@@ -95,7 +102,10 @@ def upload_ics(calendar_id):
         uploaded_cal = icalendar.Calendar.from_ical(uploaded_content)
     except Exception as e:
         logger.error("Failed to parse uploaded ICS: %s", e)
-        flash("Failed to parse the uploaded file. Please ensure it is a valid .ics file.", "danger")
+        flash(
+            "Failed to parse the uploaded file. Please ensure it is a valid .ics file.",
+            "danger",
+        )
         return redirect(url_for("main.index"))
 
     master_cal = icalendar.Calendar()
@@ -104,7 +114,7 @@ def upload_ics(calendar_id):
     master_cal.add("X-WR-CALNAME", cal_data.get("name", "EasyCloud Calendar"))
 
     existing_events = {}
-    
+
     # If action is 'add', we keep existing events
     if action == "add":
         existing_content = get_ics_from_storage(user["uid"], calendar_id)
@@ -137,17 +147,26 @@ def upload_ics(calendar_id):
         public_url = upload_ics_to_storage(user["uid"], calendar_id, ics_str)
     except Exception as e:
         logger.error("Failed to upload ICS during update: %s", e)
-        flash(f"Storage upload failed. Please ensure Firebase storage is configured. Error: {e}", "danger")
+        flash(
+            f"Storage upload failed. Please ensure Firebase storage is configured. Error: {e}",
+            "danger",
+        )
         return redirect(url_for("main.index"))
 
-    cal_ref.update({
-        "updated_at": firestore.SERVER_TIMESTAMP,
-        "event_count": event_count,
-        "public_url": public_url
-    })
+    cal_ref.update(
+        {
+            "updated_at": firestore.SERVER_TIMESTAMP,
+            "event_count": event_count,
+            "public_url": public_url,
+        }
+    )
 
-    flash(f"Successfully processed {event_count} events into '{cal_data.get('name')}'.", "success")
+    flash(
+        f"Successfully processed {event_count} events into '{cal_data.get('name')}'.",
+        "success",
+    )
     return redirect(url_for("main.index"))
+
 
 @easycloud_bp.route("/<calendar_id>/delete", methods=["POST"])
 def delete_calendar(calendar_id):
@@ -172,7 +191,7 @@ def delete_calendar(calendar_id):
         return redirect(url_for("main.index"))
 
     cal_ref.delete()
-    # Note: we are not deleting the file from storage to keep code simple, 
+    # Note: we are not deleting the file from storage to keep code simple,
     # but could easily do it if required. Since we are just dropping the reference, it's fine.
 
     flash("EasyCloud Calendar deleted.", "success")
