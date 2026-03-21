@@ -48,7 +48,11 @@ def index():
 
         # Fetch user's easycloud calendars
         try:
-            cal_docs = db.collection("easycloud_calendars").where("user_id", "==", user["uid"]).stream()
+            cal_docs = (
+                db.collection("easycloud_calendars")
+                .where("user_id", "==", user["uid"])
+                .stream()
+            )
             for doc in cal_docs:
                 data = doc.to_dict()
                 data["id"] = doc.id
@@ -64,7 +68,11 @@ def index():
         google_client_id = None
 
     return render_template(
-        "index.html", user=user, syncs=syncs, easycloud_cals=easycloud_cals, google_client_id=google_client_id
+        "index.html",
+        user=user,
+        syncs=syncs,
+        easycloud_cals=easycloud_cals,
+        google_client_id=google_client_id,
     )
 
 
@@ -158,12 +166,14 @@ def _get_sources_from_form(form):
                     raise ValueError("URL too long")
                 if cal_id and url:
                     validate_url(url)
-                    sources.append({
-                        "type": "easycloud",
-                        "id": cal_id,
-                        "url": url,
-                        "prefix": prefix,
-                    })
+                    sources.append(
+                        {
+                            "type": "easycloud",
+                            "id": cal_id,
+                            "url": url,
+                            "prefix": prefix,
+                        }
+                    )
         else:
             # iCal
             if i < len(urls):
@@ -253,7 +263,11 @@ def _handle_edit_sync_get(user, sync_data):
     easycloud_cals = []
     try:
         db = firestore.client()
-        cal_docs = db.collection("easycloud_calendars").where("user_id", "==", user["uid"]).stream()
+        cal_docs = (
+            db.collection("easycloud_calendars")
+            .where("user_id", "==", user["uid"])
+            .stream()
+        )
         for doc in cal_docs:
             data = doc.to_dict()
             data["id"] = doc.id
@@ -445,7 +459,11 @@ def create_sync():
         easycloud_cals = []
         try:
             db = firestore.client()
-            cal_docs = db.collection("easycloud_calendars").where("user_id", "==", user["uid"]).stream()
+            cal_docs = (
+                db.collection("easycloud_calendars")
+                .where("user_id", "==", user["uid"])
+                .stream()
+            )
             for doc in cal_docs:
                 data = doc.to_dict()
                 data["id"] = doc.id
@@ -455,11 +473,11 @@ def create_sync():
 
         csrf_token = generate_csrf_token()
         return render_template(
-            "create_sync.html", 
-            user=user, 
-            calendars=calendars, 
+            "create_sync.html",
+            user=user,
+            calendars=calendars,
             easycloud_cals=easycloud_cals,
-            csrf_token=csrf_token
+            csrf_token=csrf_token,
         )
 
     if request.method == "POST":
