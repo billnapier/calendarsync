@@ -247,9 +247,11 @@
                                         <strong>Events:</strong> {{ cal.event_count }}
                                     </p>
                                     {% if cal.public_url %}
-                                        <p>
-                                            <a href="{{ cal.public_url }}" target="_blank">View Calendar</a>
-                                        </p>
+                                        <div style="margin-top: 0.5rem; margin-bottom: 0.5rem;">
+                                            <a href="{{ cal.public_url }}"
+                                               target="_blank"
+                                               class="btn btn-outline btn-sm">Download Calendar</a>
+                                        </div>
                                     {% endif %}
                                     <hr style="margin: 1rem 0;
                                                border: 0;
