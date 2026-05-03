@@ -932,6 +932,7 @@ def _batch_upsert_events(
             item["prefix"],
             item.get("source_title"),
             base_url=base_url,
+            unstable_uid=item.get("unstable_uid", False),
         )
         if not body:
             continue
