@@ -19,7 +19,12 @@ import google.api_core.exceptions
 from google.cloud import tasks_v2
 
 from app.utils import get_client_config, generate_csrf_token, verify_csrf_token
-from app.sync import sync_calendar_logic, fetch_user_calendars, resolve_source_names
+from app.sync import (
+    sync_calendar_logic,
+    fetch_user_calendars,
+    resolve_source_names,
+    check_unstable_uid,
+)
 from app.security import verify_task_auth, validate_url
 
 from . import main_bp
@@ -190,7 +195,15 @@ def _get_sources_from_form(form):
                 if url:
                     # Validate URL to prevent invalid data and SSRF at configuration time
                     validate_url(url)
-                    sources.append({"type": "ical", "url": url, "prefix": prefix})
+                    unstable_uid = check_unstable_uid(url)
+                    sources.append(
+                        {
+                            "type": "ical",
+                            "url": url,
+                            "prefix": prefix,
+                            "unstable_uid": unstable_uid,
+                        }
+                    )
 
     return sources
 

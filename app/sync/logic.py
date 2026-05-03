@@ -123,6 +123,58 @@ def get_calendar_name_from_ical(url):
     return url
 
 
+def check_unstable_uid(url):
+    """
+    Checks if an ICS feed generates unstable (random) UIDs across requests.
+    Streams the response briefly to extract the first VEVENT's UID.
+    Fetches up to 3 times to compare. Returns True if UIDs differ.
+    """
+
+    def get_first_uid():
+        try:
+            with contextlib.closing(
+                safe_requests_get(url, timeout=10, stream=True)
+            ) as response:
+                response.raise_for_status()
+                in_event = False
+                for line in response.iter_lines(decode_unicode=True):
+                    if line:
+                        line_upper = line.upper()
+                        if line_upper.startswith("BEGIN:VEVENT"):
+                            in_event = True
+                        elif in_event and line_upper.startswith("UID:"):
+                            parts = line.split(":", 1)
+                            if len(parts) == 2:
+                                return parts[1].strip()
+                        elif line_upper.startswith("END:VEVENT"):
+                            in_event = False
+                return None
+        except Exception as e:
+            logger.warning(
+                "Error fetching UID for stability check from %s: %s",
+                clean_url_for_log(url),
+                e,
+            )
+            return None
+
+    uid1 = get_first_uid()
+    if not uid1:
+        return False
+
+    uid2 = get_first_uid()
+    if not uid2:
+        return False
+
+    if uid1 != uid2:
+        return True
+
+    uid3 = get_first_uid()
+    if not uid3:
+        return False
+
+    return uid1 != uid3
+
+
 def resolve_source_names(sources, calendars, fetch_remote=True):
     """
     Efficiently resolve friendly names for sources.
@@ -539,7 +591,12 @@ def _fetch_source_events(
 
             for component in components:
                 all_events_items.append(
-                    {"component": component, "prefix": prefix, "source_title": name}
+                    {
+                        "component": component,
+                        "prefix": prefix,
+                        "source_title": name,
+                        "unstable_uid": source.get("unstable_uid", False),
+                    }
                 )
 
     return all_events_items, source_names
@@ -698,7 +755,9 @@ def _get_existing_events_map(
     return existing_map
 
 
-def _build_event_body(event, prefix, source_title=None, base_url=None):
+def _build_event_body(
+    event, prefix, source_title=None, base_url=None, unstable_uid=False
+):
     """
     Helper to construct Google Calendar event body.
     """
@@ -721,6 +780,22 @@ def _build_event_body(event, prefix, source_title=None, base_url=None):
         return None, None
 
     summary = str(event.get("SUMMARY", ""))
+
+    # If the feed generates random UIDs (like BenchApp), we must generate a stable ID
+    if unstable_uid:
+        import hashlib
+
+        event_url = event.get("URL")
+        if event_url:
+            stable_string = f"url:{str(event_url)}"
+        else:
+            # Use the raw summary (without prefix) for stability if the prefix is changed later
+            stable_string = (
+                f"fallback:{summary}:{start.get('dateTime', start.get('date', ''))}"
+            )
+
+        uid = hashlib.sha256(stable_string.encode("utf-8")).hexdigest()
+
     if prefix:
         summary = f"[{prefix}] {summary}"
 
@@ -760,6 +835,7 @@ def _upsert_batch_chunk(
             item["prefix"],
             item.get("source_title"),
             base_url=base_url,
+            unstable_uid=item.get("unstable_uid", False),
         )
         if not body:
             continue
@@ -856,6 +932,7 @@ def _batch_upsert_events(
             item["prefix"],
             item.get("source_title"),
             base_url=base_url,
+            unstable_uid=item.get("unstable_uid", False),
         )
         if not body:
             continue
