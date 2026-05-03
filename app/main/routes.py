@@ -196,7 +196,14 @@ def _get_sources_from_form(form):
                     # Validate URL to prevent invalid data and SSRF at configuration time
                     validate_url(url)
                     unstable_uid = check_unstable_uid(url)
-                    sources.append({"type": "ical", "url": url, "prefix": prefix, "unstable_uid": unstable_uid})
+                    sources.append(
+                        {
+                            "type": "ical",
+                            "url": url,
+                            "prefix": prefix,
+                            "unstable_uid": unstable_uid,
+                        }
+                    )
 
     return sources
 
