@@ -780,8 +780,6 @@ def _build_event_body(
         return None, None
 
     summary = str(event.get("SUMMARY", ""))
-    if prefix:
-        summary = f"[{prefix}] {summary}"
 
     # If the feed generates random UIDs (like BenchApp), we must generate a stable ID
     if unstable_uid:
@@ -791,11 +789,15 @@ def _build_event_body(
         if event_url:
             stable_string = f"url:{str(event_url)}"
         else:
+            # Use the raw summary (without prefix) for stability if the prefix is changed later
             stable_string = (
                 f"fallback:{summary}:{start.get('dateTime', start.get('date', ''))}"
             )
 
         uid = hashlib.sha256(stable_string.encode("utf-8")).hexdigest()
+
+    if prefix:
+        summary = f"[{prefix}] {summary}"
 
     body = {
         "summary": summary,
