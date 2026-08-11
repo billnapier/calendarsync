@@ -156,7 +156,7 @@
                                 <div class="sync-card-header">
                                     <h3 class="sync-destination">
                                         To: {{ sync.destination_calendar_summary or
-                                        sync.destination_calendar_id }}
+                                            sync.destination_calendar_id }}
                                         <button type="button"
                                                 class="btn btn-outline btn-sm btn-copy btn-copy-icon"
                                                 data-copy-text="{{ sync.destination_calendar_id }}"
@@ -223,7 +223,7 @@
                            class="btn btn-primary dashboard-cta">Get Started</a>
                     </div>
                 {% endif %}
-                <div class="dashboard-header" style="margin-top: 3rem;">
+                <div class="dashboard-header mt-12">
                     <h2>Your EasyCloud Calendars</h2>
                     <p>Manage your custom calendars created from ICS file uploads.</p>
                 </div>
@@ -235,7 +235,7 @@
                                     <h3 class="sync-destination">{{ cal.name }}</h3>
                                     <form action="{{ url_for('easycloud.delete_calendar', calendar_id=cal.id) }}"
                                           method="post"
-                                          style="display:inline">
+                                          class="d-inline">
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
                                         <button type="submit"
                                                 class="btn btn-outline btn-sm"
@@ -249,10 +249,7 @@
                                         <strong>Events:</strong> {{ cal.event_count }}
                                     </p>
                                     {% if cal.public_url %}
-                                        <div style="margin-top: 0.5rem;
-                                                    margin-bottom: 0.5rem;
-                                                    display: flex;
-                                                    gap: 0.5rem">
+                                        <div class="my-2-flex">
                                             <a href="{{ cal.public_url }}"
                                                target="_blank"
                                                class="btn btn-outline btn-sm">Download Calendar</a>
@@ -263,14 +260,12 @@
                                                     aria-label="Copy Calendar URL">Copy URL</button>
                                         </div>
                                     {% endif %}
-                                    <hr style="margin: 1rem 0;
-                                               border: 0;
-                                               border-top: 1px solid var(--border-color)">
+                                    <hr class="hr-sync">
                                     <form action="{{ url_for('easycloud.upload_ics', calendar_id=cal.id) }}"
                                           method="post"
                                           enctype="multipart/form-data">
                                         <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                                        <div style="margin-bottom: 0.5rem;">
+                                        <div class="mb-2">
                                             <input type="file"
                                                    name="ics_file"
                                                    accept=".ics"
@@ -279,9 +274,7 @@
                                         </div>
                                         <div class="sync-actions-group">
                                             <select name="upload_action"
-                                                    class="btn btn-outline btn-sm"
-                                                    style="flex: 1;
-                                                           padding: 0.25rem">
+                                                    class="btn btn-outline btn-sm flex-1-p-1">
                                                 <option value="add" selected>Add Events</option>
                                                 <option value="replace">Replace Events</option>
                                             </select>

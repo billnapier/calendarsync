@@ -555,6 +555,36 @@ details[open] summary.help-summary::before {
     display: none !important;
 }
 
+.mt-12 {
+  margin-top: 3rem;
+}
+
+.d-inline {
+  display: inline;
+}
+
+.my-2-flex {
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+  display: flex;
+  gap: 0.5rem;
+}
+
+.hr-sync {
+  margin: 1rem 0;
+  border: 0;
+  border-top: 1px solid var(--border-color);
+}
+
+.mb-2 {
+  margin-bottom: 0.5rem;
+}
+
+.flex-1-p-1 {
+  flex: 1;
+  padding: 0.25rem;
+}
+
 /* Responsive */
 @media (width <=900px) {
     .ical-entry {
