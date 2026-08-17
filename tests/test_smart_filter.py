@@ -85,7 +85,10 @@ def test_call_gemini_filter_batch_fallback():
 
     assert eval_map["event-1-exams"].include is True
     assert eval_map["event-2-officehours"].include is False
-    assert "office hours" in eval_map["event-2-officehours"].reason.lower() or "excluded" in eval_map["event-2-officehours"].reason.lower()
+    assert (
+        "office hours" in eval_map["event-2-officehours"].reason.lower()
+        or "excluded" in eval_map["event-2-officehours"].reason.lower()
+    )
 
 
 def test_rebuild_filtered_ics():

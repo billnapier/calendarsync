@@ -37,7 +37,9 @@ def create_smart_filter():
 
     if request.method == "GET":
         csrf_token = generate_csrf_token()
-        return render_template("create_smart_filter.html", user=user, csrf_token=csrf_token)
+        return render_template(
+            "create_smart_filter.html", user=user, csrf_token=csrf_token
+        )
 
     # POST
     if not verify_csrf_token(request.form.get("csrf_token")):
@@ -96,7 +98,10 @@ def create_smart_filter():
             flash("Smart Filter calendar created successfully!", "success")
     except Exception as e:
         logger.error("Initial evaluation for calendar %s failed: %s", calendar_id, e)
-        flash(f"Smart Filter calendar created, but initial evaluation failed: {e}", "warning")
+        flash(
+            f"Smart Filter calendar created, but initial evaluation failed: {e}",
+            "warning",
+        )
 
     return redirect(url_for("main.index"))
 
@@ -122,7 +127,10 @@ def test_smart_filter():
         return jsonify({"success": False, "error": "Invalid CSRF token"}), 403
 
     if not source_url or not filter_prompt:
-        return jsonify({"success": False, "error": "Source URL and prompt are required"}), 400
+        return (
+            jsonify({"success": False, "error": "Source URL and prompt are required"}),
+            400,
+        )
 
     try:
         validate_url(source_url)
@@ -169,13 +177,17 @@ def edit_smart_filter(calendar_id):
 
     if not name or not source_url or not filter_prompt:
         flash("All fields are required.", "danger")
-        return redirect(url_for("smart_filter.edit_smart_filter", calendar_id=calendar_id))
+        return redirect(
+            url_for("smart_filter.edit_smart_filter", calendar_id=calendar_id)
+        )
 
     try:
         validate_url(source_url)
     except ValueError as e:
         flash(f"Invalid Source URL: {e}", "danger")
-        return redirect(url_for("smart_filter.edit_smart_filter", calendar_id=calendar_id))
+        return redirect(
+            url_for("smart_filter.edit_smart_filter", calendar_id=calendar_id)
+        )
 
     # Mark status as re-evaluating without deleting existing GCS file
     doc_ref.update(

@@ -152,5 +152,6 @@ def delete_smart_filter_from_storage(user_id, calendar_id):
                 blob.delete()
                 logger.info("Deleted smart filter file from storage: %s", path)
         except Exception as e:
-            logger.error("Failed to delete smart filter file from storage %s: %s", path, e)
-
+            logger.error(
+                "Failed to delete smart filter file from storage %s: %s", path, e
+            )

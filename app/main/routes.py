@@ -632,11 +632,15 @@ def update_filtered_calendar_one():
     try:
         payload = request.get_json()
         if not payload or "calendar_id" not in payload:
-            logger.error("Invalid payload for update_filtered_calendar_one: %s", payload)
+            logger.error(
+                "Invalid payload for update_filtered_calendar_one: %s", payload
+            )
             return "Invalid payload", 400
 
         calendar_id = payload["calendar_id"]
-        logger.info("Worker starting update for smart filter calendar_id: %s", calendar_id)
+        logger.info(
+            "Worker starting update for smart filter calendar_id: %s", calendar_id
+        )
 
         from app.smart_filter.logic import evaluate_smart_filter
 
@@ -722,4 +726,3 @@ def update_filtered_calendars_all():
     except Exception as e:
         logger.error("Critical error in smart filter dispatcher: %s", e)
         return "Internal failure. Please check logs for details.", 500
-

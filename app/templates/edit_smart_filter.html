@@ -33,7 +33,6 @@
                 </form>
             </div>
         </header>
-
         {% with messages = get_flashed_messages(with_categories=true) %}
             {% if messages %}
                 <div class="flash-messages-container">
@@ -49,7 +48,6 @@
                 </div>
             {% endif %}
         {% endwith %}
-
         <div class="dashboard-container">
             <div class="experimental-banner">
                 <span class="banner-icon">⚡</span>
@@ -57,16 +55,22 @@
                     <strong>Experimental Feature Preview:</strong> Smart Calendar Filtering is currently in free preview. It may be modified, retired, or require a paid subscription in the future to cover ongoing LLM infrastructure costs.
                 </div>
             </div>
-
             <div class="form-card">
                 <div class="form-header-group">
-                    <h1>Edit Smart Filter Calendar <span class="badge-experimental">Experimental</span></h1>
-                    <p class="form-subtitle">Update your natural language criteria or source URL. Existing subscribers will continue receiving your active feed uninterrupted while re-evaluation occurs.</p>
+                    <h1>
+                        Edit Smart Filter Calendar <span class="badge-experimental">Experimental</span>
+                    </h1>
+                    <p class="form-subtitle">
+                        Update your natural language criteria or source URL. Existing subscribers will continue receiving your active feed uninterrupted while re-evaluation occurs.
+                    </p>
                 </div>
-
-                <form action="{{ url_for('smart_filter.edit_smart_filter', calendar_id=calendar.id) }}" method="post" id="editFilterForm">
-                    <input type="hidden" name="csrf_token" id="csrfToken" value="{{ csrf_token }}">
-
+                <form action="{{ url_for('smart_filter.edit_smart_filter', calendar_id=calendar.id) }}"
+                      method="post"
+                      id="editFilterForm">
+                    <input type="hidden"
+                           name="csrf_token"
+                           id="csrfToken"
+                           value="{{ csrf_token }}">
                     <div class="form-group">
                         <label for="calendarName">Calendar Name</label>
                         <input type="text"
@@ -75,7 +79,6 @@
                                value="{{ calendar.name }}"
                                required>
                     </div>
-
                     <div class="form-group">
                         <label for="sourceUrl">Source iCal Feed URL</label>
                         <input type="url"
@@ -84,7 +87,6 @@
                                value="{{ calendar.source_url }}"
                                required>
                     </div>
-
                     <div class="form-group">
                         <label for="filterPrompt">Natural Language Filter Prompt</label>
                         <textarea id="filterPrompt"
@@ -92,32 +94,54 @@
                                   rows="4"
                                   class="form-textarea"
                                   required>{{ calendar.filter_prompt }}</textarea>
-
                         <!-- Preset Helper Chips -->
                         <div class="preset-section">
                             <span class="preset-label">Quick Presets:</span>
                             <div class="preset-chips">
-                                <button type="button" class="chip" onclick="applyPreset('Only include exams, midterms, final exams, project submission deadlines, and assignment due dates; exclude lectures, office hours, and social events.')">Exams &amp; Deadlines Only</button>
-                                <button type="button" class="chip" onclick="applyPreset('Exclude all office hours, TA review sessions, and drop-in help sessions.')">Exclude Office Hours</button>
-                                <button type="button" class="chip" onclick="applyPreset('Include course lectures, guest lectures, and academic seminars only.')">Lectures Only</button>
-                                <button type="button" class="chip" onclick="applyPreset('Include home games, pep band rehearsals, mandatory freshman seminars; exclude general campus events.')">Pep Band Freshman</button>
-                                <button type="button" class="chip" onclick="applyPreset('Include mandatory parent-teacher conferences, school holidays, and official performance events; exclude general notices and optional PTA socials.')">Busy Parent</button>
-                                <button type="button" class="chip" onclick="applyPreset('Include faculty meetings, committee sessions, and department budget reviews; exclude individual student advising and general campus news.')">Department Lead</button>
+                                <button type="button"
+                                        class="chip"
+                                        onclick="applyPreset('Only include exams, midterms, final exams, project submission deadlines, and assignment due dates; exclude lectures, office hours, and social events.')">
+                                    Exams &amp; Deadlines Only
+                                </button>
+                                <button type="button"
+                                        class="chip"
+                                        onclick="applyPreset('Exclude all office hours, TA review sessions, and drop-in help sessions.')">
+                                    Exclude Office Hours
+                                </button>
+                                <button type="button"
+                                        class="chip"
+                                        onclick="applyPreset('Include course lectures, guest lectures, and academic seminars only.')">
+                                    Lectures Only
+                                </button>
+                                <button type="button"
+                                        class="chip"
+                                        onclick="applyPreset('Include home games, pep band rehearsals, mandatory freshman seminars; exclude general campus events.')">
+                                    Pep Band Freshman
+                                </button>
+                                <button type="button"
+                                        class="chip"
+                                        onclick="applyPreset('Include mandatory parent-teacher conferences, school holidays, and official performance events; exclude general notices and optional PTA socials.')">
+                                    Busy Parent
+                                </button>
+                                <button type="button"
+                                        class="chip"
+                                        onclick="applyPreset('Include faculty meetings, committee sessions, and department budget reviews; exclude individual student advising and general campus news.')">
+                                    Department Lead
+                                </button>
                             </div>
                         </div>
                     </div>
-
                     <!-- Test / Preview Action -->
                     <div class="test-preview-container">
-                        <button type="button" id="btnTestPrompt" class="btn btn-secondary" onclick="runPromptPreview()">
-                            🧪 Test Prompt / Preview (First 15 Events)
-                        </button>
+                        <button type="button"
+                                id="btnTestPrompt"
+                                class="btn btn-secondary"
+                                onclick="runPromptPreview()">🧪 Test Prompt / Preview (First 15 Events)</button>
                         <div id="previewLoading" class="preview-loading hidden">
                             <span class="spinner"></span> Evaluating first 15 events with Gemini AI...
                         </div>
                         <div id="previewResults" class="preview-results hidden"></div>
                     </div>
-
                     <div class="form-actions">
                         <a href="{{ url_for('main.index') }}" class="btn btn-secondary">Cancel</a>
                         <button type="submit" class="btn btn-primary">Save Changes &amp; Re-evaluate</button>
@@ -125,11 +149,9 @@
                 </form>
             </div>
         </div>
-
         <footer>
             Powered by antigravity and Google Deepmind
         </footer>
-
         <script>
             function applyPreset(text) {
                 const textarea = document.getElementById('filterPrompt');
@@ -215,8 +237,7 @@
             function escapeHtml(text) {
                 if (!text) return '';
                 return text.replace(/&/g, "&amp;")
-                           .replace(/</g, "&lt;")
-                           .replace(/>/g, "&gt;")
+                           .replace(/</g , "&lt;") .replace( />/g, "&gt;")
                            .replace(/"/g, "&quot;")
                            .replace(/'/g, "&#039;");
             }

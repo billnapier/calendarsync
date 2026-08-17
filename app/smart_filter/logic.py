@@ -27,7 +27,9 @@ BATCH_SIZE = 100
 
 class EventEvaluation(BaseModel):
     id: str = Field(description="The exact native iCal UID provided in the input event")
-    include: bool = Field(description="True if the event matches user criteria, False otherwise")
+    include: bool = Field(
+        description="True if the event matches user criteria, False otherwise"
+    )
     reason: str = Field(description="Concise 1-sentence explanation for the decision")
 
 
@@ -76,7 +78,9 @@ def parse_and_extract_candidate_events(
         uid = str(component.get("uid", "")).strip()
         summary = str(component.get("summary", "")).strip()
 
-        dtstart = _to_utc(component.get("dtstart").dt if component.get("dtstart") else None)
+        dtstart = _to_utc(
+            component.get("dtstart").dt if component.get("dtstart") else None
+        )
         dtend = _to_utc(component.get("dtend").dt if component.get("dtend") else None)
 
         if not dtstart:
@@ -249,7 +253,9 @@ def call_gemini_filter_batch(
             matched = False
             inc_reason = ""
             for inc in include_matches:
-                tokens = [t.strip() for t in re.split(r"[,;]| and | or ", inc) if t.strip()]
+                tokens = [
+                    t.strip() for t in re.split(r"[,;]| and | or ", inc) if t.strip()
+                ]
                 for w in tokens:
                     stem = w.rstrip("s")
                     if stem and len(stem) > 2 and stem in text:
@@ -263,7 +269,11 @@ def call_gemini_filter_batch(
                 EventEvaluation(
                     id=event["id"],
                     include=matched,
-                    reason=inc_reason if matched else "Excluded as it does not match criteria.",
+                    reason=(
+                        inc_reason
+                        if matched
+                        else "Excluded as it does not match criteria."
+                    ),
                 )
             )
         else:
@@ -306,7 +316,9 @@ def rebuild_filtered_ics(
             uid = str(component.get("uid", "")).strip()
             summary = str(component.get("summary", "")).strip()
             dtstart = component.get("dtstart").dt if component.get("dtstart") else None
-            fallback_uid = hashlib.sha256(f"{summary}_{dtstart}".encode("utf-8")).hexdigest()
+            fallback_uid = hashlib.sha256(
+                f"{summary}_{dtstart}".encode("utf-8")
+            ).hexdigest()
 
             if uid in included_uids or fallback_uid in included_uids:
                 new_cal.add_component(component)
@@ -370,7 +382,9 @@ def evaluate_smart_filter(calendar_id: str, force: bool = False) -> Dict[str, An
 
     # Tier 2: HTTP 304 Not Modified
     if resp.status_code == 304:
-        logger.info("Upstream feed returned 304 Not Modified for calendar %s", calendar_id)
+        logger.info(
+            "Upstream feed returned 304 Not Modified for calendar %s", calendar_id
+        )
         doc_ref.update(
             {
                 "last_fetched_at": now,
@@ -409,8 +423,14 @@ def evaluate_smart_filter(calendar_id: str, force: bool = False) -> Dict[str, An
     prompt_hash = _compute_prompt_hash(filter_prompt)
 
     # Tier 3: Content Fingerprinting check
-    if not force and source_hash == stored_source_hash and prompt_hash == stored_prompt_hash:
-        logger.info("Content hashes unchanged for calendar %s (0 LLM calls used)", calendar_id)
+    if (
+        not force
+        and source_hash == stored_source_hash
+        and prompt_hash == stored_prompt_hash
+    ):
+        logger.info(
+            "Content hashes unchanged for calendar %s (0 LLM calls used)", calendar_id
+        )
         doc_ref.update(
             {
                 "last_fetched_at": now,
@@ -513,9 +533,7 @@ def test_smart_filter_preview(
     for event in preview_candidates:
         ev_res = eval_map.get(event["id"])
         include = ev_res.include if ev_res else False
-        reason = (
-            ev_res.reason if ev_res else "No evaluation returned for this event."
-        )
+        reason = ev_res.reason if ev_res else "No evaluation returned for this event."
 
         results.append(
             {
