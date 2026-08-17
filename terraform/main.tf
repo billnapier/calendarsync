@@ -56,6 +56,11 @@ resource "google_project_service" "iamcredentials_api" {
   disable_on_destroy = false
 }
 
+resource "google_project_service" "aiplatform_api" {
+  service            = "aiplatform.googleapis.com"
+  disable_on_destroy = false
+}
+
 # Artifact Registry Repository
 resource "google_artifact_registry_repository" "repo" {
   location      = var.region
@@ -88,6 +93,12 @@ resource "google_project_iam_member" "app_runner_secrets" {
 resource "google_project_iam_member" "app_runner_logging" {
   project = var.project_id
   role    = "roles/logging.logWriter"
+  member  = "serviceAccount:${google_service_account.app_runner.email}"
+}
+
+resource "google_project_iam_member" "app_runner_aiplatform" {
+  project = var.project_id
+  role    = "roles/aiplatform.user"
   member  = "serviceAccount:${google_service_account.app_runner.email}"
 }
 
