@@ -59,7 +59,7 @@
                                     <option value="{{ cal.id }}"
                                             {% if cal.id == sync.destination_calendar_id %}selected{% endif %}>
                                         {{
-                                        cal.summary }}
+                                            cal.summary }}
                                     </option>
                                 {% endfor %}
                             </select>
@@ -124,7 +124,7 @@
                                                     {% for cal in calendars %}
                                                         <option value="{{ cal.id }}" {% if cal.id == source.id %}selected{% endif %}>
                                                             {{
-                                                            cal.summary }}
+                                                                cal.summary }}
                                                         </option>
                                                     {% endfor %}
                                                 </select>
