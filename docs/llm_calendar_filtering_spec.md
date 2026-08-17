@@ -4,7 +4,10 @@
 
 Many public and institutional iCal feeds (such as university course schedules, athletic calendars, or company event feeds) are massive, noisy, and lack native filtering options. 
 
-This feature introduces **LLM-Powered Smart Calendar Filtering** to CalendarSync. Users provide an upstream iCal feed URL along with a natural language filter prompt (e.g., *"Only include exams, assignment deadlines, and CS 101 lectures; exclude social events and office hours"*). CalendarSync periodically ingests the feed, uses an LLM (Gemini Flash on Vertex AI) to evaluate events against the prompt, generates a clean, filtered `.ics` feed, and hosts it statically via Google Cloud Storage (following the established EasyCloud architecture).
+This feature introduces **LLM-Powered Smart Calendar Filtering (Experimental)** to CalendarSync. Users provide an upstream iCal feed URL along with a natural language filter prompt (e.g., *"Only include exams, assignment deadlines, and CS 101 lectures; exclude social events and office hours"*). CalendarSync periodically ingests the feed, uses an LLM (Gemini Flash on Vertex AI) to evaluate events against the prompt, generates a clean, filtered `.ics` feed, and hosts it statically via Google Cloud Storage (following the established EasyCloud architecture).
+
+> [!IMPORTANT]
+> **Experimental Feature Disclaimer**: Smart Calendar Filtering is explicitly labeled as **Experimental** across the UI. Users are informed via form and dashboard banners that this feature is in preview and may be altered, retired, or transitioned to a paid subscription tier in the future to cover ongoing LLM infrastructure costs.
 
 A primary architectural requirement is **strict cost optimization and reliability** via multi-layer HTTP/hash caching, atomic file serving, structured batching, and zero-subcollection Firestore design.
 
@@ -15,28 +18,72 @@ A primary architectural requirement is **strict cost optimization and reliabilit
 ### Critical User Journey (CUJ): Creating and Subscribing to a Filtered Feed
 
 ```
-┌─────────────────┐     ┌───────────────────────┐     ┌────────────────────────┐     ┌────────────────────────┐
-│  1. Dashboard   │────>│ 2. Create Smart Filter│────>│  3. Async Processing   │────>│ 4. Subscribe Feed URL  │
-│ Click "+ Smart  │     │ Provide Source URL &  │     │ Fetch -> Hash Check    │     │ Copy hosted .ics link  │
-│    Filter"      │     │  Natural Lang Prompt  │     │ -> LLM -> Store .ics   │     │ into Google/Apple/etc. │
-└─────────────────┘     └───────────────────────┘     └────────────────────────┘     └────────────────────────┘
+┌─────────────────┐     ┌────────────────────────┐     ┌────────────────────────┐     ┌────────────────────────┐
+│  1. Dashboard   │────>│ 2. Create & Test Form  │────>│  3. Async Processing   │────>│ 4. Subscribe Feed URL  │
+│ Click "+ Smart  │     │ Source URL, Prompt,    │     │ Redirect to Dashboard  │     │ Copy hosted .ics link  │
+│    Filter"      │     │  Presets & Dry-Run     │     │ Card polls until ready │     │ into Google/Apple/etc. │
+└─────────────────┘     └────────────────────────┘     └────────────────────────┘     └────────────────────────┘
 ```
 
-1. **Initiation**: From the CalendarSync dashboard, the user clicks **"+ New Smart Filter Calendar"**.
-2. **Configuration Form**: The user inputs:
+1. **Initiation**: From the CalendarSync dashboard, the user clicks **"+ New Smart Filter Calendar"** (styled with a prominent `[Experimental]` badge).
+2. **Configuration & Preview Form**:
+   - **Experimental Banner**: Displayed at top of form: *"Experimental Feature: Smart Calendar Filtering is in free preview. It may be modified, retired, or require a paid subscription in the future to cover LLM usage costs."*
    - **Calendar Name**: e.g., *"CS 101 & Exams Only"*
    - **Source iCal Feed URL**: e.g., `https://university.edu/calendar/all_events.ics`
-   - **Natural Language Prompt**: e.g., *"Include only CS 101 lectures, midterm/final exams, and project submission deadlines. Exclude office hours, student club meetings, and general announcements."*
-3. **Initial Pipeline Execution**:
-   - The backend validates the source URL (SSRF via `app.security.safe_requests_get` & size checks).
-   - Fetches the feed, extracts candidate event metadata into minimal JSON payloads, invokes Vertex AI Gemini in batches, filters original `.ics` VEVENT components, and atomically writes the output `.ics` file and audit JSON to Google Cloud Storage (GCS).
+   - **Natural Language Prompt Input**: Text area for custom filtering criteria.
+   - **Preset Helper Chips**:
+     - *Functional Presets*: `[Exams & Deadlines Only]`, `[Exclude Office Hours]`, `[Lectures Only]`
+     - *Persona Presets*: `[Pep Band Freshman]` (*"Include home games, pep band rehearsals, mandatory freshman seminars; exclude general campus events"*), `[Busy Parent]`, `[Department Lead]`
+   - **"Test Prompt / Preview" Action**: 
+     - Evaluates the prompt against the first 15 upcoming events of the source feed without saving.
+     - Displays an inline split preview: **Included (Green check)** vs **Excluded (Red X)** with Gemini's 1-sentence reasoning per event.
+3. **Asynchronous Creation & Pipeline Execution**:
+   - Submitting the form immediately redirects the user to the dashboard.
+   - A new calendar card appears in a **`Syncing...`** state (with a blue status badge and spinner).
+   - Client-side JavaScript polls `/smart_filters/<id>/status` every 3 seconds until processing completes.
+   - The backend validates the source URL (SSRF via `safe_requests_get`), extracts minimal JSON event payloads, calls Gemini Flash in batches, builds filtered `.ics` file, and uploads `.ics` and internal `_audit.json` sidecar to GCS.
 4. **Output & Subscription**:
-   - The user is presented with a hosted feed URL: `https://storage.googleapis.com/<bucket>/filtered_calendars/<user_id>/<calendar_id>.ics` (identical pattern to EasyCloud calendars).
-   - The dashboard provides a **"Copy Subscription URL"** button and an **"Audit / Debug Log"** tab to view LLM filtering rationale.
-5. **Automated Background Maintenance**:
-   - Cloud Scheduler regularly triggers background refreshes via Cloud Tasks.
-   - If the upstream feed has not changed (verified via ETag 304 or SHA-256 content hash), zero LLM calls occur.
-   - If changes are detected, active events are processed in batches of 100.
+   - Once ready, the card badge updates to **`Active`**.
+   - The user clicks **"Copy Subscription URL"** to copy `https://storage.googleapis.com/<bucket>/filtered_calendars/<user_id>/<calendar_id>.ics` to their clipboard (triggering a success toast).
+   - Beside the copy button, a **"How to Subscribe"** button opens a shared instruction modal (`shared/subscribe_instructions_modal.html`) detailing setup steps for Google Calendar, Apple Calendar, and Outlook (consistent with EasyCloud calendars).
+5. **Zero-Match ("0 Events Included") Edge Case Handling**:
+   - If 0 events match the user's prompt, the system still publishes a valid empty `.ics` file (a `VCALENDAR` with 0 `VEVENT` items) so external calendar subscriptions do not fail with HTTP 404 errors.
+   - An warning toast appears on the dashboard: *"Warning: Your filter prompt matched 0 of X events. Adjust your prompt if needed."*
+6. **Automated Background Maintenance & Manual Sync**:
+   - Cloud Scheduler triggers background refreshes every 60 minutes.
+   - If the user clicks **"Sync Now"** on a card:
+     - Button enters `Syncing...` state and temporarily disables.
+     - If feed updated: Toast announces *"Sync complete! Evaluated X events (Y included)."*
+     - If feed unchanged (HTTP 304 / Hash match): Toast announces *"Calendar is already up to date. Upstream feed hasn't changed (0 LLM calls used)."*
+7. **Non-Blocking Edits**:
+   - Editing a prompt or URL updates Firestore and triggers background re-evaluation.
+   - The dashboard card displays a `Re-evaluating...` badge, while the existing GCS `.ics` file continues serving subscribers uninterrupted until the new run completes 100% successfully.
+8. **Error Recovery & Diagnostics**:
+   - On background failure (e.g. upstream 500/timeout), card status becomes **`Degraded`** (yellow) or **`Error`** (red).
+   - An alert banner displays a simplified error message with direct **`Retry Sync`** and **`Edit Source URL`** recovery buttons.
+
+---
+
+### Dashboard Integration & Card UX Specification
+
+Smart Filter Calendars are displayed in a dedicated dashboard grid section titled **"Your Smart Filter Calendars [Experimental]"**.
+
+A disclaimer banner is displayed at the top of this dashboard section:
+> ℹ️ **Experimental Preview**: *LLM Smart Calendar Filtering is currently in preview. This feature may be modified, retired, or require a paid subscription in the future to cover LLM usage costs.*
+
+```
+┌──────────────────────────────────────────────────────────────────────────────────┐
+│  CS 101 & Exams Only  [Experimental]             [ Active ] (Green Badge)        │
+├──────────────────────────────────────────────────────────────────────────────────┤
+│  Source: https://university.edu/calendar/all_events.ics 🔗                       │
+│  Prompt: "Include CS 101 lectures, midterm/final exams..." (Collapsible)         │
+│  Stats:  14 included / 85 evaluated         Last synced: 12 minutes ago          │
+├──────────────────────────────────────────────────────────────────────────────────┤
+│  [ Copy Subscription URL ]  [ How to Subscribe ]  [ Sync Now ]  [ Edit ]  [ Delete ] │
+└──────────────────────────────────────────────────────────────────────────────────┘
+```
+
+*Note: The internal `_audit.json` sidecar stored in GCS is strictly reserved for developer debugging and backend support. There is no customer-facing Audit Log UI.*
 
 ---
 
@@ -201,7 +248,7 @@ To prevent unnecessary LLM invocations and avoid Firestore cost explosions:
 | `prompt_hash` | `string` | SHA-256 hash of `filter_prompt` |
 | `gcs_path` | `string` | Storage path (`filtered_calendars/{user_id}/{id}.ics`) |
 | `public_url` | `string` | Public GCS subscription URL |
-| `audit_url` | `string` | Public GCS audit sidecar URL (`..._audit.json`) |
+| `audit_url` | `string` | Internal GCS audit sidecar URL (`..._audit.json` for dev/support diagnostics) |
 | `etag` | `string` | Last HTTP `ETag` header |
 | `last_modified` | `string` | Last HTTP `Last-Modified` header |
 | `source_hash` | `string` | SHA-256 hash of source event data |
