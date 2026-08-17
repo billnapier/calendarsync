@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="description"
+              content="Create an LLM-powered smart calendar filter in CalendarSync.">
+        <title>New Smart Filter Calendar - CalendarSync</title>
+        <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+              rel="stylesheet">
+        <script src="{{ url_for('static', filename='ui.js') }}" defer></script>
+    </head>
+    <body>
+        <header class="header">
+            <a href="{{ url_for('main.index') }}" class="logo-container">
+                <img src="{{ url_for('static', filename='images/logo.png') }}"
+                     alt="CalendarSync Logo"
+                     class="logo-img"
+                     width="32"
+                     height="32">
+                <span class="logo-text">CalendarSync</span>
+            </a>
+            <div class="user-menu">
+                <span>Hello, <strong>{{ user.name }}</strong></span>
+                <form action="{{ url_for('main.logout') }}"
+                      method="post"
+                      class="logout-form">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <button type="submit" class="btn btn-outline">Sign Out</button>
+                </form>
+            </div>
+        </header>
+
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-messages-container">
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">
+                            {{ message }}
+                            <button type="button"
+                                    class="alert-close"
+                                    onclick="this.parentElement.remove()"
+                                    aria-label="Close">×</button>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+
+        <div class="dashboard-container">
+            <div class="experimental-banner">
+                <span class="banner-icon">⚡</span>
+                <div class="banner-text">
+                    <strong>Experimental Feature Preview:</strong> Smart Calendar Filtering is currently in free preview. It may be modified, retired, or require a paid subscription in the future to cover ongoing LLM infrastructure costs.
+                </div>
+            </div>
+
+            <div class="form-card">
+                <div class="form-header-group">
+                    <h1>Create Smart Filter Calendar <span class="badge-experimental">Experimental</span></h1>
+                    <p class="form-subtitle">Use AI to automatically filter noisy public or institutional iCal feeds based on your custom prompt.</p>
+                </div>
+
+                <form action="{{ url_for('smart_filter.create_smart_filter') }}" method="post" id="createFilterForm">
+                    <input type="hidden" name="csrf_token" id="csrfToken" value="{{ csrf_token }}">
+
+                    <div class="form-group">
+                        <label for="calendarName">Calendar Name</label>
+                        <input type="text"
+                               id="calendarName"
+                               name="name"
+                               placeholder="e.g., CS 101 & Exams Only"
+                               required>
+                        <div class="form-hint">A recognizable name for this filtered calendar in your dashboard.</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="sourceUrl">Source iCal Feed URL</label>
+                        <input type="url"
+                               id="sourceUrl"
+                               name="source_url"
+                               placeholder="https://university.edu/calendar/all_events.ics"
+                               required>
+                        <div class="form-hint">The upstream webcal or http(s) .ics feed URL to filter.</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="filterPrompt">Natural Language Filter Prompt</label>
+                        <textarea id="filterPrompt"
+                                  name="filter_prompt"
+                                  rows="4"
+                                  class="form-textarea"
+                                  placeholder="e.g., Only include exams, assignment deadlines, and CS 101 lectures; exclude social events and office hours."
+                                  required></textarea>
+                        <div class="form-hint">Describe in plain English what events to include or exclude.</div>
+
+                        <!-- Preset Helper Chips -->
+                        <div class="preset-section">
+                            <span class="preset-label">Quick Presets:</span>
+                            <div class="preset-chips">
+                                <button type="button" class="chip" onclick="applyPreset('Only include exams, midterms, final exams, project submission deadlines, and assignment due dates; exclude lectures, office hours, and social events.')">Exams &amp; Deadlines Only</button>
+                                <button type="button" class="chip" onclick="applyPreset('Exclude all office hours, TA review sessions, and drop-in help sessions.')">Exclude Office Hours</button>
+                                <button type="button" class="chip" onclick="applyPreset('Include course lectures, guest lectures, and academic seminars only.')">Lectures Only</button>
+                                <button type="button" class="chip" onclick="applyPreset('Include home games, pep band rehearsals, mandatory freshman seminars; exclude general campus events.')">Pep Band Freshman</button>
+                                <button type="button" class="chip" onclick="applyPreset('Include mandatory parent-teacher conferences, school holidays, and official performance events; exclude general notices and optional PTA socials.')">Busy Parent</button>
+                                <button type="button" class="chip" onclick="applyPreset('Include faculty meetings, committee sessions, and department budget reviews; exclude individual student advising and general campus news.')">Department Lead</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Test / Preview Action -->
+                    <div class="test-preview-container">
+                        <button type="button" id="btnTestPrompt" class="btn btn-secondary" onclick="runPromptPreview()">
+                            🧪 Test Prompt / Preview (First 15 Events)
+                        </button>
+                        <div id="previewLoading" class="preview-loading hidden">
+                            <span class="spinner"></span> Evaluating first 15 events with Gemini AI...
+                        </div>
+                        <div id="previewResults" class="preview-results hidden"></div>
+                    </div>
+
+                    <div class="form-actions">
+                        <a href="{{ url_for('main.index') }}" class="btn btn-secondary">Cancel</a>
+                        <button type="submit" class="btn btn-primary">+ Create Smart Filter</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <footer>
+            Powered by antigravity and Google Deepmind
+        </footer>
+
+        <script>
+            function applyPreset(text) {
+                const textarea = document.getElementById('filterPrompt');
+                textarea.value = text;
+                textarea.focus();
+            }
+
+            function runPromptPreview() {
+                const sourceUrl = document.getElementById('sourceUrl').value.trim();
+                const filterPrompt = document.getElementById('filterPrompt').value.trim();
+                const csrfToken = document.getElementById('csrfToken').value;
+
+                const btn = document.getElementById('btnTestPrompt');
+                const loading = document.getElementById('previewLoading');
+                const resultsDiv = document.getElementById('previewResults');
+
+                if (!sourceUrl || !filterPrompt) {
+                    alert('Please enter both a Source iCal URL and a Filter Prompt before testing.');
+                    return;
+                }
+
+                btn.disabled = true;
+                loading.classList.remove('hidden');
+                resultsDiv.classList.add('hidden');
+                resultsDiv.innerHTML = '';
+
+                fetch("{{ url_for('smart_filter.test_smart_filter') }}", {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        source_url: sourceUrl,
+                        filter_prompt: filterPrompt,
+                        csrf_token: csrfToken
+                    })
+                })
+                .then(res => res.json())
+                .then(data => {
+                    btn.disabled = false;
+                    loading.classList.add('hidden');
+                    resultsDiv.classList.remove('hidden');
+
+                    if (!data.success) {
+                        resultsDiv.innerHTML = `<div class="alert alert-danger">Preview Error: ${data.error}</div>`;
+                        return;
+                    }
+
+                    const evals = data.evaluations || [];
+                    if (evals.length === 0) {
+                        resultsDiv.innerHTML = `<div class="alert alert-info">No candidate events found in source feed preview.</div>`;
+                        return;
+                    }
+
+                    let html = `<div class="preview-header"><h4>Preview Results (${evals.length} events evaluated)</h4></div><div class="preview-grid">`;
+
+                    evals.forEach(ev => {
+                        const isInc = ev.include;
+                        const statusClass = isInc ? 'preview-included' : 'preview-excluded';
+                        const icon = isInc ? '✅ INCLUDED' : '❌ EXCLUDED';
+                        html += `
+                            <div class="preview-item ${statusClass}">
+                                <div class="preview-item-header">
+                                    <span class="preview-status-badge">${icon}</span>
+                                    <strong class="preview-item-title">${escapeHtml(ev.summary)}</strong>
+                                </div>
+                                <div class="preview-reason">${escapeHtml(ev.reason)}</div>
+                            </div>
+                        `;
+                    });
+
+                    html += `</div>`;
+                    resultsDiv.innerHTML = html;
+                })
+                .catch(err => {
+                    btn.disabled = false;
+                    loading.classList.add('hidden');
+                    resultsDiv.classList.remove('hidden');
+                    resultsDiv.innerHTML = `<div class="alert alert-danger">Network Error: ${err.message}</div>`;
+                });
+            }
+
+            function escapeHtml(text) {
+                if (!text) return '';
+                return text.replace(/&/g, "&amp;")
+                           .replace(/</g, "&lt;")
+                           .replace(/>/g, "&gt;")
+                           .replace(/"/g, "&quot;")
+                           .replace(/'/g, "&#039;");
+            }
+        </script>
+    </body>
+</html>

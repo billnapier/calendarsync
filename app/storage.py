@@ -92,3 +92,65 @@ def get_ics_from_storage(user_id, calendar_id):
     except Exception as e:
         logger.error("Failed to fetch ICS from storage: %s", e)
         return None
+
+
+def generate_smart_filter_path(user_id, calendar_id):
+    """Generate the storage path for a smart filter calendar .ics file."""
+    return f"filtered_calendars/{user_id}/{calendar_id}.ics"
+
+
+def generate_smart_filter_audit_path(user_id, calendar_id):
+    """Generate the storage path for a smart filter calendar _audit.json file."""
+    return f"filtered_calendars/{user_id}/{calendar_id}_audit.json"
+
+
+def upload_smart_filter_to_storage(user_id, calendar_id, ics_content, audit_content):
+    """
+    Uploads the filtered ICS content and audit JSON sidecar to GCS.
+    Returns (public_url, audit_url).
+    """
+    bucket_name = get_bucket_name()
+    bucket = storage.bucket(bucket_name)
+
+    ics_path = generate_smart_filter_path(user_id, calendar_id)
+    blob_ics = bucket.blob(ics_path)
+    if isinstance(ics_content, str):
+        ics_content = ics_content.encode("utf-8")
+    blob_ics.upload_from_string(ics_content, content_type="text/calendar")
+    try:
+        blob_ics.make_public()
+    except Exception as e:
+        logger.warning("Could not make ICS blob public: %s", e)
+    public_url = f"https://storage.googleapis.com/{bucket_name}/{ics_path}"
+
+    audit_path = generate_smart_filter_audit_path(user_id, calendar_id)
+    blob_audit = bucket.blob(audit_path)
+    if isinstance(audit_content, str):
+        audit_content = audit_content.encode("utf-8")
+    blob_audit.upload_from_string(audit_content, content_type="application/json")
+    try:
+        blob_audit.make_public()
+    except Exception as e:
+        logger.warning("Could not make audit blob public: %s", e)
+    audit_url = f"https://storage.googleapis.com/{bucket_name}/{audit_path}"
+
+    return public_url, audit_url
+
+
+def delete_smart_filter_from_storage(user_id, calendar_id):
+    """Deletes smart filter .ics and _audit.json files from storage."""
+    bucket_name = get_bucket_name()
+    bucket = storage.bucket(bucket_name)
+
+    for path in [
+        generate_smart_filter_path(user_id, calendar_id),
+        generate_smart_filter_audit_path(user_id, calendar_id),
+    ]:
+        try:
+            blob = bucket.blob(path)
+            if blob.exists():
+                blob.delete()
+                logger.info("Deleted smart filter file from storage: %s", path)
+        except Exception as e:
+            logger.error("Failed to delete smart filter file from storage %s: %s", path, e)
+

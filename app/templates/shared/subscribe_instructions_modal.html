@@ -1,0 +1,49 @@
+<div id="subscribeModal" class="modal-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+    <div class="modal-card">
+        <div class="modal-header">
+            <h3 id="modalTitle">How to Subscribe to Your Calendar Feed</h3>
+            <button type="button" class="modal-close" onclick="closeSubscribeModal()" aria-label="Close modal">&times;</button>
+        </div>
+        <div class="modal-body">
+            <p class="modal-intro">
+                Copy your unique subscription URL from your calendar card, then follow the instructions for your calendar provider:
+            </p>
+            <div class="tab-nav">
+                <button type="button" class="tab-btn active" onclick="switchSubscribeTab(event, 'tab-gcal')">Google Calendar</button>
+                <button type="button" class="tab-btn" onclick="switchSubscribeTab(event, 'tab-apple')">Apple Calendar</button>
+                <button type="button" class="tab-btn" onclick="switchSubscribeTab(event, 'tab-outlook')">Outlook</button>
+            </div>
+
+            <div id="tab-gcal" class="tab-content active">
+                <ol class="instructions-list">
+                    <li>Open <strong>Google Calendar</strong> on the web (calendar.google.com).</li>
+                    <li>On the left sidebar, click the <strong>"+"</strong> button next to <em>"Other calendars"</em>.</li>
+                    <li>Select <strong>"From URL"</strong> from the menu.</li>
+                    <li>Paste your copied CalendarSync subscription URL into the <em>"URL of calendar"</em> field.</li>
+                    <li>Click <strong>"Add calendar"</strong>.</li>
+                </ol>
+            </div>
+
+            <div id="tab-apple" class="tab-content hidden">
+                <ol class="instructions-list">
+                    <li>Open <strong>Apple Calendar</strong> on your Mac, iPhone, or iPad.</li>
+                    <li>On Mac: Go to <strong>File &gt; New Calendar Subscription</strong>. On iOS: Go to <strong>Settings &gt; Calendar &gt; Accounts &gt; Add Account &gt; Other &gt; Add Subscribed Calendar</strong>.</li>
+                    <li>Paste your copied CalendarSync subscription URL.</li>
+                    <li>Click <strong>Subscribe</strong> and set auto-refresh (e.g., Every hour).</li>
+                </ol>
+            </div>
+
+            <div id="tab-outlook" class="tab-content hidden">
+                <ol class="instructions-list">
+                    <li>Open <strong>Outlook on the Web</strong> (outlook.live.com / outlook.office.com).</li>
+                    <li>Navigate to the <strong>Calendar</strong> view.</li>
+                    <li>Click <strong>"Add calendar"</strong> in the left pane, then select <strong>"Subscribe from web"</strong>.</li>
+                    <li>Paste your copied subscription URL, enter a calendar name, and click <strong>Import</strong>.</li>
+                </ol>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" class="btn btn-primary" onclick="closeSubscribeModal()">Got it</button>
+        </div>
+    </div>
+</div>
