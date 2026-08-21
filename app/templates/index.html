@@ -47,10 +47,7 @@
                     {% for category, message in messages %}
                         <div class="alert alert-{{ category }}">
                             {{ message }}
-                            <button type="button"
-                                    class="alert-close"
-                                    onclick="this.parentElement.remove()"
-                                    aria-label="Close">×</button>
+                            <button type="button" class="alert-close" aria-label="Close">×</button>
                         </div>
                     {% endfor %}
                 </div>
@@ -383,9 +380,7 @@
                                                 class="btn btn-primary btn-sm btn-copy"
                                                 data-copy-text="{{ sf.public_url }}"
                                                 title="Copy Subscription URL">Copy Subscription URL</button>
-                                        <button type="button"
-                                                class="btn btn-outline btn-sm"
-                                                onclick="openSubscribeModal()">How to Subscribe</button>
+                                        <button type="button" class="btn btn-outline btn-sm btn-open-subscribe-modal">How to Subscribe</button>
                                     {% endif %}
                                     <form action="{{ url_for('smart_filter.sync_smart_filter', calendar_id=sf.id) }}"
                                           method="post"

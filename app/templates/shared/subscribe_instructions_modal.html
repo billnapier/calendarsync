@@ -8,7 +8,7 @@
             <h3 id="modalTitle">How to Subscribe to Your Calendar Feed</h3>
             <button type="button"
                     class="modal-close"
-                    onclick="closeSubscribeModal()"
+                    data-action="close-subscribe-modal"
                     aria-label="Close modal">&times;</button>
         </div>
         <div class="modal-body">
@@ -16,15 +16,9 @@
                 Copy your unique subscription URL from your calendar card, then follow the instructions for your calendar provider:
             </p>
             <div class="tab-nav">
-                <button type="button"
-                        class="tab-btn active"
-                        onclick="switchSubscribeTab(event, 'tab-gcal')">Google Calendar</button>
-                <button type="button"
-                        class="tab-btn"
-                        onclick="switchSubscribeTab(event, 'tab-apple')">Apple Calendar</button>
-                <button type="button"
-                        class="tab-btn"
-                        onclick="switchSubscribeTab(event, 'tab-outlook')">Outlook</button>
+                <button type="button" class="tab-btn active" data-tab-id="tab-gcal">Google Calendar</button>
+                <button type="button" class="tab-btn" data-tab-id="tab-apple">Apple Calendar</button>
+                <button type="button" class="tab-btn" data-tab-id="tab-outlook">Outlook</button>
             </div>
             <div id="tab-gcal" class="tab-content active">
                 <ol class="instructions-list">
@@ -77,7 +71,9 @@
             </div>
         </div>
         <div class="modal-footer">
-            <button type="button" class="btn btn-primary" onclick="closeSubscribeModal()">Got it</button>
+            <button type="button"
+                    class="btn btn-primary"
+                    data-action="close-subscribe-modal">Got it</button>
         </div>
     </div>
 </div>
