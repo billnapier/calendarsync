@@ -169,7 +169,8 @@
                 const resultsDiv = document.getElementById('previewResults');
 
                 if (!sourceUrl || !filterPrompt) {
-                    alert('Please enter both a Source iCal URL and a Filter Prompt before testing.');
+                    resultsDiv.classList.remove('hidden');
+                    resultsDiv.innerHTML = `<div class="alert alert-warning">⚠️ Please enter both a <strong>Source iCal URL</strong> and a <strong>Filter Prompt</strong> before testing.</div>`;
                     return;
                 }
 
