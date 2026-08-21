@@ -63,8 +63,13 @@ def parse_and_extract_candidate_events(
     window_start = now - timedelta(days=SYNC_WINDOW_PAST_DAYS)
     window_end = now + timedelta(days=SYNC_WINDOW_FUTURE_DAYS)
 
+    # Sanitize raw_ics_content: strip empty blank lines that break strict icalendar parsers
+    lines = raw_ics_content.splitlines()
+    cleaned_lines = [line for line in lines if line.strip()]
+    cleaned_content = b"\r\n".join(cleaned_lines)
+
     try:
-        cal = icalendar.Calendar.from_ical(raw_ics_content)
+        cal = icalendar.Calendar.from_ical(cleaned_content)
     except Exception as e:
         logger.error("Failed to parse iCal feed: %s", e)
         raise ValueError(f"Invalid iCal feed format: {e}") from e

@@ -123,6 +123,9 @@ def test_smart_filter():
         source_url = request.form.get("source_url", "").strip()
         filter_prompt = request.form.get("filter_prompt", "").strip()
 
+    if source_url.startswith("webcal://"):
+        source_url = "https://" + source_url[9:]
+
     if not verify_csrf_token(csrf_token):
         return jsonify({"success": False, "error": "Invalid CSRF token"}), 403
 
