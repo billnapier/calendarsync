@@ -514,7 +514,7 @@ def test_smart_filter_preview(
     source_url: str, filter_prompt: str
 ) -> List[Dict[str, Any]]:
     """
-    Evaluates filter_prompt against the first 15 upcoming candidate events
+    Evaluates filter_prompt against the first 50 upcoming candidate events
     of source_url without saving. Returns evaluation results for UI preview.
     """
     resp = safe_requests_get(source_url, timeout=15)
@@ -522,8 +522,8 @@ def test_smart_filter_preview(
         raise ValueError(f"Failed to fetch source feed: HTTP {resp.status_code}")
 
     candidate_events, _ = parse_and_extract_candidate_events(resp.content)
-    # Take first 15 events
-    preview_candidates = candidate_events[:15]
+    # Take first 50 events
+    preview_candidates = candidate_events[:50]
 
     evaluations = call_gemini_filter_batch(preview_candidates, filter_prompt)
 
