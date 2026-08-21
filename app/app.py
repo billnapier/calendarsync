@@ -37,7 +37,6 @@ app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
 app.config["SEND_FILE_MAX_AGE_DEFAULT"] = 0
 
 
-
 @app.after_request
 def add_security_headers(response):
     """Add security headers to all responses."""
