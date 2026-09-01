@@ -416,6 +416,82 @@ class TestSyncLogic(unittest.TestCase):
         # Verify batch.add count = 60
         self.assertEqual(mock_batch.add.call_count, 60)
 
+    @patch("app.sync.logic.firestore.client")
+    @patch("app.sync.logic.get_client_config")
+    @patch("app.sync.logic.Credentials")
+    @patch("app.sync.logic.build")
+    @patch("app.sync.logic.requests.get")
+    def test_sync_calendar_logic_unstable_uid_existing_update(
+        self, mock_get, mock_build, mock_creds, mock_config, mock_firestore
+    ):
+        """Test that unstable_uid generates hashed UIDs for existing events lookup."""
+        import hashlib
+
+        sync_data = {
+            "user_id": "test_user_unstable",
+            "destination_calendar_id": "dest_cal_unstable",
+            "sources": [
+                {
+                    "url": "http://benchapp.test/feed.ics",
+                    "prefix": "Hockey",
+                    "unstable_uid": True,
+                }
+            ],
+        }
+        self._setup_common_mocks(mock_firestore, sync_data)
+
+        # Raw content with random UID but valid URL
+        raw_uid = "random-uuid-999"
+        event_url = "https://benchapp.com/game/123"
+        content = (
+            f"BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Test//\r\n"
+            f"BEGIN:VEVENT\r\nUID:{raw_uid}\r\n"
+            f"DTSTART:20260903T200000Z\r\nDTEND:20260903T210000Z\r\n"
+            f"SUMMARY:Game 1\r\nURL:{event_url}\r\nEND:VEVENT\r\nEND:VCALENDAR"
+        ).encode("utf-8")
+
+        mock_response = MagicMock()
+        mock_response.status_code = 200
+        mock_response.content = content
+        mock_get.return_value = mock_response
+
+        mock_service = MagicMock()
+        mock_build.return_value = mock_service
+
+        mock_batch = MagicMock()
+        mock_service.new_batch_http_request.return_value = mock_batch
+
+        # Calculate expected hashed UID
+        expected_hashed_uid = hashlib.sha256(f"url:{event_url}".encode()).hexdigest()
+
+        # Simulate batch response returning existing event for expected_hashed_uid
+        response_map = {
+            expected_hashed_uid: (
+                {
+                    "items": [
+                        {
+                            "id": "google_event_id_unstable",
+                            "iCalUID": expected_hashed_uid,
+                        }
+                    ]
+                },
+                None,
+            )
+        }
+        self._mock_batch_setup(mock_batch, response_map=response_map)
+
+        logic.sync_calendar_logic("sync_unstable_test")
+
+        # Verify update was called instead of import because existing event was matched by hashed UID
+        self.assertTrue(
+            mock_service.events.return_value.update.called,
+            "Expected update() to be called for existing unstable UID event",
+        )
+        self.assertFalse(
+            mock_service.events.return_value.import_.called,
+            "import_() should not be called when event matches existing hashed UID",
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

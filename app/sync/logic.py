@@ -1042,9 +1042,15 @@ def sync_calendar_logic(sync_id):  # pylint: disable=too-many-locals
     # Optimization: Only fetch events we plan to sync to avoid listing entire calendar history
     event_uids = []
     for item in all_events_items:
-        uid = item["component"].get("UID")
+        _, uid = _build_event_body(
+            item["component"],
+            item["prefix"],
+            item.get("source_title"),
+            base_url=base_url,
+            unstable_uid=item.get("unstable_uid", False),
+        )
         if uid:
-            event_uids.append(str(uid))
+            event_uids.append(uid)
 
     existing_map = _get_existing_events_map(
         service, destination_id, known_uids=event_uids, creds=creds
