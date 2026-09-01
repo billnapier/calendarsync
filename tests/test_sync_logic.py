@@ -13,7 +13,7 @@ class TestSyncLogic(unittest.TestCase):
 
     def _get_ical_content(self, uid, summary, days_offset=0, rrule=None):
         """Helper to generate iCal content with current dates."""
-        now = datetime.utcnow()
+        now = datetime.now(timezone.utc)
         dtstart = (now + timedelta(days=days_offset)).strftime("%Y%m%dT%H%M%SZ")
         dtend = (now + timedelta(days=days_offset, hours=1)).strftime("%Y%m%dT%H%M%SZ")
 

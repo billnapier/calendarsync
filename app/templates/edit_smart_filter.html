@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="description"
+              content="Edit your LLM smart calendar filter configuration.">
+        <title>Edit Smart Filter Calendar - CalendarSync</title>
+        <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap"
+              rel="stylesheet">
+        <script src="{{ url_for('static', filename='ui.js', v='2') }}" defer></script>
+    </head>
+    <body>
+        <header class="header">
+            <a href="{{ url_for('main.index') }}" class="logo-container">
+                <img src="{{ url_for('static', filename='images/logo.png') }}"
+                     alt="CalendarSync Logo"
+                     class="logo-img"
+                     width="32"
+                     height="32">
+                <span class="logo-text">CalendarSync</span>
+            </a>
+            <div class="user-menu">
+                <span>Hello, <strong>{{ user.name }}</strong></span>
+                <form action="{{ url_for('main.logout') }}"
+                      method="post"
+                      class="logout-form">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <button type="submit" class="btn btn-outline">Sign Out</button>
+                </form>
+            </div>
+        </header>
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                <div class="flash-messages-container">
+                    {% for category, message in messages %}
+                        <div class="alert alert-{{ category }}">
+                            {{ message }}
+                            <button type="button" class="alert-close" aria-label="Close">×</button>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+        {% endwith %}
+        <div class="dashboard-container">
+            <div class="experimental-banner">
+                <span class="banner-icon">⚡</span>
+                <div class="banner-text">
+                    <strong>Experimental Feature Preview:</strong> Smart Calendar Filtering is currently in free preview. It may be modified, retired, or require a paid subscription in the future to cover ongoing LLM infrastructure costs.
+                </div>
+            </div>
+            <div class="form-card">
+                <div class="form-header-group">
+                    <h1>
+                        Edit Smart Filter Calendar <span class="badge-experimental">Experimental</span>
+                    </h1>
+                    <p class="form-subtitle">
+                        Update your natural language criteria or source URL. Existing subscribers will continue receiving your active feed uninterrupted while re-evaluation occurs.
+                    </p>
+                </div>
+                <form action="{{ url_for('smart_filter.edit_smart_filter', calendar_id=calendar.id) }}"
+                      method="post"
+                      id="editFilterForm">
+                    <input type="hidden"
+                           name="csrf_token"
+                           id="csrfToken"
+                           value="{{ csrf_token }}">
+                    <div class="form-group">
+                        <label for="calendarName">Calendar Name</label>
+                        <input type="text"
+                               id="calendarName"
+                               name="name"
+                               value="{{ calendar.name }}"
+                               required>
+                    </div>
+                    <div class="form-group">
+                        <label for="sourceUrl">Source iCal Feed URL</label>
+                        <input type="url"
+                               id="sourceUrl"
+                               name="source_url"
+                               value="{{ calendar.source_url }}"
+                               required>
+                    </div>
+                    <div class="form-group">
+                        <label for="filterPrompt">Natural Language Filter Prompt</label>
+                        <textarea id="filterPrompt"
+                                  name="filter_prompt"
+                                  rows="4"
+                                  class="form-textarea"
+                                  required>{{ calendar.filter_prompt }}</textarea>
+                        <!-- Preset Helper Chips -->
+                        <div class="preset-section">
+                            <span class="preset-label">Quick Presets:</span>
+                            <div class="preset-chips">
+                                <button type="button"
+                                        class="chip"
+                                        data-preset="Only include exams, midterms, final exams, project submission deadlines, and assignment due dates; exclude lectures, office hours, and social events.">
+                                    Exams &amp; Deadlines Only
+                                </button>
+                                <button type="button"
+                                        class="chip"
+                                        data-preset="Exclude all office hours, TA review sessions, and drop-in help sessions.">
+                                    Exclude Office Hours
+                                </button>
+                                <button type="button"
+                                        class="chip"
+                                        data-preset="Include course lectures, guest lectures, and academic seminars only.">
+                                    Lectures Only
+                                </button>
+                                <button type="button"
+                                        class="chip"
+                                        data-preset="Include home games, pep band rehearsals, mandatory freshman seminars; exclude general campus events.">
+                                    Pep Band Freshman
+                                </button>
+                                <button type="button"
+                                        class="chip"
+                                        data-preset="Include mandatory parent-teacher conferences, school holidays, and official performance events; exclude general notices and optional PTA socials.">
+                                    Busy Parent
+                                </button>
+                                <button type="button"
+                                        class="chip"
+                                        data-preset="Include faculty meetings, committee sessions, and department budget reviews; exclude individual student advising and general campus news.">
+                                    Department Lead
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- Test / Preview Action -->
+                    <div class="test-preview-container">
+                        <button type="button"
+                                id="btnTestPrompt"
+                                class="btn btn-secondary"
+                                data-test-url="{{ url_for('smart_filter.test_smart_filter') }}">🧪 Test Prompt / Preview (First 50 Events)</button>
+                        <div id="previewLoading" class="preview-loading hidden">
+                            <span class="spinner"></span> Evaluating first 50 events with Gemini AI...
+                        </div>
+                        <div id="previewResults" class="preview-results hidden"></div>
+                    </div>
+                    <div class="form-actions">
+                        <a href="{{ url_for('main.index') }}" class="btn btn-secondary">Cancel</a>
+                        <button type="submit" class="btn btn-primary">Save Changes &amp; Re-evaluate</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <footer>
+            Powered by antigravity and Google Deepmind
+        </footer>
+    </body>
+</html>
