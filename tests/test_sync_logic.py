@@ -5,6 +5,7 @@ from datetime import datetime, timedelta, timezone
 
 os.environ["TESTING"] = "1"
 from unittest.mock import patch, MagicMock
+import icalendar
 import requests
 from app.sync import logic
 
@@ -490,6 +491,76 @@ class TestSyncLogic(unittest.TestCase):
         self.assertFalse(
             mock_service.events.return_value.import_.called,
             "import_() should not be called when event matches existing hashed UID",
+        )
+
+
+class TestBuildEventBodyMissingEnd(unittest.TestCase):
+    """Regression tests for events with no DTEND and no DURATION."""
+
+    def _make_event(self, ical_body):
+        cal = icalendar.Calendar.from_ical(ical_body)
+        for component in cal.subcomponents:
+            if component.name == "VEVENT":
+                return component
+        raise AssertionError("No VEVENT found in test fixture")
+
+    def test_build_event_body_applies_default_duration_when_no_dtend_or_duration(
+        self,
+    ):
+        """
+        Some source feeds (e.g. sports schedules) only publish a start time
+        with no DTEND and no DURATION. Previously this produced an event
+        body with no "end" key at all, which the Google Calendar API
+        rejects, silently dropping the event from sync.
+        """
+        ical_body = (
+            b"BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Test//\r\n"
+            b"BEGIN:VEVENT\r\nUID:no-end-event-1\r\n"
+            b"DTSTART:20260903T183000Z\r\n"
+            b"SUMMARY:Away Game\r\nEND:VEVENT\r\nEND:VCALENDAR"
+        )
+        event = self._make_event(ical_body)
+
+        body, uid = logic._build_event_body(event, prefix="")
+
+        self.assertEqual(uid, "no-end-event-1")
+        self.assertIsNotNone(body)
+        self.assertIn("end", body)
+        expected_start = datetime(2026, 9, 3, 18, 30, tzinfo=timezone.utc)
+        expected_end = expected_start + logic.DEFAULT_EVENT_DURATION
+        self.assertEqual(datetime.fromisoformat(body["end"]["dateTime"]), expected_end)
+
+    def test_build_event_body_applies_default_duration_for_all_day_event(self):
+        """All-day events (DATE value, no DTEND/DURATION) get a 1-day end."""
+        ical_body = (
+            b"BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Test//\r\n"
+            b"BEGIN:VEVENT\r\nUID:no-end-all-day-1\r\n"
+            b"DTSTART;VALUE=DATE:20260903\r\n"
+            b"SUMMARY:All Day Tournament\r\nEND:VEVENT\r\nEND:VCALENDAR"
+        )
+        event = self._make_event(ical_body)
+
+        body, uid = logic._build_event_body(event, prefix="")
+
+        self.assertEqual(uid, "no-end-all-day-1")
+        self.assertIsNotNone(body)
+        self.assertEqual(body["end"], {"date": "2026-09-04"})
+
+    def test_build_event_body_prefers_explicit_dtend_over_default(self):
+        """Sanity check: default duration must not override a real DTEND."""
+        ical_body = (
+            b"BEGIN:VCALENDAR\r\nVERSION:2.0\r\nPRODID:-//Test//\r\n"
+            b"BEGIN:VEVENT\r\nUID:has-end-event-1\r\n"
+            b"DTSTART:20260903T183000Z\r\nDTEND:20260903T200000Z\r\n"
+            b"SUMMARY:Home Game\r\nEND:VEVENT\r\nEND:VCALENDAR"
+        )
+        event = self._make_event(ical_body)
+
+        body, _uid = logic._build_event_body(event, prefix="")
+
+        self.assertEqual(
+            body["end"]["dateTime"],
+            datetime(2026, 9, 3, 20, 0, tzinfo=timezone.utc).isoformat(),
         )
 
 
