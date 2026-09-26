@@ -3,7 +3,7 @@ import contextlib
 import json
 import logging
 import time
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 import icalendar
 import requests
@@ -32,6 +32,12 @@ CALENDAR_LIST_FIELDS = "items(id,summary)"
 EVENT_LIST_FIELDS = (
     "summary,nextPageToken,items(id,summary,description,location,start,end)"
 )
+
+# Fallback duration applied when a source VEVENT has neither DTEND nor
+# DURATION (e.g. some sports-schedule feeds only publish a start time).
+# Without this, the Google Calendar API rejects the import/update because
+# "end" is missing, and the event silently fails to sync.
+DEFAULT_EVENT_DURATION = timedelta(hours=1)
 
 logger = logging.getLogger(__name__)
 
@@ -250,6 +256,29 @@ def _calculate_end_time(start_dt_prop, duration_prop):
     if isinstance(end_dt_obj, datetime):
         end_dt_obj = end_dt_obj.replace(tzinfo=timezone.utc)
         return {"dateTime": end_dt_obj.isoformat()}
+    return {"date": end_dt_obj.isoformat()}
+
+
+def _default_end_time(start_dt_prop):
+    """
+    Compute a fallback end time when a source event has neither DTEND nor
+    DURATION. Adds DEFAULT_EVENT_DURATION to the start time, preserving
+    all-day vs timed semantics.
+    """
+    if not start_dt_prop:
+        return None
+
+    start_dt_obj = start_dt_prop.dt
+
+    if isinstance(start_dt_obj, datetime):
+        end_dt_obj = start_dt_obj + DEFAULT_EVENT_DURATION
+        if end_dt_obj.tzinfo:
+            return {"dateTime": end_dt_obj.isoformat()}
+        end_dt_obj = end_dt_obj.replace(tzinfo=timezone.utc)
+        return {"dateTime": end_dt_obj.isoformat()}
+
+    # Date object (all-day event): keep it a single all-day event.
+    end_dt_obj = start_dt_obj + timedelta(days=1)
     return {"date": end_dt_obj.isoformat()}
 
 
@@ -775,6 +804,19 @@ def _build_event_body(
 
     if not end and start:
         end = _calculate_end_time(event.get("DTSTART"), event.get("DURATION"))
+
+    if not end and start:
+        # Source feed provided neither DTEND nor DURATION (seen on some
+        # sports-schedule feeds, e.g. game listings with a start time only).
+        # Google Calendar's API requires an "end" for the event to be
+        # imported/updated, so fall back to a default duration rather than
+        # silently dropping the event.
+        end = _default_end_time(event.get("DTSTART"))
+        logger.warning(
+            "Event '%s' missing DTEND/DURATION; applying default %s duration",
+            event.get("SUMMARY", uid),
+            DEFAULT_EVENT_DURATION,
+        )
 
     if not start:
         return None, None
