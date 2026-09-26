@@ -104,7 +104,8 @@
                                         <select>
                                             <option value="ical"
                                                     {% if (source.type or 'ical' ) == 'ical' %}selected{% endif %}>iCal URL</option>
-                                            <option value="google" {% if source.type == 'google' %}selected{% endif %}>Google Cal</option>
+                                            <option value="google"
+                                                    {% if source.type == 'google' %}selected{% endif %}>Google Cal</option>
                                             <option value="easycloud"
                                                     {% if source.type == 'easycloud' %}selected{% endif %}>EasyCloud Calendar</option>
                                         </select>
@@ -122,7 +123,8 @@
                                                         Calendar
                                                     </option>
                                                     {% for cal in calendars %}
-                                                        <option value="{{ cal.id }}" {% if cal.id == source.id %}selected{% endif %}>
+                                                        <option value="{{ cal.id }}"
+                                                                {% if cal.id == source.id %}selected{% endif %}>
                                                             {{
                                                                 cal.summary }}
                                                         </option>
@@ -171,7 +173,9 @@
                                     <!-- Actions -->
                                     <div class="source-actions">
                                         <span class="field-label visibility-hidden">Remove</span>
-                                        <button type="button" class="btn btn-danger" aria-label="Remove Source">Remove</button>
+                                        <button type="button"
+                                                class="btn btn-danger"
+                                                aria-label="Remove Source">Remove</button>
                                     </div>
                                 </div>
                             {% endfor %}
@@ -205,7 +209,8 @@
                                                 <select name="easycloud_ids_visible" aria-label="EasyCloud Source">
                                                     <option value="" disabled selected>Select Calendar</option>
                                                     {% for cal in easycloud_cals %}
-                                                        <option value="{{ cal.id }}" data-url="{{ cal.public_url }}">{{ cal.name }}</option>
+                                                        <option value="{{ cal.id }}"
+                                                                data-url="{{ cal.public_url }}">{{ cal.name }}</option>
                                                     {% endfor %}
                                                 </select>
                                             {% else %}
@@ -229,7 +234,9 @@
                                     </label>
                                     <div class="source-actions">
                                         <span class="field-label visibility-hidden">Remove</span>
-                                        <button type="button" class="btn btn-danger" aria-label="Remove Source">Remove</button>
+                                        <button type="button"
+                                                class="btn btn-danger"
+                                                aria-label="Remove Source">Remove</button>
                                     </div>
                                 </div>
                             {% endif %}

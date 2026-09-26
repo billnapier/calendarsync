@@ -119,7 +119,8 @@
                                             </select>
                                         {% else %}
                                             <p class="form-hint">
-                                                No Google Calendars found. <a href="{{ url_for('auth.login') }}" class="refresh-link">Refresh?</a>
+                                                No Google Calendars found. <a href="{{ url_for('auth.login') }}"
+    class="refresh-link">Refresh?</a>
                                             </p>
                                         {% endif %}
                                     </div>
@@ -129,7 +130,8 @@
                                             <select name="easycloud_ids_visible" aria-label="EasyCloud Source">
                                                 <option value="" disabled selected>Select Calendar</option>
                                                 {% for cal in easycloud_cals %}
-                                                    <option value="{{ cal.id }}" data-url="{{ cal.public_url }}">{{ cal.name }}</option>
+                                                    <option value="{{ cal.id }}"
+                                                            data-url="{{ cal.public_url }}">{{ cal.name }}</option>
                                                 {% endfor %}
                                             </select>
                                         {% else %}
@@ -156,7 +158,9 @@
                                 <!-- Actions -->
                                 <div class="source-actions">
                                     <span class="field-label visibility-hidden">Remove</span>
-                                    <button type="button" class="btn btn-danger" aria-label="Remove Source">Remove</button>
+                                    <button type="button"
+                                            class="btn btn-danger"
+                                            aria-label="Remove Source">Remove</button>
                                 </div>
                             </div>
                         </div>
