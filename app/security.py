@@ -61,6 +61,17 @@ def safe_requests_get(url, **kwargs):
     """
     Drop-in replacement for requests.get that validates the URL and any redirects.
     """
+    if url.startswith("webcal://"):
+        url = "https://" + url[9:]
+
+    headers = kwargs.get("headers", {})
+    if "User-Agent" not in headers and "user-agent" not in headers:
+        headers["User-Agent"] = (
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 "
+            "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36 CalendarSync/1.0"
+        )
+    kwargs["headers"] = headers
+
     validate_url(url)
 
     def check_redirect(resp, *args, **kwargs):  # pylint: disable=unused-argument

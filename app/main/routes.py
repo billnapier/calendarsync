@@ -58,6 +58,7 @@ def index():
     user = session.get("user")
     syncs = []
     easycloud_cals = []
+    smart_filters = []
     if user:
         db = firestore.client()
         # Fetch user's syncs
@@ -72,6 +73,20 @@ def index():
 
         easycloud_cals = _get_user_easycloud_calendars(user["uid"])
 
+        # Fetch user's smart filter calendars
+        try:
+            sf_docs = (
+                db.collection("filtered_calendars")
+                .where("user_id", "==", user["uid"])
+                .stream()
+            )
+            for doc in sf_docs:
+                data = doc.to_dict()
+                data["id"] = doc.id
+                smart_filters.append(data)
+        except Exception as e:
+            logger.error("Error fetching smart filter calendars: %s", e)
+
     try:
         client_config = get_client_config()
         google_client_id = client_config["web"]["client_id"]
@@ -84,6 +99,7 @@ def index():
         user=user,
         syncs=syncs,
         easycloud_cals=easycloud_cals,
+        smart_filters=smart_filters,
         google_client_id=google_client_id,
     )
 
@@ -596,4 +612,117 @@ def sync_all_users():
 
     except Exception as e:
         logger.error("Critical error in dispatcher: %s", e)
+        return "Internal failure. Please check logs for details.", 500
+
+
+@main_bp.route("/tasks/update_filtered_calendar_one", methods=["POST"])
+def update_filtered_calendar_one():
+    """
+    Worker endpoint to update a single smart filter calendar.
+    Called by Cloud Tasks.
+    """
+    try:
+        verify_task_auth()
+    except ValueError as e:
+        logger.warning("Auth failed: %s", e)
+        return "Unauthorized", 403
+
+    calendar_id = None
+    start_time = time.time()
+    try:
+        payload = request.get_json()
+        if not payload or "calendar_id" not in payload:
+            logger.error(
+                "Invalid payload for update_filtered_calendar_one: %s", payload
+            )
+            return "Invalid payload", 400
+
+        calendar_id = payload["calendar_id"]
+        logger.info(
+            "Worker starting update for smart filter calendar_id: %s", calendar_id
+        )
+
+        from app.smart_filter.logic import evaluate_smart_filter
+
+        evaluate_smart_filter(calendar_id, force=False)
+
+        return "Smart filter update successful", 200
+    except Exception as e:
+        duration = time.time() - start_time
+        error_payload = {
+            "event": "smart_filter_update_failed",
+            "calendar_id": calendar_id,
+            "error": str(e),
+            "duration_seconds": round(duration, 2),
+        }
+        logger.error("SMART_FILTER_ERROR: %s", json.dumps(error_payload))
+        # Return 500 to trigger Cloud Tasks retry
+        return "Worker failed. Please check logs for details.", 500
+
+
+@main_bp.route("/tasks/update_filtered_calendars_all", methods=["POST"])
+def update_filtered_calendars_all():
+    """
+    Dispatcher endpoint for smart filter calendars.
+    Triggered by Cloud Scheduler every 60 minutes.
+    """
+    try:
+        verify_task_auth()
+    except ValueError as e:
+        logger.warning("Auth failed: %s", e)
+        return "Unauthorized", 403
+
+    logger.info("Starting global smart filter dispatch...")
+
+    db = firestore.client()
+    project = os.environ.get("GOOGLE_CLOUD_PROJECT") or os.environ.get(
+        "FIREBASE_PROJECT_ID"
+    )
+    location = os.environ.get("GCP_REGION", "us-central1")
+    queue = "smart-filter-queue"
+    invoker_email = os.environ.get("SCHEDULER_INVOKER_EMAIL")
+
+    if not project or not invoker_email:
+        logger.error("Missing required env vars for Cloud Tasks dispatch")
+        return "Configuration error", 500
+
+    client = tasks_v2.CloudTasksClient()
+    parent = client.queue_path(project, location, queue)
+
+    try:
+        docs = db.collection("filtered_calendars").stream()
+        count = 0
+
+        for cal_doc in docs:
+            calendar_id = cal_doc.id
+
+            task = {
+                "http_request": {
+                    "http_method": tasks_v2.HttpMethod.POST,
+                    "url": url_for("main.update_filtered_calendar_one", _external=True),
+                    "headers": {"Content-Type": "application/json"},
+                    "oidc_token": {
+                        "service_account_email": invoker_email,
+                    },
+                }
+            }
+
+            payload = {"calendar_id": calendar_id}
+            task["http_request"]["body"] = json.dumps(payload).encode()
+
+            try:
+                client.create_task(request={"parent": parent, "task": task})
+                count += 1
+            except Exception as e:
+                logger.error(
+                    "Failed to enqueue task for smart filter calendar_id %s: %s",
+                    calendar_id,
+                    e,
+                )
+
+        logger.info("Dispatched %d smart filter update tasks.", count)
+        return f"Dispatched {count} tasks", 200
+
+    except Exception as e:
+        logger.error("Critical error in smart filter dispatcher: %s", e)
         return "Internal failure. Please check logs for details.", 500

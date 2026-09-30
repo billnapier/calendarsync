@@ -9,6 +9,12 @@ resource "google_cloud_tasks_queue" "sync_queue" {
   depends_on = [google_project_service.tasks_api]
 }
 
+resource "google_cloud_tasks_queue" "smart_filter_queue" {
+  name       = "smart-filter-queue"
+  location   = var.region
+  depends_on = [google_project_service.tasks_api]
+}
+
 # Grant the Cloud Run service account permission to enqueue tasks
 # Note: Cloud Run uses the Default Compute Service Account by default if not specified
 resource "google_project_iam_member" "cloud_run_tasks_enqueuer" {

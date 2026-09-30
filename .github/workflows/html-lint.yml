@@ -19,4 +19,4 @@ jobs:
           pip install djlint
       - name: Analysing the code with djlint
         run: |
-          djlint app/templates/*.html --check
+          djlint app/templates/ --check

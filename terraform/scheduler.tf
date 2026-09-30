@@ -14,6 +14,22 @@ resource "google_cloud_scheduler_job" "sync_all" {
   }
 }
 
+resource "google_cloud_scheduler_job" "smart_filter_all" {
+  name        = "update-filtered-calendars-all"
+  description = "Trigger smart filter updates for all users"
+  schedule    = "0 * * * *"
+  time_zone   = "Etc/UTC"
+
+  http_target {
+    http_method = "POST"
+    uri         = "${google_cloud_run_service.default.status[0].url}/tasks/update_filtered_calendars_all"
+
+    oidc_token {
+      service_account_email = google_service_account.scheduler_invoker.email
+    }
+  }
+}
+
 resource "google_service_account" "scheduler_invoker" {
   account_id   = "scheduler-invoker"
   display_name = "Cloud Scheduler Invoker"

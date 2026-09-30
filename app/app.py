@@ -8,6 +8,7 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 from app.auth import auth_bp
 from app.main import main_bp
 from app.easycloud import easycloud_bp
+from app.smart_filter import smart_filter_bp
 
 # Utils
 from app.utils import generate_csrf_token, time_ago_filter
@@ -33,6 +34,7 @@ app.config["SESSION_COOKIE_NAME"] = "__session"
 app.config["SESSION_COOKIE_SECURE"] = True
 app.config["SESSION_COOKIE_HTTPONLY"] = True
 app.config["SESSION_COOKIE_SAMESITE"] = "Lax"
+app.config["SEND_FILE_MAX_AGE_DEFAULT"] = 0
 
 
 @app.after_request
@@ -82,6 +84,7 @@ else:
 app.register_blueprint(auth_bp)
 app.register_blueprint(main_bp)
 app.register_blueprint(easycloud_bp)
+app.register_blueprint(smart_filter_bp, url_prefix="/smart_filter")
 
 # Register Context Processors and Filters
 app.context_processor(lambda: {"csrf_token": generate_csrf_token()})
